@@ -17,3 +17,12 @@ The first time you run it, you will be prompted to select your Satisfactory inst
 ## Discord
 
 Join our Discord at https://discord.gg/NncUggkwQB to be notified of new version, provide feedback, or to ask for help.
+
+## Alternatives
+
+Don't like this calculator? Try these:
+
+- https://www.satisfactory-planner.net/
+- https://www.satisfactorytools.com/
+- https://satisfactory-calculator.com/
+- https://daniel2013.github.io/satisfactory/
