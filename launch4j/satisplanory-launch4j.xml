@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2022 elcheapogary
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+
+<launch4jConfig>
+  <dontWrapJar>true</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar></jar>
+  <outfile>E:\satisplanory.exe</outfile>
+  <errTitle>Cant load Java, did you extract the zip file?</errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>https://github.com/elcheapogary/satisplanory/wiki/Error-running-Satisplanory-Windows-launcher</downloadUrl>
+  <supportUrl>https://discord.gg/NncUggkwQB</supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <icon>E:\sp.ico</icon>
+  <classPath>
+    <mainClass>io.github.elcheapogary.satisplanory/io.github.elcheapogary.satisplanory.ui.jfx.app.Main</mainClass>
+  </classPath>
+  <jre>
+    <path>%EXEDIR%</path>
+    <bundledJre64Bit>false</bundledJre64Bit>
+    <bundledJreAsFallback>false</bundledJreAsFallback>
+    <minVersion>17</minVersion>
+    <maxVersion>300</maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+    <runtimeBits>64/32</runtimeBits>
+    <opt>-m io.github.elcheapogary.satisplanory/io.github.elcheapogary.satisplanory.ui.jfx.app.Main</opt>
+  </jre>
+</launch4jConfig>

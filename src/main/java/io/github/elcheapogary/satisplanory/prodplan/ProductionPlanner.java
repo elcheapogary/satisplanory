@@ -1,0 +1,481 @@
+/*
+ * Copyright (c) 2022 elcheapogary
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package io.github.elcheapogary.satisplanory.prodplan;
+
+import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.prodplan.lp.FractionExpression;
+import io.github.elcheapogary.satisplanory.prodplan.lp.InfeasibleSolutionException;
+import io.github.elcheapogary.satisplanory.prodplan.lp.Model;
+import io.github.elcheapogary.satisplanory.prodplan.lp.OptimizationResult;
+import io.github.elcheapogary.satisplanory.prodplan.lp.UnboundedSolutionException;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+
+public class ProductionPlanner
+{
+    private final Map<Item, OutputRequirement> outputRequirements;
+    private final Map<Item, BigDecimal> inputItems;
+    private final Set<Recipe> recipes;
+    private final boolean strictMaximizeRatios;
+    private final BigDecimal maximizeOutputItemsWeight;
+    private final BigDecimal powerWeight;
+    private final BigDecimal minimizeInputItemWeight;
+    private final BigDecimal balanceWeight;
+    private final BigDecimal maximizeInputItemWeight;
+    private final BigDecimal minimizeByProductsWeight;
+
+    protected ProductionPlanner(Builder builder)
+    {
+        this.inputItems = Collections.unmodifiableMap(Item.createMap(builder.inputItems));
+        this.outputRequirements = Collections.unmodifiableMap(Item.createMap(builder.outputRequirements));
+        this.recipes = Collections.unmodifiableSet(Recipe.createSet(builder.recipes));
+        this.strictMaximizeRatios = builder.strictMaximizeRatios;
+        this.maximizeOutputItemsWeight = Objects.requireNonNull(builder.maximizeOutputItemWeight);
+        this.powerWeight = Objects.requireNonNull(builder.powerWeight);
+        this.minimizeInputItemWeight = Objects.requireNonNull(builder.minimizeInputItemWeight);
+        this.balanceWeight = Objects.requireNonNull(builder.balanceWeight);
+        this.maximizeInputItemWeight = Objects.requireNonNull(builder.maximizeInputItemsWeight);
+        this.minimizeByProductsWeight = Objects.requireNonNull(builder.minimizeByProductsWeight);
+    }
+
+    private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
+    {
+        recipes = ProdPlanUtils.getRecipesWeCanBuild(
+                getRecipesThatBuildShitWeNeed(recipes, outputItems),
+                inputItems
+        );
+
+        filteredRecipes.addAll(recipes);
+
+        filteredItems.addAll(inputItems);
+        filteredItems.addAll(outputItems);
+        filteredItems.addAll(ProdPlanUtils.getItemsUsedInRecipes(recipes));
+    }
+
+    private static Collection<? extends Recipe> getRecipesThatBuildShitWeNeed(Collection<? extends Recipe> recipes, Collection<? extends Item> shitWeNeed)
+    {
+        Set<Item> seenItems = Item.createSet();
+        seenItems.addAll(shitWeNeed);
+
+        List<Item> todoItems = new LinkedList<>(shitWeNeed);
+
+        Set<Recipe> unaddedRecipes = Recipe.createSet(recipes);
+        Set<Recipe> retv = Recipe.createSet();
+
+        while (!todoItems.isEmpty()){
+            Item item = todoItems.remove(0);
+
+            for (Iterator<Recipe> it = unaddedRecipes.iterator(); it.hasNext(); ){
+                Recipe recipe = it.next();
+
+                if (recipe.producesItem(item)){
+                    it.remove();
+
+                    retv.add(recipe);
+
+                    for (Recipe.RecipeItem ri : recipe.getIngredients()){
+                        if (seenItems.add(ri.getItem())){
+                            todoItems.add(ri.getItem());
+                        }
+                    }
+                }
+            }
+        }
+
+        return retv;
+    }
+
+    private static <K> Map<K, BigFraction> getVariableValues(Map<K, FractionExpression> variableMap, Supplier<Map<K, BigFraction>> mapFactory, OptimizationResult result)
+    {
+        Map<K, BigFraction> outputMap = mapFactory.get();
+
+        for (Map.Entry<K, FractionExpression> entry : variableMap.entrySet()){
+            K key = entry.getKey();
+            FractionExpression variable = entry.getValue();
+            BigFraction amount = variable.getValue(result);
+            if (amount.signum() > 0){
+                outputMap.put(key, amount);
+            }
+        }
+
+        return outputMap;
+    }
+
+    public ProductionPlan createPlan()
+            throws ProductionPlanNotFeatisbleException, InterruptedException, ProductionPlanInternalException
+    {
+        Set<Recipe> recipes = Recipe.createSet();
+        Set<Item> items = Item.createSet();
+
+        filterRecipesAndItems(this.recipes, inputItems.keySet(), outputRequirements.keySet(), recipes, items);
+
+        items.addAll(outputRequirements.keySet());
+
+        Model model = new Model();
+
+        Map<Item, FractionExpression> itemOutputVariableMap = Item.createMap();
+        Map<Item, FractionExpression> itemInputVariableMap = Item.createMap();
+        Map<Recipe, FractionExpression> recipeVariableMap = Recipe.createMap();
+        FractionExpression powerExpression = FractionExpression.zero();
+
+        {
+            Map<Item, FractionExpression> itemsProducedExpressionMap = Item.createMap();
+            Map<Item, FractionExpression> itemsConsumedExpressionMap = Item.createMap();
+
+            for (Recipe recipe : recipes){
+                FractionExpression recipeVariable = model.addFractionVariable();
+                model.addConstraint(recipeVariable.nonNegative());
+                recipeVariableMap.put(recipe, recipeVariable);
+                powerExpression = powerExpression.add(recipe.getPowerConsumption(), recipeVariable);
+
+                for (Recipe.RecipeItem ri : recipe.getIngredients()){
+                    itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
+                            Objects.requireNonNullElse(expression, FractionExpression.zero())
+                                    .add(ri.getAmount().getAmountPerMinute(), recipeVariable)
+                    );
+                }
+
+                for (Recipe.RecipeItem ri : recipe.getProducts()){
+                    itemsProducedExpressionMap.compute(ri.getItem(), (item, expression) ->
+                            Objects.requireNonNullElse(expression, FractionExpression.zero())
+                                    .add(ri.getAmount().getAmountPerMinute(), recipeVariable)
+                    );
+                }
+            }
+
+            for (Item item : items){
+                FractionExpression consumed = Objects.requireNonNullElse(itemsConsumedExpressionMap.get(item), FractionExpression.zero());
+                FractionExpression produced = Objects.requireNonNullElse(itemsProducedExpressionMap.get(item), FractionExpression.zero());
+
+                FractionExpression inputVariable = FractionExpression.zero();
+
+                {
+                    BigDecimal inputAmountPerMinute = inputItems.get(item);
+                    if (inputAmountPerMinute != null){
+                        inputVariable = model.addFractionVariable();
+                        itemInputVariableMap.put(item, inputVariable);
+                        model.addConstraint(inputVariable.nonNegative());
+                        model.addConstraint(inputVariable.lte(inputAmountPerMinute));
+                        model.addConstraint(inputVariable.eq(consumed.subtract(produced)));
+                    }
+                }
+
+                FractionExpression outputExpression = produced.subtract(consumed.subtract(inputVariable));
+                itemOutputVariableMap.put(item, outputExpression);
+
+                {
+                    OutputRequirement outputRequirement = outputRequirements.get(item);
+                    if (outputRequirement != null && outputRequirement.getItemsPerMinute() != null){
+                        model.addConstraint(outputExpression.gte(outputRequirement.getItemsPerMinute()));
+                    }else{
+                        model.addConstraint(outputExpression.nonNegative());
+                    }
+                }
+            }
+        }
+
+        FractionExpression maximizedOutputItemsExpression = FractionExpression.zero();
+        FractionExpression byProductsExpression = FractionExpression.zero();
+        FractionExpression balanceExpression = FractionExpression.zero();
+
+        {
+            Map<Item, BigDecimal> outputItemWeights = Item.createMap();
+            for (var entry : outputRequirements.entrySet()){
+                Item item = entry.getKey();
+                OutputRequirement outputRequirement = entry.getValue();
+
+                BigDecimal weight = outputRequirement.getMaximizeWeight();
+
+                if (weight != null && weight.signum() > 0){
+                    outputItemWeights.put(item, weight);
+                }
+            }
+
+            for (Item item : items){
+                BigDecimal weight = outputItemWeights.get(item);
+                if (weight == null){
+                    byProductsExpression = byProductsExpression.add(itemOutputVariableMap.get(item));
+                }else{
+                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(weight, itemOutputVariableMap.get(item));
+                }
+            }
+
+            if (outputItemWeights.size() > 1){
+                if (strictMaximizeRatios){
+                    FractionExpression balanceVariable = model.addFractionVariable();
+                    model.addConstraint(balanceVariable.nonNegative());
+                    balanceExpression = balanceVariable;
+
+                    for (var entry : outputItemWeights.entrySet()){
+                        Item item = entry.getKey();
+                        BigDecimal weight = entry.getValue();
+
+                        model.addConstraint(itemOutputVariableMap.get(item).eq(balanceVariable.multiply(weight)));
+                    }
+                }else{
+                    List<Item> maxItems = new ArrayList<>(outputItemWeights.keySet());
+                    for (int i = 0; i < maxItems.size() - 1; i++){
+                        Item a = maxItems.get(i);
+                        for (int j = i + 1; j < maxItems.size(); j++){
+                            Item b = maxItems.get(j);
+
+                            FractionExpression balanceVariable = model.addFractionVariable();
+                            balanceExpression = balanceExpression.add(balanceVariable);
+                            model.addConstraint(balanceVariable.nonNegative());
+                            model.addConstraint(itemOutputVariableMap.get(a).gte(balanceVariable.multiply(outputItemWeights.get(a))));
+                            model.addConstraint(itemOutputVariableMap.get(b).gte(balanceVariable.multiply(outputItemWeights.get(b))));
+                        }
+                    }
+                }
+            }
+        }
+
+        FractionExpression inputItemsExpression = FractionExpression.zero();
+
+        for (FractionExpression e : itemInputVariableMap.values()){
+            inputItemsExpression = inputItemsExpression.add(e);
+        }
+
+        FractionExpression objectiveFunction = FractionExpression.zero()
+                .add(maximizedOutputItemsExpression.multiply(maximizeOutputItemsWeight))
+                .add(balanceExpression.multiply(balanceWeight))
+                .add(inputItemsExpression.multiply(maximizeInputItemWeight))
+                .subtract(inputItemsExpression.multiply(minimizeInputItemWeight))
+                .subtract(powerExpression.multiply(powerWeight))
+                .subtract(byProductsExpression.multiply(minimizeByProductsWeight));
+
+        OptimizationResult result;
+
+        try {
+            result = model.maximize(objectiveFunction);
+        }catch (InfeasibleSolutionException e){
+            throw new ProductionPlanNotFeatisbleException(e);
+        }catch (UnboundedSolutionException e){
+            throw new ProductionPlanInternalException(e);
+        }
+
+        return new ProductionPlan(
+                getVariableValues(recipeVariableMap, Recipe::createMap, result),
+                getVariableValues(itemInputVariableMap, Item::createMap, result),
+                getVariableValues(itemOutputVariableMap, Item::createMap, result)
+        );
+    }
+
+    public Map<Item, BigDecimal> getInputItems()
+    {
+        return inputItems;
+    }
+
+    public BigDecimal getOutputItemMaximizeWeight(Item item)
+    {
+        return outputRequirements.get(item).getMaximizeWeight();
+    }
+
+    public BigDecimal getOutputItemMinimumPerMinute(Item item)
+    {
+        return outputRequirements.get(item).getItemsPerMinute();
+    }
+
+    public Collection<? extends Item> getOutputItems()
+    {
+        return outputRequirements.keySet();
+    }
+
+    public Set<Recipe> getRecipes()
+    {
+        return recipes;
+    }
+
+    public Builder toBuilder()
+    {
+        return new Builder(this);
+    }
+
+    public static class Builder
+    {
+        private final Map<Item, OutputRequirement> outputRequirements = Item.createMap();
+        private final Map<Item, BigDecimal> inputItems = Item.createMap();
+        private final Set<Recipe> recipes = Recipe.createSet();
+        private boolean strictMaximizeRatios = false;
+        private BigDecimal maximizeOutputItemWeight = BigDecimal.ONE;
+        private BigDecimal powerWeight = BigDecimal.ZERO;
+        private BigDecimal minimizeInputItemWeight = BigDecimal.ZERO;
+        private BigDecimal balanceWeight = BigDecimal.TEN.pow(3);
+        private BigDecimal maximizeInputItemsWeight = BigDecimal.ZERO;
+        private BigDecimal minimizeByProductsWeight = BigDecimal.ZERO;
+
+        public Builder()
+        {
+        }
+
+        public Builder(ProductionPlanner planner)
+        {
+            this.outputRequirements.putAll(planner.outputRequirements);
+            this.inputItems.putAll(planner.inputItems);
+            this.recipes.addAll(planner.recipes);
+            this.strictMaximizeRatios = planner.strictMaximizeRatios;
+            this.maximizeOutputItemWeight = planner.maximizeOutputItemsWeight;
+            this.powerWeight = planner.powerWeight;
+            this.minimizeInputItemWeight = planner.minimizeInputItemWeight;
+            this.balanceWeight = planner.balanceWeight;
+            this.maximizeInputItemsWeight = planner.maximizeInputItemWeight;
+            this.minimizeByProductsWeight = planner.minimizeByProductsWeight;
+        }
+
+        public Builder addInputItem(Item item, long itemsPerMinute)
+        {
+            return addInputItem(item, BigDecimal.valueOf(itemsPerMinute));
+        }
+
+        public Builder addInputItem(Item item, BigDecimal itemsPerMinute)
+        {
+            inputItems.put(item, itemsPerMinute);
+            return this;
+        }
+
+        public Builder addOutputItem(Item item, BigDecimal itemsPerMinute, BigDecimal weight)
+        {
+            outputRequirements.put(item, new OutputRequirement(itemsPerMinute, weight));
+            return this;
+        }
+
+        public Builder addRecipe(Recipe recipe)
+        {
+            recipes.add(recipe);
+            return this;
+        }
+
+        public Builder addRecipes(Collection<? extends Recipe> recipes)
+        {
+            this.recipes.addAll(recipes);
+            return this;
+        }
+
+        public ProductionPlanner build()
+        {
+            return new ProductionPlanner(this);
+        }
+
+        public Builder maximizeOutputItem(Item item, long weight)
+        {
+            return addOutputItem(item, null, BigDecimal.valueOf(weight));
+        }
+
+        public Builder maximizeOutputItem(Item item, BigDecimal weight)
+        {
+            outputRequirements.compute(item, (item1, outputRequirement) -> {
+                Optional<OutputRequirement> o = Optional.ofNullable(outputRequirement);
+
+                return new OutputRequirement(
+                        o.map(OutputRequirement::getItemsPerMinute).orElse(null),
+                        o.map(OutputRequirement::getMaximizeWeight).orElse(BigDecimal.ZERO)
+                                .max(weight)
+                );
+            });
+            return this;
+        }
+
+        public Builder requireOutputItemsPerMinute(Item item, BigDecimal itemsPerMinute)
+        {
+            outputRequirements.compute(item, (item1, outputRequirement) -> {
+                Optional<OutputRequirement> o = Optional.ofNullable(outputRequirement);
+
+                return new OutputRequirement(
+                        o.map(OutputRequirement::getItemsPerMinute).orElse(BigDecimal.ZERO)
+                                .add(itemsPerMinute),
+                        o.map(OutputRequirement::getMaximizeWeight).orElse(null)
+                );
+            });
+            return this;
+        }
+
+        public Builder requireOutputItemsPerMinute(Item item, long itemsPerMinute)
+        {
+            return requireOutputItemsPerMinute(item, BigDecimal.valueOf(itemsPerMinute));
+        }
+
+        public Builder setBalanceWeight(BigDecimal balanceWeight)
+        {
+            this.balanceWeight = balanceWeight;
+            return this;
+        }
+
+        public Builder setMaximizeInputItemsWeight(BigDecimal maximizeInputItemsWeight)
+        {
+            this.maximizeInputItemsWeight = maximizeInputItemsWeight;
+            return this;
+        }
+
+        public Builder setMaximizeOutputItemWeight(BigDecimal maximizeOutputItemWeight)
+        {
+            this.maximizeOutputItemWeight = maximizeOutputItemWeight;
+            return this;
+        }
+
+        public Builder setMinimizeInputItemWeight(BigDecimal minimizeInputItemWeight)
+        {
+            this.minimizeInputItemWeight = minimizeInputItemWeight;
+            return this;
+        }
+
+        public Builder setPowerWeight(BigDecimal powerWeight)
+        {
+            this.powerWeight = powerWeight;
+            return this;
+        }
+
+        public Builder setMinimizeByProductsWeight(BigDecimal minimizeByProductsWeight)
+        {
+            this.minimizeByProductsWeight = minimizeByProductsWeight;
+            return this;
+        }
+
+        public Builder setStrictMaximizeRatios(boolean strictMaximizeRatios)
+        {
+            this.strictMaximizeRatios = strictMaximizeRatios;
+            return this;
+        }
+    }
+
+    private static class OutputRequirement
+    {
+        private final BigDecimal itemsPerMinute;
+        private final BigDecimal maximizeWeight;
+
+        public OutputRequirement(BigDecimal itemsPerMinute, BigDecimal maximizeWeight)
+        {
+            this.itemsPerMinute = itemsPerMinute;
+            this.maximizeWeight = maximizeWeight;
+        }
+
+        public BigDecimal getItemsPerMinute()
+        {
+            return itemsPerMinute;
+        }
+
+        public BigDecimal getMaximizeWeight()
+        {
+            return maximizeWeight;
+        }
+    }
+}

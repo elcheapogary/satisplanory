@@ -1,0 +1,113 @@
+<!--
+  ~ Copyright (c) 2022 elcheapogary
+  ~
+  ~ This program and the accompanying materials are made
+  ~ available under the terms of the Eclipse Public License 2.0
+  ~ which is available at https://www.eclipse.org/legal/epl-2.0/
+  ~
+  ~ SPDX-License-Identifier: EPL-2.0
+  -->
+<html>
+<head>
+    <title>Help</title>
+    <style type="text/css">
+        html {
+            font-family: sans-serif;
+            font-size: 13px;
+        }
+        body {
+            margin: 10px;
+            margin-right: 25px;
+        }
+    </style>
+</head>
+<body>
+    <p>
+        This screen is the production planner - a tool to calculate how many buildings configured with which recipes
+        are required to produce a certain number of items per minute given the availability of certain input items.
+    </p>
+
+    <p>
+        There are three sets of data that can be configured:
+    </p>
+
+    <dl>
+        <dt>Recipes</dt>
+        <dd>
+            <p>
+                Here you select which recipes the calculator can consider when calculating a production plan.
+            </p>
+        </dd>
+        <dt>Input Items</dt>
+        <dd>
+            <p>
+                These are the input items that are available to be used in the production plan. These can be raw
+                resources or products of other factories.
+            </p>
+        </dd>
+        <dt>Output Requirements</dt>
+        <dd>
+            <p>
+                This is which items you would like to produce. You can configure a specific amount or as many as
+                possible.
+            </p>
+        </dd>
+    </dl>
+
+    <p><b>Recipes</b></p>
+
+    <p>
+        You can select any or all of the default or alternate recipes. You can search for recipes by name, or by the
+        item they produce.
+    </p>
+
+    <p>
+        If you select no recipes, or a production plan is not possible with the recipes you have selected, the
+        calculator will attempt to find the best recipes to use and will suggest them to you.
+    </p>
+
+    <p><b>Input Items</b></p>
+
+    <p>
+        These are the items the calculator will attempt to use as input for the production lines. You can add all raw
+        resources on the map by using the "Add All Raw Resources" button.
+    </p>
+
+    <p>
+        If you add no input items, or if a production plan is not possible with the input items you have selected, then
+        the calculator will attempt to find the input items required to create a production plan and suggest them to
+        you.
+    </p>
+
+    <p><b>Output Items</b></p>
+
+    <p>
+        These are the items you would like the production lines to produce.
+    </p>
+
+    <p>
+        Each item can have a minimum amount per minute and a maximization weight. The calculator will attempt to create
+        a production plan that produces at least the configured minimum items per minute, and as much as possible of the
+        items with a weight value greater than zero.
+    </p>
+
+    <p>
+        <b>Note!</b> If you configure a minimum of zero for a particular item, then the calculator may create a
+        production plan that produces none of that item!
+    </p>
+
+    <p>
+        You must add at least one output item that has either a minimum number of items per minute greater than zero or
+        a weight greater than zero.
+    </p>
+
+    <p>
+        The calculator will attempt to balance the output items according to their weight. eg. If you configure Iron
+        Rods with a weight of 2 and Iron Plates with a weight of 3, then the calculator will attempt to create a
+        production plan which produces 3 Iron Plates for every 2 Iron Rods. This, however, is not strictly enforced.
+        If, for some reason, fewer Iron Plates are producible then the calculator will still attempt to maximize Iron
+        Rods, even if output ratio would no longer match what is configured.
+    </p>
+
+</body>
+</html>
