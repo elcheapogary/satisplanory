@@ -272,7 +272,7 @@
                         <version>3.3.0</version>
                         <executions>
                             <execution>
-                                <id>runtime</id>
+                                <id>windows</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>single</goal>
@@ -280,7 +280,7 @@
                                 <configuration>
 
                                     <descriptors>
-                                        <descriptor>src/main/assembly/runtime.xml</descriptor>
+                                        <descriptor>src/main/assembly/windows.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
