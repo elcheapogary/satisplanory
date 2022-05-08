@@ -34,8 +34,6 @@ public class ZoomableScrollPane
         setContent(outerNode(zoomNode));
 
         setPannable(true);
-        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         setFitToHeight(true); //center
         setFitToWidth(true); //center
 
