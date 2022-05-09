@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.InputItemNodeData;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.OutputItemNodeData;
@@ -20,10 +21,15 @@ import io.github.elcheapogary.satisplanory.prodplan.graph.data.RecipeNodeData;
 import io.github.elcheapogary.satisplanory.prodplan.graph.lib.Edge;
 import io.github.elcheapogary.satisplanory.prodplan.graph.lib.Graph;
 import io.github.elcheapogary.satisplanory.prodplan.graph.lib.Node;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.ZoomableScrollPane;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
@@ -37,10 +43,18 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Background;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -74,7 +88,7 @@ class GraphPane
         if (nodeData instanceof RecipeNodeData recipeNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-recipe");
             line1 = recipeNodeData.getRecipe().getName();
-            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
+            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-input");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
@@ -175,16 +189,176 @@ class GraphPane
         return l;
     }
 
-    public static Pane createGraphPane(ProductionPlan plan)
+    private static Region createInputItemNodeDetailPane(InputItemNodeData nodeData)
     {
-        return createGraphPane(plan.toGraph(), GraphPane::createNodeComponent, GraphPane::createEdgeComponent);
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new javafx.geometry.Insets(10));
+
+        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+
+        TitledPane titledPane = new TitledPane();
+        titledPane.setCollapsible(false);
+        titledPane.setAlignment(Pos.CENTER);
+        titledPane.setMaxHeight(Double.MAX_VALUE);
+        titledPane.getStyleClass().add("stpnr-tenbold");
+        titledPane.setText("Input: " + nodeData.getItem().getName());
+        titledPane.setContent(vbox);
+        return titledPane;
     }
 
-    private static <N, E> Pane createGraphPane(Graph<N, E> graph, BiFunction<? super N, ? super BooleanBinding, ? extends Region> nodeComponentFactory, BiFunction<? super E, ? super BooleanBinding, ? extends Region> edgeComponentFactory)
+    private static Region createOutputItemNodeDetailPane(OutputItemNodeData nodeData)
+    {
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new javafx.geometry.Insets(10));
+
+        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+
+        TitledPane titledPane = new TitledPane();
+        titledPane.setCollapsible(false);
+        titledPane.setAlignment(Pos.CENTER);
+        titledPane.setMaxHeight(Double.MAX_VALUE);
+        titledPane.getStyleClass().add("stpnr-tenbold");
+        titledPane.setText("Output: " + nodeData.getItem().getName());
+        titledPane.setContent(vbox);
+        return titledPane;
+    }
+
+    private static TitledPane createRecipeItemsDetailPane(String heading, BigFraction amount, Collection<? extends Recipe.RecipeItem> recipeItems)
+    {
+        TitledPane titledPane = new TitledPane();
+
+        titledPane.setText(heading);
+        titledPane.setCollapsible(true);
+
+        VBox lines = new VBox(3);
+        lines.setPadding(new javafx.geometry.Insets(10));
+        titledPane.setContent(lines);
+
+        List<Recipe.RecipeItem> sortedRecipeItems = new ArrayList<>(recipeItems);
+        sortedRecipeItems.sort(Comparator.<Recipe.RecipeItem, String>comparing(recipeItem -> recipeItem.getItem().getName()));
+
+        for (Recipe.RecipeItem ri : sortedRecipeItems){
+            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + BigDecimalUtils.normalize(ri.getAmount().getAmountPerMinuteFraction().multiply(amount).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+        }
+
+        return titledPane;
+    }
+
+    private static Region createRecipeNodeDetailPane(RecipeNodeData nodeData)
+    {
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new javafx.geometry.Insets(10));
+
+        {
+            TitledPane titledPane = new TitledPane();
+            vbox.getChildren().add(titledPane);
+
+            titledPane.setText("Buildings");
+            titledPane.setCollapsible(true);
+
+            VBox container = new VBox(10);
+            titledPane.setContent(container);
+            container.setPadding(new javafx.geometry.Insets(10));
+
+            VBox lines = new VBox(3);
+            container.getChildren().add(lines);
+
+            BigDecimal n = nodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP);
+            BigDecimal i = n.setScale(0, RoundingMode.DOWN);
+            n = n.subtract(i);
+
+            if (i.signum() != 0){
+                lines.getChildren().add(new Label(i + " × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at 100%"));
+            }
+
+            if (n.signum() != 0){
+                final BigDecimal formattedNumber = BigDecimalUtils.normalize(n.movePointRight(2));
+                Label l = new Label("1 × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at " + formattedNumber + "%");
+                lines.getChildren().add(l);
+
+                l.onMouseClickedProperty().set(event -> {
+                    ClipboardContent clipboardContent = new ClipboardContent();
+                    clipboardContent.putString(formattedNumber.toString());
+                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                });
+
+                Button copyButton = new Button("Copy");
+                container.getChildren().add(copyButton);
+
+                Tooltip tooltip = new Tooltip();
+                tooltip.setText("Underclock % copied");
+
+                copyButton.setMaxWidth(Double.MAX_VALUE);
+                copyButton.onActionProperty().set(event -> {
+                    ClipboardContent clipboardContent = new ClipboardContent();
+                    clipboardContent.putString(formattedNumber.toString());
+                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                    Point2D p = copyButton.localToScene(0, 0);
+                    tooltip.show(copyButton, p.getX(), p.getY() - 20);
+                });
+
+                copyButton.onMouseExitedProperty().set(event -> {
+                    tooltip.hide();
+                });
+            }
+        }
+
+        vbox.getChildren().add(createRecipeItemsDetailPane("Consumes", nodeData.getAmount(), nodeData.getRecipe().getIngredients()));
+        vbox.getChildren().add(createRecipeItemsDetailPane("Produces", nodeData.getAmount(), nodeData.getRecipe().getProducts()));
+
+        {
+            Region grower = new Pane();
+            grower.setPrefHeight(0);
+            grower.setPrefWidth(0);
+            VBox.setVgrow(grower, Priority.ALWAYS);
+            vbox.getChildren().add(grower);
+        }
+
+        TitledPane titledPane = new TitledPane();
+        titledPane.setCollapsible(false);
+        titledPane.setAlignment(Pos.CENTER);
+        titledPane.setMaxHeight(Double.MAX_VALUE);
+        titledPane.getStyleClass().add("stpnr-tenbold");
+        titledPane.setText(nodeData.getRecipe().getName());
+        titledPane.setContent(vbox);
+        return titledPane;
+    }
+
+    private static Region createNodeDetailPane(ProdPlanNodeData data)
+    {
+        if (data instanceof InputItemNodeData inputItemNodeData){
+            return createInputItemNodeDetailPane(inputItemNodeData);
+        }else if (data instanceof OutputItemNodeData outputItemNodeData){
+            return createOutputItemNodeDetailPane(outputItemNodeData);
+        }else if (data instanceof RecipeNodeData recipeNodeData){
+            return createRecipeNodeDetailPane(recipeNodeData);
+        }else{
+            return new Pane();
+        }
+    }
+
+    public static Region createGraphPane(ProductionPlan plan)
+    {
+        BorderPane bp = new BorderPane();
+        ObjectProperty<Node<ProdPlanNodeData, ProdPlanEdgeData>> selectedNodeProperty = new SimpleObjectProperty<>();
+
+        selectedNodeProperty.addListener((observable, oldValue, newValue) -> {
+            if (newValue == null){
+                bp.setRight(null);
+            }else{
+                bp.setRight(createNodeDetailPane(newValue.getData()));
+            }
+        });
+
+        ScrollPane sp = new ZoomableScrollPane(createGraphPane(plan.toGraph(), GraphPane::createNodeComponent, GraphPane::createEdgeComponent, selectedNodeProperty));
+        sp.setPannable(true);
+        bp.setCenter(sp);
+        return bp;
+    }
+
+    private static <N, E> Pane createGraphPane(Graph<N, E> graph, BiFunction<? super N, ? super BooleanBinding, ? extends Region> nodeComponentFactory, BiFunction<? super E, ? super BooleanBinding, ? extends Region> edgeComponentFactory, ObjectProperty<Node<N, E>> selectedNodeProperty)
     {
         Map<Node<N, E>, Region> nodeComponentMap = new TreeMap<>(Comparator.comparing(Node::getName));
-
-        final ObjectProperty<Node<N, E>> selectedNodeProperty = new SimpleObjectProperty<>();
 
         final PaneState paneState = new PaneState();
 

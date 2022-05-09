@@ -16,7 +16,6 @@ import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
-import io.github.elcheapogary.satisplanory.ui.jfx.component.ZoomableScrollPane;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,7 +34,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
@@ -200,9 +198,7 @@ class ResultsPane
             Tab graphTab = new Tab("Graph");
             graphTab.setClosable(false);
             tabPane.getTabs().add(graphTab);
-            ScrollPane sp = new ZoomableScrollPane(GraphPane.createGraphPane(plan));
-            sp.setPannable(true);
-            graphTab.setContent(sp);
+            graphTab.setContent(GraphPane.createGraphPane(plan));
         }
 
         {
@@ -241,7 +237,7 @@ class ResultsPane
         tableView.getColumns().add(countColumn);
         countColumn.setStyle("-fx-alignment: CENTER_RIGHT;");
         countColumn.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(Optional.ofNullable(param.getValue().number)
-                .map(n -> n.toBigDecimal(4, RoundingMode.HALF_UP))
+                .map(n -> n.toBigDecimal(6, RoundingMode.HALF_UP))
                 .orElse(null)
         ));
 

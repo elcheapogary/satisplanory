@@ -20,5 +20,10 @@
 }
 
 .stpnr-graph-node:selected {
-    -fx-background-color: derive(-stpnr-background-color, 30%);
+    -fx-background-color: derive(-stpnr-background-color, 40%);
+}
+
+.titled-pane.stpnr-tenbold > .title {
+    -fx-padding: 10px;
+    -fx-font-weight: bold;
 }
