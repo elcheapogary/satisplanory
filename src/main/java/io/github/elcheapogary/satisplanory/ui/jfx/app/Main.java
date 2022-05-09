@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.app;
 
 import io.github.elcheapogary.satisplanory.Satisplanory;
+import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallation;
 import io.github.elcheapogary.satisplanory.ui.SatisfactoryDataLoader;
 import io.github.elcheapogary.satisplanory.ui.jfx.MainPane;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
@@ -73,25 +74,35 @@ public class Main
         stage.setScene(scene);
         stage.show();
         Platform.runLater(() -> stage.setMaximized(true));
-        if (appContext.getPersistentData().getSatisfactoryPath() != null){
-            try {
-                new TaskProgressDialog(appContext)
-                        .setTitle("Loading Satisfactory data")
-                        .setContentText("Loading Satisfactory data")
-                        .setCancellable(false)
-                        .runTask(taskContext -> {
-                            var gameData = SatisfactoryDataLoader.loadSatisfactoryData(new File(appContext.getPersistentData().getSatisfactoryPath())).build();
+        try {
+            new TaskProgressDialog(appContext)
+                    .setTitle("Loading Satisfactory data")
+                    .setContentText("Loading Satisfactory data")
+                    .setCancellable(false)
+                    .runTask(taskContext -> {
+                        File satisfactoryInstallation = null;
+                        if (appContext.getPersistentData().getSatisfactoryPath() != null){
+                            satisfactoryInstallation = new File(appContext.getPersistentData().getSatisfactoryPath());
+                            if (!SatisfactoryInstallation.isValidSatisfactoryInstallation(satisfactoryInstallation)){
+                                satisfactoryInstallation = null;
+                            }
+                        }
+                        if (satisfactoryInstallation == null){
+                            satisfactoryInstallation = SatisfactoryInstallation.findSatisfactoryInstallation();
+                        }
+                        if (satisfactoryInstallation != null){
+                            var gameData = SatisfactoryDataLoader.loadSatisfactoryData(satisfactoryInstallation).build();
                             Platform.runLater(() -> appContext.setGameData(gameData));
-                            return null;
-                        })
-                        .get();
-            }catch (Exception e){
-                new ExceptionDialog(appContext)
-                        .setTitle("Error loading Satisfactory data")
-                        .setContextMessage("Error loading Satisfactory data")
-                        .setException(e)
-                        .showAndWait();
-            }
+                        }
+                        return null;
+                    })
+                    .get();
+        }catch (Exception e){
+            new ExceptionDialog(appContext)
+                    .setTitle("Error loading Satisfactory data")
+                    .setContextMessage("Error loading Satisfactory data")
+                    .setException(e)
+                    .showAndWait();
         }
     }
 }
