@@ -10,6 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx;
 
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,30 +35,31 @@ public class AboutPane
     {
     }
 
-    public static Node create(Application application)
+    public static Node create(Application application, AppContext appContext)
             throws IOException
     {
         TabPane tabPane = new TabPane();
-        tabPane.getTabs().add(createTab("About", "AboutPane_Main.html", application));
-        tabPane.getTabs().add(createTab("Credits", "AboutPane_Credits.html", application));
-        tabPane.getTabs().add(createTab("License", "AboutPane_EPL-2.0.html", application));
+        tabPane.getTabs().add(createTab("About", "AboutPane_Main.html", application, appContext));
+        tabPane.getTabs().add(createTab("Credits", "AboutPane_Credits.html", application, appContext));
+        tabPane.getTabs().add(createTab("License", "AboutPane_EPL-2.0.html", application, appContext));
         return tabPane;
     }
 
-    private static Tab createTab(String title, String resourceName, Application application)
+    private static Tab createTab(String title, String resourceName, Application application, AppContext appContext)
             throws IOException
     {
         Tab tab = new Tab(title);
         tab.setClosable(false);
-        tab.setContent(createWebView(resourceName, application));
+        tab.setContent(createWebView(resourceName, application, appContext));
         return tab;
     }
 
-    private static Node createWebView(String resourceName, Application application)
+    private static Node createWebView(String resourceName, Application application, AppContext appContext)
             throws IOException
     {
         String content = ResourceUtils.getResourceAsString(AboutPane.class, resourceName);
         WebView webView = new WebView();
+        Style.configureWebView(appContext, webView);
         webView.getEngine().getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == Worker.State.SUCCEEDED){
                 NodeList nl = webView.getEngine().getDocument().getElementsByTagName("a");

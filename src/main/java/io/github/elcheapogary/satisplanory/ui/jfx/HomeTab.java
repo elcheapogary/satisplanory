@@ -12,7 +12,7 @@ package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.ui.SatisfactoryDataLoader;
-import io.github.elcheapogary.satisplanory.ui.jfx.data.AppData;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
@@ -34,14 +34,14 @@ public class HomeTab
     {
     }
 
-    public static Tab create(AppData appData)
+    public static Tab create(AppContext appContext)
     {
-        Tab retv = new Tab("Home", createPane(appData));
+        Tab retv = new Tab("Home", createPane(appContext));
         retv.setClosable(false);
         return retv;
     }
 
-    private static Node createLoadSatisfactoryDataPane(AppData appData)
+    private static Node createLoadSatisfactoryDataPane(AppContext appContext)
     {
         VBox vbox = new VBox();
         vbox.setSpacing(10);
@@ -72,22 +72,22 @@ public class HomeTab
                     break;
                 }else{
                     try {
-                        new TaskProgressDialog()
+                        new TaskProgressDialog(appContext)
                                 .setTitle("Loading Satisfactory data")
                                 .setContentText("Loading Satisfactory data")
                                 .setCancellable(false)
                                 .runTask(taskContext -> {
                                     GameData gameData = SatisfactoryDataLoader.loadSatisfactoryData(f).build();
                                     Platform.runLater(() -> {
-                                        appData.setGameData(gameData);
-                                        appData.getPersistentData().setSatisfactoryPath(f.getPath());
-                                        SatisplanoryPersistence.save(appData.getPersistentData());
+                                        appContext.setGameData(gameData);
+                                        appContext.getPersistentData().setSatisfactoryPath(f.getPath());
+                                        SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
                                     });
                                     return null;
                                 })
                                 .get();
                     }catch (Exception e){
-                        new ExceptionDialog()
+                        new ExceptionDialog(appContext)
                                 .setTitle("Error loading Satisfactory data")
                                 .setContextMessage("Error loading Satisfactory data")
                                 .setException(e)
@@ -106,19 +106,19 @@ public class HomeTab
         tp.setCollapsible(false);
         tp.setText("Satisfactory data required");
 
-        tp.visibleProperty().bind(appData.gameDataProperty().isNull());
+        tp.visibleProperty().bind(appContext.gameDataProperty().isNull());
 
         return tp;
     }
 
-    private static Pane createPane(AppData appData)
+    private static Pane createPane(AppContext appContext)
     {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
 
         vbox.setMaxWidth(Double.MAX_VALUE);
 
-        vbox.getChildren().add(createLoadSatisfactoryDataPane(appData));
+        vbox.getChildren().add(createLoadSatisfactoryDataPane(appContext));
 
         return vbox;
     }

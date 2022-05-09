@@ -10,6 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.dialog;
 
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -19,35 +22,20 @@ import javafx.scene.layout.VBox;
 
 public class TaskProgressDialog
 {
+    private final List<? extends String> styleSheets;
     private String title;
     private String contentText;
     private boolean cancellable;
 
-    public TaskProgressDialog()
+    public TaskProgressDialog(AppContext appContext)
     {
-    }
-
-    public TaskProgressDialog setContentText(String contentText)
-    {
-        this.contentText = contentText;
-        return this;
-    }
-
-    public TaskProgressDialog setCancellable(boolean cancellable)
-    {
-        this.cancellable = cancellable;
-        return this;
-    }
-
-    public TaskProgressDialog setTitle(String title)
-    {
-        this.title = title;
-        return this;
+        this.styleSheets = Style.getStyleSheets(appContext);
     }
 
     public <T> TaskResult<T> runTask(Task<? extends T> task)
     {
         Dialog<TaskResult<T>> dialog = new Dialog<>();
+        dialog.getDialogPane().getStylesheets().addAll(styleSheets);
         dialog.setTitle(title);
         VBox content = new VBox();
         content.setPrefWidth(360);
@@ -87,6 +75,24 @@ public class TaskProgressDialog
             });
         }
         return dialog.showAndWait().orElse(null);
+    }
+
+    public TaskProgressDialog setCancellable(boolean cancellable)
+    {
+        this.cancellable = cancellable;
+        return this;
+    }
+
+    public TaskProgressDialog setContentText(String contentText)
+    {
+        this.contentText = contentText;
+        return this;
+    }
+
+    public TaskProgressDialog setTitle(String title)
+    {
+        this.title = title;
+        return this;
     }
 
     public interface TaskContext

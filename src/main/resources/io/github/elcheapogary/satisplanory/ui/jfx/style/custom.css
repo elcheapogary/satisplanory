@@ -1,0 +1,24 @@
+
+.root {
+    -fx-font-family: 'Roboto';
+}
+
+.stpnr-graph-node-recipe {
+    -stpnr-background-color: #5F96F5
+}
+
+.stpnr-graph-node-input {
+    -stpnr-background-color: #FA975F;
+}
+
+.stpnr-graph-node-output {
+    -stpnr-background-color: #4BDE7C;
+}
+
+.stpnr-graph-node {
+    -fx-background-color: -stpnr-background-color;
+}
+
+.stpnr-graph-node:selected {
+    -fx-background-color: derive(-stpnr-background-color, 30%);
+}

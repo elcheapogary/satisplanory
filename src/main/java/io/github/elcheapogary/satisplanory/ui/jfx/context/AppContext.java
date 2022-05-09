@@ -8,17 +8,21 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.ui.jfx.data;
+package io.github.elcheapogary.satisplanory.ui.jfx.context;
 
 import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentData;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
+import java.util.concurrent.TimeUnit;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
-public class AppData
+public class AppContext
 {
     private final ObjectProperty<PersistentData> persistentData = new SimpleObjectProperty<>();
     private final ObjectProperty<GameData> gameData = new SimpleObjectProperty<>();
+    private volatile long persistTime = 0L;
 
     public ObjectProperty<GameData> gameDataProperty()
     {
@@ -48,5 +52,26 @@ public class AppData
     public ObjectProperty<PersistentData> persistentDataProperty()
     {
         return persistentData;
+    }
+
+    public void queuePersistData()
+    {
+        final long now = System.nanoTime();
+
+        persistTime = now;
+
+        new Thread(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            }catch (InterruptedException e){
+                return;
+            }
+
+            if (persistTime != now){
+                return;
+            }
+
+            Platform.runLater(() -> SatisplanoryPersistence.save(this, getPersistentData()));
+        }).start();
     }
 }

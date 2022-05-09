@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -78,11 +79,14 @@ public class SatisplanoryPersistence
         }
 
         try (Reader r = new InputStreamReader(new BufferedInputStream(new FileInputStream(jsonFile)), StandardCharsets.UTF_8)) {
-            return PersistentData.fromJson(new JSONObject(new JSONTokener(r)));
+            return new PersistentData(new JSONObject(new JSONTokener(r)));
         }
     }
 
-    public static void save(PersistentData data)
+    /*
+     * We actually run this on the UI thread as a means of getting a stable snapshot
+     */
+    public static void save(AppContext appContext, PersistentData data)
     {
         File jsonFile = getJsonFile();
 
@@ -99,7 +103,7 @@ public class SatisplanoryPersistence
                 Files.deleteIfExists(tmpFile.toPath());
             }
         }catch (IOException | RuntimeException e){
-            new ExceptionDialog()
+            new ExceptionDialog(appContext)
                     .setTitle("Error saving Satisplanory data")
                     .setContextMessage("An error occurred while saving Satisplanory data")
                     .setDetailsMessage(e.toString())

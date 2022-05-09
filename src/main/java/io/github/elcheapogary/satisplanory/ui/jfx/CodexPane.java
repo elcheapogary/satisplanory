@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import javafx.collections.FXCollections;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
@@ -35,21 +36,13 @@ import javafx.scene.control.TitledPane;
 import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.BorderStroke;
-import javafx.scene.layout.BorderStrokeStyle;
-import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Paint;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.util.StringConverter;
 
 public class CodexPane
@@ -148,7 +141,7 @@ public class CodexPane
         vbox.setFillWidth(true);
 
         Label mainHeading = new Label(item.getName());
-        mainHeading.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize() * 1.5));
+        mainHeading.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         VBox.setVgrow(mainHeading, Priority.NEVER);
         vbox.getChildren().add(mainHeading);
 
@@ -270,7 +263,7 @@ public class CodexPane
 
         {
             Label recipeNameLabel = new Label(recipe.getName());
-            recipeNameLabel.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
+            recipeNameLabel.setStyle("-fx-font-weight: bold;");
             VBox.setVgrow(recipeNameLabel, Priority.NEVER);
             vbox.getChildren().add(recipeNameLabel);
         }
@@ -288,13 +281,11 @@ public class CodexPane
                 GridPane gridPane = new GridPane();
                 hBox.getChildren().add(gridPane);
 
-                Paint greyBorderPaint = Paint.valueOf("#aaa");
-
                 {
                     Label l = new Label("Produced in");
                     l.setMaxWidth(Double.MAX_VALUE);
-                    l.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-                    setBorder(l, greyBorderPaint, 1, 1, 1, 1);
+                    l.setStyle("-fx-font-weight: bold;");
+                    setBorder(l, 1, 1, 1, 1);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 0, 0);
@@ -303,7 +294,7 @@ public class CodexPane
                 {
                     Label l = new Label(recipe.getProducedInBuilding().getName());
                     l.setMaxWidth(Double.MAX_VALUE);
-                    setBorder(l, greyBorderPaint, 1, 1, 1, 0);
+                    setBorder(l, 1, 1, 1, 0);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 1, 0);
@@ -312,8 +303,8 @@ public class CodexPane
                 {
                     Label l = new Label("Cycle time");
                     l.setMaxWidth(Double.MAX_VALUE);
-                    l.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-                    setBorder(l, greyBorderPaint, 0, 1, 1, 1);
+                    l.setStyle("-fx-font-weight: bold;");
+                    setBorder(l, 0, 1, 1, 1);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 0, 1);
@@ -322,7 +313,7 @@ public class CodexPane
                 {
                     Label l = new Label(BigDecimalUtils.normalize(recipe.getCycleTimeSeconds().setScale(2, RoundingMode.HALF_UP)).toString().concat(" secs"));
                     l.setMaxWidth(Double.MAX_VALUE);
-                    setBorder(l, greyBorderPaint, 0, 1, 1, 0);
+                    setBorder(l, 0, 1, 1, 0);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 1, 1);
@@ -331,8 +322,8 @@ public class CodexPane
                 {
                     Label l = new Label("Power usage");
                     l.setMaxWidth(Double.MAX_VALUE);
-                    l.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-                    setBorder(l, greyBorderPaint, 0, 1, 1, 1);
+                    l.setStyle("-fx-font-weight: bold;");
+                    setBorder(l, 0, 1, 1, 1);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 0, 2);
@@ -341,7 +332,7 @@ public class CodexPane
                 {
                     Label l = new Label(BigDecimalUtils.normalize(recipe.getPowerConsumption().setScale(2, RoundingMode.HALF_UP)).toString().concat(" MW"));
                     l.setMaxWidth(Double.MAX_VALUE);
-                    setBorder(l, greyBorderPaint, 0, 1, 1, 0);
+                    setBorder(l, 0, 1, 1, 0);
                     l.setPadding(new Insets(5));
                     GridPane.setFillWidth(l, true);
                     gridPane.add(l, 1, 2);
@@ -356,8 +347,6 @@ public class CodexPane
 
     private static Node createRecipeItemsTable(String heading, Collection<? extends Recipe.RecipeItem> items)
     {
-        Paint greyBorderPaint = Paint.valueOf("#aaa");
-
         GridPane gp = new GridPane();
 
         {
@@ -370,9 +359,10 @@ public class CodexPane
 
         {
             Label tableHeading = new Label(heading);
+            tableHeading.setAlignment(Pos.CENTER);
             tableHeading.setMaxWidth(Double.MAX_VALUE);
-            tableHeading.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-            setBorder(tableHeading, greyBorderPaint, 1, 1, 0, 1);
+            tableHeading.setStyle("-fx-font-weight: bold;");
+            setBorder(tableHeading, 1, 1, 0, 1);
             tableHeading.setPadding(new Insets(5));
             GridPane.setFillWidth(tableHeading, true);
             GridPane.setColumnSpan(tableHeading, 3);
@@ -382,8 +372,8 @@ public class CodexPane
         {
             Label itemHeader = new Label("Item");
             itemHeader.setMaxWidth(Double.MAX_VALUE);
-            itemHeader.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-            setBorder(itemHeader, greyBorderPaint, 1, 1, 1, 1);
+            itemHeader.setStyle("-fx-font-weight: bold;");
+            setBorder(itemHeader, 1, 1, 1, 1);
             itemHeader.setPadding(new Insets(5));
             GridPane.setFillWidth(itemHeader, true);
             gp.add(itemHeader, 0, 1);
@@ -393,8 +383,8 @@ public class CodexPane
             Label perCycleHeader = new Label("/ cycle");
             perCycleHeader.setAlignment(Pos.BASELINE_RIGHT);
             perCycleHeader.setMaxWidth(Double.MAX_VALUE);
-            perCycleHeader.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-            setBorder(perCycleHeader, greyBorderPaint, 1, 1, 1, 0);
+            perCycleHeader.setStyle("-fx-font-weight: bold;");
+            setBorder(perCycleHeader, 1, 1, 1, 0);
             perCycleHeader.setPadding(new Insets(5));
             GridPane.setFillWidth(perCycleHeader, true);
             gp.add(perCycleHeader, 1, 1);
@@ -404,8 +394,8 @@ public class CodexPane
             Label perMinHeader = new Label("/ min");
             perMinHeader.setAlignment(Pos.BASELINE_RIGHT);
             perMinHeader.setMaxWidth(Double.MAX_VALUE);
-            perMinHeader.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
-            setBorder(perMinHeader, greyBorderPaint, 1, 1, 1, 0);
+            perMinHeader.setStyle("-fx-font-weight: bold;");
+            setBorder(perMinHeader, 1, 1, 1, 0);
             perMinHeader.setPadding(new Insets(5));
             GridPane.setFillWidth(perMinHeader, true);
             gp.add(perMinHeader, 2, 1);
@@ -419,21 +409,21 @@ public class CodexPane
             Label itemName = new Label(ri.getItem().getName());
             itemName.setPadding(new Insets(5));
             itemName.setMaxWidth(Double.MAX_VALUE);
-            setBorder(itemName, greyBorderPaint, 0, 1, 1, 1);
+            setBorder(itemName, 0, 1, 1, 1);
             GridPane.setFillWidth(itemName, true);
             gp.add(itemName, 0, row);
             Label perCycle = new Label(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerCycle()).setScale(1, RoundingMode.HALF_UP).toString());
             perCycle.setPadding(new Insets(5));
             perCycle.setMaxWidth(Double.MAX_VALUE);
             perCycle.setAlignment(Pos.BASELINE_RIGHT);
-            setBorder(perCycle, greyBorderPaint, 0, 1, 1, 0);
+            setBorder(perCycle, 0, 1, 1, 0);
             GridPane.setFillWidth(perCycle, true);
             gp.add(perCycle, 1, row);
             Label perMin = new Label(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerMinute()).setScale(4, RoundingMode.HALF_UP).toString());
             perMin.setPadding(new Insets(5));
             perMin.setMaxWidth(Double.MAX_VALUE);
             perMin.setAlignment(Pos.BASELINE_RIGHT);
-            setBorder(perMin, greyBorderPaint, 0, 1, 1, 0);
+            setBorder(perMin, 0, 1, 1, 0);
             GridPane.setFillWidth(perMin, true);
             gp.add(perMin, 2, row);
             row++;
@@ -442,8 +432,8 @@ public class CodexPane
         return gp;
     }
 
-    private static void setBorder(Region n, Paint paint, int top, int right, int bottom, int left)
+    private static void setBorder(Region n, int top, int right, int bottom, int left)
     {
-        n.setBorder(new Border(new BorderStroke(paint, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(top, right, bottom, left))));
+        n.setStyle(Objects.requireNonNullElse(n.getStyle(), "") + "-fx-border-color: -fx-box-border; -fx-border-width: " + top + "px " + right + "px " + bottom + "px " + left + "px;");
     }
 }

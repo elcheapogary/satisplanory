@@ -11,11 +11,13 @@
 package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.Satisplanory;
-import io.github.elcheapogary.satisplanory.ui.jfx.data.AppData;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.prodplan.ProdPlanTab;
 import java.io.IOException;
 import javafx.application.Application;
+import javafx.beans.property.BooleanProperty;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
@@ -43,7 +45,7 @@ public class MainPane
         return fileMenu;
     }
 
-    private static Menu createHelpMenu(Application application, Stage stage, TabPane mainTabPane)
+    private static Menu createHelpMenu(Application application, Stage stage, AppContext appContext, TabPane mainTabPane)
     {
         Menu helpMenu = new Menu("Help");
 
@@ -54,11 +56,11 @@ public class MainPane
             try {
                 Tab tab = new Tab("About " + Satisplanory.getApplicationName());
                 tab.setClosable(true);
-                tab.setContent(AboutPane.create(application));
+                tab.setContent(AboutPane.create(application, appContext));
                 mainTabPane.getTabs().add(tab);
                 mainTabPane.getSelectionModel().selectLast();
             }catch (IOException e){
-                new ExceptionDialog()
+                new ExceptionDialog(appContext)
                         .setTitle("Error loading data")
                         .setContextMessage("An error occurred while loading data")
                         .setException(e)
@@ -69,41 +71,58 @@ public class MainPane
         return helpMenu;
     }
 
-    public static Pane createMainPane(Application application, Stage stage, AppData appData)
+    public static Pane createMainPane(Application application, Stage stage, AppContext appContext)
     {
         BorderPane borderPane = new BorderPane();
 
-        TabPane mainTabPage = createTabPane(appData);
+        TabPane mainTabPage = createTabPane(appContext);
 
-        borderPane.setTop(createMenuBar(application, stage, mainTabPage));
+        borderPane.setTop(createMenuBar(application, appContext, stage, mainTabPage));
 
         borderPane.setCenter(mainTabPage);
 
         return borderPane;
     }
 
-    private static MenuBar createMenuBar(Application application, Stage stage, TabPane mainTabPane)
+    private static MenuBar createMenuBar(Application application, AppContext appContext, Stage stage, TabPane mainTabPane)
     {
         MenuBar mainMenuBar = new MenuBar();
 
         mainMenuBar.getMenus().add(createFileMenu(application, stage));
-        mainMenuBar.getMenus().add(createHelpMenu(application, stage, mainTabPane));
+        mainMenuBar.getMenus().add(createOptionsMenu(appContext));
+        mainMenuBar.getMenus().add(createHelpMenu(application, stage, appContext, mainTabPane));
 
         return mainMenuBar;
     }
 
-    private static TabPane createTabPane(AppData appData)
+    private static Menu createOptionsMenu(AppContext appContext)
+    {
+        Menu menu = new Menu("Options");
+
+        CheckMenuItem darkModeMenuItem = new CheckMenuItem();
+        menu.getItems().add(darkModeMenuItem);
+        darkModeMenuItem.setText("Dark mode");
+        BooleanProperty darkModeProperty = appContext.getPersistentData().getPreferences().getUiPreferences().darkModeEnabledProperty();
+        darkModeMenuItem.selectedProperty().bindBidirectional(darkModeProperty);
+        darkModeProperty.addListener((observable, oldValue, newValue) -> {
+            appContext.queuePersistData();
+        });
+
+        return menu;
+    }
+
+    private static TabPane createTabPane(AppContext appContext)
     {
         TabPane tabPane = new TabPane();
 
-        final Tab homeTab = HomeTab.create(appData);
+        final Tab homeTab = HomeTab.create(appContext);
         tabPane.getTabs().add(homeTab);
 
-        appData.gameDataProperty().addListener((observable, oldValue, gameData) -> {
+        appContext.gameDataProperty().addListener((observable, oldValue, gameData) -> {
             if (gameData != null){
                 tabPane.getTabs().remove(homeTab);
                 tabPane.getTabs().add(CodexPane.createTab(gameData));
-                tabPane.getTabs().add(ProdPlanTab.create(gameData));
+                tabPane.getTabs().add(ProdPlanTab.create(appContext, gameData));
             }
         });
 

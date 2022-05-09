@@ -34,6 +34,7 @@ import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.PseudoClass;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -48,8 +49,6 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurve;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
 import org.eclipse.draw2d.PositionConstants;
@@ -59,46 +58,43 @@ import org.eclipse.draw2d.graph.DirectedGraphLayout;
 
 class GraphPane
 {
+    private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
+
     private GraphPane()
     {
     }
 
     private static Region createNodeComponent(ProdPlanNodeData nodeData, BooleanBinding selectedBinding)
     {
-        final Color color;
+        VBox vbox = new VBox();
+        vbox.getStyleClass().add("stpnr-graph-node");
+
         String line1;
         String line2;
         if (nodeData instanceof RecipeNodeData recipeNodeData){
-            color = Color.valueOf("#5F96F5");
+            vbox.getStyleClass().add("stpnr-graph-node-recipe");
             line1 = recipeNodeData.getRecipe().getName();
             line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
-            color = Color.valueOf("#FA975F");
+            vbox.getStyleClass().add("stpnr-graph-node-input");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
             line2 = BigDecimalUtils.normalize(inputItemNodeData.getItem().toDisplayAmount(inputItemNodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min";
         }else if (nodeData instanceof OutputItemNodeData outputItemNodeData){
-            color = Color.valueOf("#4BDE7C");
+            vbox.getStyleClass().add("stpnr-graph-node-output");
             line1 = "Output: " + outputItemNodeData.getItem().getName();
             line2 = BigDecimalUtils.normalize(outputItemNodeData.getItem().toDisplayAmount(outputItemNodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min";
         }else{
             throw new AssertionError();
         }
 
-        VBox vbox = new VBox();
         vbox.setFillWidth(true);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
-        vbox.backgroundProperty().bind(Bindings.createObjectBinding(() -> {
-            if (selectedBinding.get()){
-                return Background.fill(color.brighter().brighter().desaturate());
-            }else{
-                return Background.fill(color);
-            }
-        }, selectedBinding));
+        selectedBinding.addListener((observable, oldValue, newValue) -> vbox.pseudoClassStateChanged(SELECTED, newValue));
 
         Label l1 = new Label(line1);
         l1.setMaxWidth(Double.MAX_VALUE);
-        l1.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
+        l1.setStyle("-fx-font-weight: bold;");
         l1.setTextAlignment(TextAlignment.CENTER);
         l1.setAlignment(Pos.BASELINE_CENTER);
         l1.setTextFill(Color.BLACK);
@@ -112,7 +108,6 @@ class GraphPane
         vbox.getChildren().add(l2);
 
         HBox hbox = new HBox();
-        hbox.setBackground(Background.fill(Color.WHITE));
         hbox.getChildren().add(vbox);
 
         hbox.viewOrderProperty().bind(Bindings.createDoubleBinding(() -> {

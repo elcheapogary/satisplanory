@@ -18,8 +18,10 @@ import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanNotFeatisbleException;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
+import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -62,16 +64,16 @@ public class ProdPlanTab
     {
     }
 
-    public static Tab create(GameData gameData)
+    public static Tab create(AppContext appContext, GameData gameData)
     {
         TabPane subTabPane = new TabPane();
-        addInputTab(gameData, subTabPane);
+        addInputTab(appContext, gameData, subTabPane);
         Tab retv = new Tab("Production Plans", subTabPane);
         retv.setClosable(false);
         return retv;
     }
 
-    private static void addInputTab(GameData gameData, TabPane tabPane)
+    private static void addInputTab(AppContext appContext, GameData gameData, TabPane tabPane)
     {
         HBox hbox = new HBox(10);
         hbox.setAlignment(Pos.TOP_CENTER);
@@ -102,7 +104,7 @@ public class ProdPlanTab
         n = SettingsPane.createSettingsPane(prodPlanData.settings);
         vbox.getChildren().add(n);
 
-        n = createHelpPane();
+        n = createHelpPane(appContext);
         n.setPrefWidth(0);
         n.setPrefHeight(0);
         n.setMaxWidth(Double.MAX_VALUE);
@@ -159,7 +161,7 @@ public class ProdPlanTab
             }
 
             if (!hasOutputRequirement){
-                new ExceptionDialog()
+                new ExceptionDialog(appContext)
                         .setContextMessage("No output requirements provided. Please provide output requirements.")
                         .setTitle("Error: No output requirements provided")
                         .setDetailsMessage("There needs to be at least one item listed under Output Requirements that has a value\ngreater than zero for either Min or Weight.")
@@ -170,7 +172,7 @@ public class ProdPlanTab
             MultiPlan plan;
 
             try {
-                plan = new TaskProgressDialog()
+                plan = new TaskProgressDialog(appContext)
                         .setTitle("Calculating")
                         .setContentText("Calculating production plan")
                         .setCancellable(true)
@@ -179,13 +181,13 @@ public class ProdPlanTab
             }catch (TaskProgressDialog.TaskCancelledException e){
                 return;
             }catch (ProductionPlanNotFeatisbleException e){
-                new ExceptionDialog()
+                new ExceptionDialog(appContext)
                         .setTitle("No feasible plan")
                         .setContextMessage("No production plan possible with the provided input")
                         .showAndWait();
                 return;
             }catch (Exception e){
-                new ExceptionDialog()
+                new ExceptionDialog(appContext)
                         .setTitle("Error calculating production plan")
                         .setContextMessage("An unexpected error occurred while calculating the production plan")
                         .setDetailsMessage("This should not happen. It's probably a bug. We would like to hear about this.\n"
@@ -290,13 +292,14 @@ public class ProdPlanTab
         return titledPane;
     }
 
-    private static TitledPane createHelpPane()
+    private static TitledPane createHelpPane(AppContext appContext)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setText("Help");
         titledPane.setCollapsible(true);
 
         WebView webView = new WebView();
+        Style.configureWebView(appContext, webView);
         webView.setMaxWidth(Double.MAX_VALUE);
         webView.setMaxHeight(Double.MAX_VALUE);
         titledPane.setContent(webView);
@@ -318,7 +321,7 @@ public class ProdPlanTab
 
         List<CheckBox> checkboxes = new LinkedList<>();
 
-        VBox vbox = new VBox();
+        VBox vbox = new VBox(2);
         t.setContent(vbox);
 
         {
