@@ -74,7 +74,7 @@ class GraphPane
         if (nodeData instanceof RecipeNodeData recipeNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-recipe");
             line1 = recipeNodeData.getRecipe().getName();
-            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
+            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-input");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
