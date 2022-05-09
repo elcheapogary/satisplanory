@@ -46,3 +46,9 @@
  {
     -fx-background-color: -fx-focused-text-base-color;
 }
+
+.notification-bar > .pane {
+    -fx-background-color: #e0e0e0;
+    -fx-border-width: 1px;
+    -fx-border-color: -fx-box-border;
+}

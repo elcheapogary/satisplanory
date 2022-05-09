@@ -34,6 +34,7 @@ public class Recipe
     private final Map<Item, Integer> products;
     private final BigDecimal variablePowerConstant;
     private final BigDecimal variablePowerFactor;
+    private final Item primaryProduct;
 
     protected Recipe(Builder builder)
     {
@@ -42,6 +43,7 @@ public class Recipe
         this.cycleTimeSeconds = Objects.requireNonNull(builder.cycleTimeSeconds, "cycleTimeSeconds required");
         this.variablePowerConstant = Objects.requireNonNull(builder.variablePowerConstant);
         this.variablePowerFactor = Objects.requireNonNull(builder.variablePowerFactor);
+        this.primaryProduct = Objects.requireNonNull(builder.primaryProduct);
 
         if (builder.ingredients.isEmpty()){
             throw new IllegalArgumentException("Recipe has no ingredients");
@@ -117,6 +119,16 @@ public class Recipe
         }
     }
 
+    public Item getPrimaryProduct()
+    {
+        return primaryProduct;
+    }
+
+    public RecipeItemAmount getPrimaryProductAmount()
+    {
+        return new RecipeItemAmount(cycleTimeSeconds, BigDecimal.valueOf(products.get(primaryProduct)));
+    }
+
     public Building getProducedInBuilding()
     {
         return producedInBuilding;
@@ -172,6 +184,7 @@ public class Recipe
         private BigDecimal cycleTimeSeconds;
         private BigDecimal variablePowerConstant;
         private BigDecimal variablePowerFactor;
+        private Item primaryProduct;
 
         public Builder addIngredient(Item item, int amount)
         {
@@ -181,6 +194,9 @@ public class Recipe
 
         public Builder addProduct(Item item, int amount)
         {
+            if (primaryProduct == null){
+                primaryProduct = item;
+            }
             this.products.put(item, amount);
             return this;
         }
@@ -199,6 +215,12 @@ public class Recipe
         public Builder setName(String name)
         {
             this.name = name;
+            return this;
+        }
+
+        public Builder setPrimaryProduct(Item primaryProduct)
+        {
+            this.primaryProduct = primaryProduct;
             return this;
         }
 

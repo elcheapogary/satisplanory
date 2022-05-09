@@ -43,11 +43,11 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TitledPane;
-import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Background;
@@ -65,6 +65,8 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurve;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
+import javafx.util.Duration;
+import org.controlsfx.control.Notifications;
 import org.eclipse.draw2d.PositionConstants;
 import org.eclipse.draw2d.geometry.Insets;
 import org.eclipse.draw2d.graph.DirectedGraph;
@@ -238,7 +240,7 @@ class GraphPane
         sortedRecipeItems.sort(Comparator.<Recipe.RecipeItem, String>comparing(recipeItem -> recipeItem.getItem().getName()));
 
         for (Recipe.RecipeItem ri : sortedRecipeItems){
-            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + BigDecimalUtils.normalize(ri.getAmount().getAmountPerMinuteFraction().multiply(amount).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + BigDecimalUtils.normalize(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerMinuteFraction().multiply(amount)).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
         }
 
         return titledPane;
@@ -272,33 +274,52 @@ class GraphPane
             }
 
             if (n.signum() != 0){
-                final BigDecimal formattedNumber = BigDecimalUtils.normalize(n.movePointRight(2));
-                Label l = new Label("1 × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at " + formattedNumber + "%");
+                final BigDecimal underclockedClockSpeedPercent = BigDecimalUtils.normalize(n.movePointRight(2));
+                Label l = new Label("1 × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at " + underclockedClockSpeedPercent + "%");
                 lines.getChildren().add(l);
 
                 l.onMouseClickedProperty().set(event -> {
                     ClipboardContent clipboardContent = new ClipboardContent();
-                    clipboardContent.putString(formattedNumber.toString());
+                    clipboardContent.putString(underclockedClockSpeedPercent.toString());
                     Clipboard.getSystemClipboard().setContent(clipboardContent);
                 });
 
-                Button copyButton = new Button("Copy");
-                container.getChildren().add(copyButton);
+                MenuButton menuButton = new MenuButton("Copy Underclocked");
+                container.getChildren().add(menuButton);
 
-                Tooltip tooltip = new Tooltip();
-                tooltip.setText("Underclock % copied");
-
-                copyButton.setMaxWidth(Double.MAX_VALUE);
-                copyButton.onActionProperty().set(event -> {
+                MenuItem clockSpeed = new MenuItem("Clock speed");
+                menuButton.getItems().add(clockSpeed);
+                clockSpeed.onActionProperty().set(event -> {
                     ClipboardContent clipboardContent = new ClipboardContent();
-                    clipboardContent.putString(formattedNumber.toString());
+                    clipboardContent.putString(underclockedClockSpeedPercent.toString().concat("%"));
                     Clipboard.getSystemClipboard().setContent(clipboardContent);
-                    Point2D p = copyButton.localToScene(0, 0);
-                    tooltip.show(copyButton, p.getX(), p.getY() - 20);
+
+                    Notifications.create()
+                            .title("Clock speed copied")
+                            .text("Clock speed copied to clipboard: " + underclockedClockSpeedPercent + "%")
+                            .hideAfter(Duration.seconds(3))
+                            .position(Pos.TOP_CENTER)
+                            .show();
                 });
 
-                copyButton.onMouseExitedProperty().set(event -> {
-                    tooltip.hide();
+                MenuItem itemsPerMin = new MenuItem("Output items / min");
+                menuButton.getItems().add(itemsPerMin);
+                itemsPerMin.onActionProperty().set(event -> {
+                    String copyText = BigDecimalUtils.normalize(nodeData.getRecipe().getPrimaryProductAmount()
+                            .getAmountPerMinuteFraction()
+                            .multiply(nodeData.getAmount().subtract(BigFraction.valueOf(i)))
+                            .toBigDecimal(4, RoundingMode.HALF_UP)
+                    ).toString();
+                    ClipboardContent clipboardContent = new ClipboardContent();
+                    clipboardContent.putString(copyText);
+                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+
+                    Notifications.create()
+                            .title("Output items / min copied")
+                            .text("Output items / min copies to clipboard: " + copyText)
+                            .hideAfter(Duration.seconds(3))
+                            .position(Pos.TOP_CENTER)
+                            .show();
                 });
             }
         }
