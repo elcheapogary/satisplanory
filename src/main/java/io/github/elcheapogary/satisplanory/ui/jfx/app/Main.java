@@ -92,6 +92,7 @@ public class Main
                         }
                         if (satisfactoryInstallation != null){
                             var gameData = SatisfactoryDataLoader.loadSatisfactoryData(satisfactoryInstallation).build();
+                            appContext.getPersistentData().setSatisfactoryPath(satisfactoryInstallation.getAbsolutePath());
                             Platform.runLater(() -> appContext.setGameData(gameData));
                         }
                         return null;
