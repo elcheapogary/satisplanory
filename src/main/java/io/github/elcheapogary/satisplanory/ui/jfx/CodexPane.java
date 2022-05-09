@@ -279,6 +279,8 @@ public class CodexPane
 
             {
                 GridPane gridPane = new GridPane();
+                gridPane.getColumnConstraints().add(new ColumnConstraints());
+                gridPane.getColumnConstraints().add(new ColumnConstraints(120));
                 hBox.getChildren().add(gridPane);
 
                 {
@@ -354,7 +356,7 @@ public class CodexPane
             c.setHgrow(Priority.ALWAYS);
             gp.getColumnConstraints().add(c);
             gp.getColumnConstraints().add(new ColumnConstraints());
-            gp.getColumnConstraints().add(new ColumnConstraints(80));
+            gp.getColumnConstraints().add(new ColumnConstraints(70));
         }
 
         {
