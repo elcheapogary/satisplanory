@@ -29,3 +29,20 @@
         -fx-faint-focus-color,
         linear-gradient(to right, derive(-fx-base,-3%), derive(-fx-base,5%) 50%, derive(-fx-base,-3%));
 }
+
+.menu-item .label {
+    -fx-text-fill: -fx-dark-text-color;
+}
+
+.menu-item:hover .label,
+.menu-item:focused .label {
+    -fx-text-fill: -fx-focused-text-base-color;
+}
+.check-menu-item:checked > .left-container > .check {
+    -fx-background-color: -fx-dark-text-color;
+}
+.check-menu-item:checked:hover > .left-container > .check,
+.check-menu-item:checked:focused > .left-container > .check
+ {
+    -fx-background-color: -fx-focused-text-base-color;
+}
