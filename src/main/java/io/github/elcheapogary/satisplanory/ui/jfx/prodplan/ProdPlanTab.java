@@ -85,6 +85,7 @@ public class ProdPlanTab
         tabPane.getTabs().add(inputTab);
 
         ProdPlanData prodPlanData = new ProdPlanData();
+        prodPlanData.getEnabledRecipes().addAll(gameData.getRecipes());
 
         ObservableList<Item> allItemsObservableList = FXCollections.observableList(new ArrayList<>(gameData.getItems()));
 
