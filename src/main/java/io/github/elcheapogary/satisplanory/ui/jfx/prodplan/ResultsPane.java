@@ -241,7 +241,7 @@ class ResultsPane
         tableView.getColumns().add(countColumn);
         countColumn.setStyle("-fx-alignment: CENTER_RIGHT;");
         countColumn.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(Optional.ofNullable(param.getValue().number)
-                .map(n -> n.toBigDecimal(4, RoundingMode.HALF_UP))
+                .map(n -> n.toBigDecimal(6, RoundingMode.HALF_UP))
                 .orElse(null)
         ));
 

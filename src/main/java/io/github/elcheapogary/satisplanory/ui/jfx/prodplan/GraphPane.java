@@ -71,7 +71,7 @@ class GraphPane
         if (nodeData instanceof RecipeNodeData recipeNodeData){
             color = Color.valueOf("#5F96F5");
             line1 = recipeNodeData.getRecipe().getName();
-            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
+            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
             color = Color.valueOf("#FA975F");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
