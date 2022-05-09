@@ -62,7 +62,7 @@ public class AppContext
 
         new Thread(() -> {
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(2);
             }catch (InterruptedException e){
                 return;
             }
