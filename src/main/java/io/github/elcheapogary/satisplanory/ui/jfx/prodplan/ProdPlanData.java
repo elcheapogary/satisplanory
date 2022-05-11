@@ -120,17 +120,5 @@ class ProdPlanData
 
     public static class Settings
     {
-        public OptimizationWeights weights = new OptimizationWeights();
-
-        public static class OptimizationWeights
-        {
-            public int balance = 15;
-            public int maximizeOutputItems = 14;
-            public int minimizeInputItems = 1;
-            public int maximizeInputItems = 0;
-            public int power = 0;
-            public int inputItemScarcity;
-            public int minimizeByProducts = 0;
-        }
     }
 }

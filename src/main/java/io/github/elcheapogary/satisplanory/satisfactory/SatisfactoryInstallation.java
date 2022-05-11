@@ -27,7 +27,7 @@ public class SatisfactoryInstallation
         }
 
         if (f == null){
-            f = findSatisfactoryInstallationEpic();
+            f = Epic.findSatisfactoryInstallation();
         }
 
         if (f != null && !isValidSatisfactoryInstallation(f)){
@@ -35,11 +35,6 @@ public class SatisfactoryInstallation
         }
 
         return f;
-    }
-
-    private static File findSatisfactoryInstallationEpic()
-    {
-        return null;
     }
 
     public static boolean isValidSatisfactoryInstallation(File installFolder)

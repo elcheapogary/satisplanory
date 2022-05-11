@@ -18,6 +18,7 @@ import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanNotFeatisbleException;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.ObservableRunnable;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
@@ -41,6 +42,7 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -64,15 +66,6 @@ public class ProdPlanTab
     {
     }
 
-    public static Tab create(AppContext appContext, GameData gameData)
-    {
-        TabPane subTabPane = new TabPane();
-        addInputTab(appContext, gameData, subTabPane);
-        Tab retv = new Tab("Production Plans", subTabPane);
-        retv.setClosable(false);
-        return retv;
-    }
-
     private static void addInputTab(AppContext appContext, GameData gameData, TabPane tabPane)
     {
         HBox hbox = new HBox(10);
@@ -90,35 +83,42 @@ public class ProdPlanTab
         ObservableList<Item> allItemsObservableList = FXCollections.observableList(new ArrayList<>(gameData.getItems()));
 
         Region n = createRecipesPane(gameData.getRecipes(), prodPlanData.getEnabledRecipes(), allItemsObservableList);
+        HBox.setHgrow(n, Priority.NEVER);
         hbox.getChildren().add(n);
 
         VBox vbox = new VBox(10);
+        vbox.setPrefWidth(0);
         HBox.setHgrow(vbox, Priority.ALWAYS);
         hbox.getChildren().add(vbox);
 
-        n = InputItemsPane.createInputItemsPane(prodPlanData.getInputItems(), allItemsObservableList, gameData);
-        vbox.getChildren().add(n);
+        Accordion accordion = new Accordion();
+        VBox.setVgrow(accordion, Priority.ALWAYS);
+        vbox.getChildren().add(accordion);
 
-        n = OutputItemsPane.createOutputRequirementsPane(prodPlanData.getOutputItems(), allItemsObservableList);
-        vbox.getChildren().add(n);
+        ObservableList<ProdPlanData.InputItem> inputItems = FXCollections.observableList(prodPlanData.getInputItems());
 
-        n = SettingsPane.createSettingsPane(prodPlanData.settings);
-        vbox.getChildren().add(n);
+        accordion.getPanes().add(InputItemsPane.createInputItemsPane(inputItems, allItemsObservableList, gameData));
 
-        n = createHelpPane(appContext);
-        n.setPrefWidth(0);
-        n.setPrefHeight(0);
-        n.setMaxWidth(Double.MAX_VALUE);
-        n.setMaxHeight(Double.MAX_VALUE);
-        VBox.setVgrow(n, Priority.ALWAYS);
-        vbox.getChildren().add(n);
+        accordion.setExpandedPane(accordion.getPanes().get(0));
 
-        n = new Region();
-        n.setMinHeight(0);
-        n.setPrefHeight(0);
-        VBox.setMargin(n, new Insets(-10, 0, 0, 0));
-        VBox.setVgrow(n, Priority.SOMETIMES);
-        vbox.getChildren().add(n);
+        ObservableValue<List<ProdPlanData.OutputItem>> outputItems;
+        {
+            ObservableList<ProdPlanData.OutputItem> tmp = FXCollections.observableList(prodPlanData.getOutputItems());
+
+            ObservableRunnable r = new ObservableRunnable();
+
+            accordion.getPanes().add(OutputItemsPane.createOutputRequirementsPane(tmp, allItemsObservableList, r));
+
+            outputItems = Bindings.createObjectBinding(() -> tmp, tmp, r);
+        }
+
+        ObservableList<SettingsPane.OptimizationTarget> optimizationTargets = FXCollections.observableList(new ArrayList<>());
+        optimizationTargets.add(SettingsPane.OptimizationTarget.BALANCE);
+        optimizationTargets.add(SettingsPane.OptimizationTarget.MAXIMIZE_OUTPUT_ITEMS);
+
+        accordion.getPanes().add(SettingsPane.createSettingsPane(prodPlanData.settings, outputItems, optimizationTargets));
+
+        accordion.getPanes().add(createHelpPane(appContext));
 
         Button button = new Button("Calculate");
         button.setMaxWidth(Double.MAX_VALUE);
@@ -129,14 +129,21 @@ public class ProdPlanTab
         button.onActionProperty().set(event -> {
             ProductionPlanner.Builder b = new ProductionPlanner.Builder();
 
-            b.setMinimizeInputItemWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.minimizeInputItems));
-            b.setBalanceWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.balance));
-            b.setMaximizeOutputItemWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.maximizeOutputItems));
-            b.setPowerWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.power));
-            b.setMaximizeInputItemsWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.maximizeInputItems));
-            b.setMinimizeByProductsWeight(SettingsPane.importanceIntToWeight(prodPlanData.settings.weights.minimizeByProducts));
-
             b.addRecipes(prodPlanData.getEnabledRecipes());
+
+            {
+                BigDecimal weight = BigDecimal.ONE;
+                for (SettingsPane.OptimizationTarget target : optimizationTargets){
+                    target.setWeight(b, weight);
+                    weight = weight.movePointLeft(5);
+                }
+
+                for (SettingsPane.OptimizationTarget target : SettingsPane.OptimizationTarget.values()){
+                    if (!optimizationTargets.contains(target)){
+                        target.setWeight(b, BigDecimal.ZERO);
+                    }
+                }
+            }
 
             for (ProdPlanData.InputItem inputItem : prodPlanData.getInputItems()){
                 if (inputItem.getAmount().signum() > 0){
@@ -207,90 +214,13 @@ public class ProdPlanTab
         });
     }
 
-    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, Set<Recipe> enabledRecipes, ObservableList<Item> allItems)
+    public static Tab create(AppContext appContext, GameData gameData)
     {
-        TitledPane titledPane = new TitledPane();
-        titledPane.setCollapsible(false);
-        titledPane.setText("Recipes");
-
-        VBox vBox = new VBox(10);
-        vBox.setPadding(new Insets(10, 25, 10, 10));
-
-        ObservableValue<String> searchStringValue;
-        ObservableValue<Item> producesItem;
-
-        {
-            GridPane searchGridPane = new GridPane();
-            vBox.getChildren().add(searchGridPane);
-
-            {
-                Label label = new Label("Search:");
-                searchGridPane.add(label, 0, 0);
-            }
-
-            TextField searchField = new TextField();
-            searchField.setMaxWidth(Double.MAX_VALUE);
-            GridPane.setHgrow(searchField, Priority.ALWAYS);
-            GridPane.setMargin(searchField, new Insets(0, 0, 0, 10));
-            searchGridPane.add(searchField, 1, 0);
-            searchStringValue = searchField.textProperty();
-
-            {
-                Label label = new Label("Produces:");
-                GridPane.setMargin(label, new Insets(10, 0, 0, 0));
-                searchGridPane.add(label, 0, 1);
-            }
-
-            ComboBox<Item> producesComboBox = ItemComponents.createItemComboBox(allItems);
-            producesComboBox.setMaxWidth(Double.MAX_VALUE);
-            GridPane.setHgrow(producesComboBox, Priority.ALWAYS);
-            GridPane.setMargin(producesComboBox, new Insets(10, 0, 0, 10));
-            searchGridPane.add(producesComboBox, 1, 1);
-            producesItem = producesComboBox.valueProperty();
-
-            Button clearButton = new Button("Clear\nSearch");
-            clearButton.setTextAlignment(TextAlignment.CENTER);
-            clearButton.setMaxHeight(Double.MAX_VALUE);
-            GridPane.setVgrow(clearButton, Priority.ALWAYS);
-            GridPane.setRowSpan(clearButton, 2);
-            GridPane.setHalignment(clearButton, HPos.RIGHT);
-            GridPane.setMargin(clearButton, new Insets(0, 0, 0, 10));
-            searchGridPane.add(clearButton, 2, 0);
-            clearButton.onActionProperty().set(event -> {
-                searchField.setText("");
-                producesComboBox.setValue(null);
-            });
-        }
-
-        Function<Recipe, ObservableValue<Boolean>> displayValueFactory = recipe -> Bindings.createBooleanBinding(() -> {
-            String searchString = searchStringValue.getValue().trim().toLowerCase(Locale.ENGLISH);
-            if (!searchString.isEmpty()){
-                return recipe.getName().toLowerCase(Locale.ENGLISH).contains(searchString);
-            }
-            if (producesItem.getValue() != null){
-                return recipe.producesItem(producesItem.getValue());
-            }
-            return true;
-        }, searchStringValue, producesItem);
-
-        {
-            HBox hBox = new HBox(10);
-            vBox.getChildren().add(hBox);
-            hBox.setFillHeight(true);
-
-            Node defaultRecipes = createRecipeSelectionList("Default Recipes", recipe -> !recipe.isAlternateRecipe(), recipes, enabledRecipes, displayValueFactory);
-            HBox.setHgrow(defaultRecipes, Priority.ALWAYS);
-            hBox.getChildren().add(defaultRecipes);
-
-            Node alternateRecipes = createRecipeSelectionList("Alternate Recipes", Recipe::isAlternateRecipe, recipes, enabledRecipes, displayValueFactory);
-            HBox.setHgrow(alternateRecipes, Priority.ALWAYS);
-            hBox.getChildren().add(alternateRecipes);
-        }
-
-        ScrollPane scrollPane = new ScrollPane(vBox);
-        titledPane.setContent(scrollPane);
-
-        return titledPane;
+        TabPane subTabPane = new TabPane();
+        addInputTab(appContext, gameData, subTabPane);
+        Tab retv = new Tab("Production Plans", subTabPane);
+        retv.setClosable(false);
+        return retv;
     }
 
     private static TitledPane createHelpPane(AppContext appContext)
@@ -386,6 +316,92 @@ public class ProdPlanTab
         }
 
         return t;
+    }
+
+    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, Set<Recipe> enabledRecipes, ObservableList<Item> allItems)
+    {
+        TitledPane titledPane = new TitledPane();
+        titledPane.setCollapsible(false);
+        titledPane.setText("Recipes");
+
+        VBox vBox = new VBox(10);
+        vBox.setPadding(new Insets(10, 25, 10, 10));
+
+        ObservableValue<String> searchStringValue;
+        ObservableValue<Item> producesItem;
+
+        {
+            GridPane searchGridPane = new GridPane();
+            vBox.getChildren().add(searchGridPane);
+
+            {
+                Label label = new Label("Search:");
+                searchGridPane.add(label, 0, 0);
+            }
+
+            TextField searchField = new TextField();
+            searchField.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(searchField, Priority.ALWAYS);
+            GridPane.setMargin(searchField, new Insets(0, 0, 0, 10));
+            searchGridPane.add(searchField, 1, 0);
+            searchStringValue = searchField.textProperty();
+
+            {
+                Label label = new Label("Produces:");
+                GridPane.setMargin(label, new Insets(10, 0, 0, 0));
+                searchGridPane.add(label, 0, 1);
+            }
+
+            ComboBox<Item> producesComboBox = ItemComponents.createItemComboBox(allItems);
+            producesComboBox.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHgrow(producesComboBox, Priority.ALWAYS);
+            GridPane.setMargin(producesComboBox, new Insets(10, 0, 0, 10));
+            searchGridPane.add(producesComboBox, 1, 1);
+            producesItem = producesComboBox.valueProperty();
+
+            Button clearButton = new Button("Clear\nSearch");
+            clearButton.setTextAlignment(TextAlignment.CENTER);
+            clearButton.setMaxHeight(Double.MAX_VALUE);
+            GridPane.setVgrow(clearButton, Priority.ALWAYS);
+            GridPane.setRowSpan(clearButton, 2);
+            GridPane.setHalignment(clearButton, HPos.RIGHT);
+            GridPane.setMargin(clearButton, new Insets(0, 0, 0, 10));
+            searchGridPane.add(clearButton, 2, 0);
+            clearButton.onActionProperty().set(event -> {
+                searchField.setText("");
+                producesComboBox.setValue(null);
+            });
+        }
+
+        Function<Recipe, ObservableValue<Boolean>> displayValueFactory = recipe -> Bindings.createBooleanBinding(() -> {
+            String searchString = searchStringValue.getValue().trim().toLowerCase(Locale.ENGLISH);
+            if (!searchString.isEmpty()){
+                return recipe.getName().toLowerCase(Locale.ENGLISH).contains(searchString);
+            }
+            if (producesItem.getValue() != null){
+                return recipe.producesItem(producesItem.getValue());
+            }
+            return true;
+        }, searchStringValue, producesItem);
+
+        {
+            HBox hBox = new HBox(10);
+            vBox.getChildren().add(hBox);
+            hBox.setFillHeight(true);
+
+            Node defaultRecipes = createRecipeSelectionList("Default Recipes", recipe -> !recipe.isAlternateRecipe(), recipes, enabledRecipes, displayValueFactory);
+            HBox.setHgrow(defaultRecipes, Priority.ALWAYS);
+            hBox.getChildren().add(defaultRecipes);
+
+            Node alternateRecipes = createRecipeSelectionList("Alternate Recipes", Recipe::isAlternateRecipe, recipes, enabledRecipes, displayValueFactory);
+            HBox.setHgrow(alternateRecipes, Priority.ALWAYS);
+            hBox.getChildren().add(alternateRecipes);
+        }
+
+        ScrollPane scrollPane = new ScrollPane(vBox);
+        titledPane.setContent(scrollPane);
+
+        return titledPane;
     }
 
 

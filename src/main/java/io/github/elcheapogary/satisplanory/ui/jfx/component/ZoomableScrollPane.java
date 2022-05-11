@@ -16,54 +16,52 @@ import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 
 public class ZoomableScrollPane
-        extends ScrollPane
 {
-    private double scaleValue = 0.7;
-    private double zoomIntensity = 0.02;
-    private Node target;
-    private Node zoomNode;
-
-    public ZoomableScrollPane(Node target)
+    private ZoomableScrollPane()
     {
-        super();
-        this.target = target;
-        this.zoomNode = new Group(target);
-        setContent(outerNode(zoomNode));
-
-        setPannable(true);
-        setFitToHeight(true); //center
-        setFitToWidth(true); //center
-
-        updateScale();
     }
 
-    private Node centeredNode(Node node)
+    public static ScrollPane create(Node target)
     {
-        VBox vBox = new VBox(node);
-        vBox.setAlignment(Pos.CENTER);
-        return vBox;
+        ScrollPane sp = new ScrollPane();
+        sp.setFitToWidth(true);
+        sp.setFitToHeight(true);
+        sp.setPannable(true);
+
+        Group zoomNode = new Group(target);
+        VBox outer = new VBox(zoomNode);
+        outer.setAlignment(Pos.CENTER);
+
+        sp.setContent(outer);
+
+        outer.setOnScroll(scrollEvent -> zoom(sp, zoomNode, target, scrollEvent));
+
+        return sp;
     }
 
-    private void onScroll(double wheelDelta, Point2D mousePoint)
+    private static void zoom(ScrollPane sp, Node zoomNode, Node target, ScrollEvent scrollEvent)
     {
-        double zoomFactor = Math.exp(wheelDelta * zoomIntensity);
+        scrollEvent.consume();
+        double zoomFactor = Math.exp(scrollEvent.getDeltaY() * 0.005);
 
         Bounds innerBounds = zoomNode.getLayoutBounds();
-        Bounds viewportBounds = getViewportBounds();
+        Bounds viewportBounds = sp.getViewportBounds();
 
         // calculate pixel offsets from [0, 1] range
-        double valX = this.getHvalue() * (innerBounds.getWidth() - viewportBounds.getWidth());
-        double valY = this.getVvalue() * (innerBounds.getHeight() - viewportBounds.getHeight());
+        double valX = sp.getHvalue() * (innerBounds.getWidth() - viewportBounds.getWidth());
+        double valY = sp.getVvalue() * (innerBounds.getHeight() - viewportBounds.getHeight());
 
-        scaleValue = scaleValue * zoomFactor;
-        updateScale();
-        this.layout(); // refresh ScrollPane scroll positions & target bounds
+        double scale = target.getScaleX() * zoomFactor;
+        target.setScaleX(scale);
+        target.setScaleY(scale);
+        sp.layout(); // refresh ScrollPane scroll positions & target bounds
 
         // convert target coordinates to zoomTarget coordinates
-        Point2D posInZoomTarget = target.parentToLocal(zoomNode.parentToLocal(mousePoint));
+        Point2D posInZoomTarget = target.parentToLocal(zoomNode.parentToLocal(new Point2D(scrollEvent.getX(), scrollEvent.getY())));
 
         // calculate adjustment of scroll position (pixels)
         Point2D adjustment = target.getLocalToParentTransform().deltaTransform(posInZoomTarget.multiply(zoomFactor - 1));
@@ -71,31 +69,7 @@ public class ZoomableScrollPane
         // convert back to [0, 1] range
         // (too large/small values are automatically corrected by ScrollPane)
         Bounds updatedInnerBounds = zoomNode.getBoundsInLocal();
-        this.setHvalue((valX + adjustment.getX()) / (updatedInnerBounds.getWidth() - viewportBounds.getWidth()));
-        this.setVvalue((valY + adjustment.getY()) / (updatedInnerBounds.getHeight() - viewportBounds.getHeight()));
-    }
-
-    private Node outerNode(Node node)
-    {
-        Node outerNode = centeredNode(node);
-        this.setOnScroll(e -> {
-            if (e.isControlDown()){
-                e.consume();
-                onScroll(e.getTextDeltaY(), new Point2D(e.getX(), e.getY()));
-            }
-        });
-        outerNode.setOnScroll(e -> {
-            if (e.isControlDown()){
-                e.consume();
-                onScroll(e.getTextDeltaY(), new Point2D(e.getX(), e.getY()));
-            }
-        });
-        return outerNode;
-    }
-
-    private void updateScale()
-    {
-        target.setScaleX(scaleValue);
-        target.setScaleY(scaleValue);
+        sp.setHvalue((valX + adjustment.getX()) / (updatedInnerBounds.getWidth() - viewportBounds.getWidth()));
+        sp.setVvalue((valY + adjustment.getY()) / (updatedInnerBounds.getHeight() - viewportBounds.getHeight()));
     }
 }

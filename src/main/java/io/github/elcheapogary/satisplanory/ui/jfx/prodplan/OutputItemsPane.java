@@ -36,7 +36,65 @@ class OutputItemsPane
     {
     }
 
-    static TitledPane createOutputRequirementsPane(List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems)
+    private static void addRow(ProdPlanData.OutputItem outputItem, VBox vbox, List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
+    {
+        HBox hbox = new HBox(10);
+        vbox.getChildren().add(vbox.getChildren().size() - 1, hbox);
+
+        hbox.setAlignment(Pos.BASELINE_LEFT);
+
+        {
+            ComboBox<Item> comboBox = ItemComponents.createItemComboBox(allItems);
+            comboBox.getSelectionModel().select(outputItem.getItem());
+            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                outputItem.setItem(newValue);
+                onChange.run();
+            });
+            comboBox.setMaxWidth(Double.MAX_VALUE);
+            comboBox.setPrefWidth(150);
+            HBox.setHgrow(comboBox, Priority.ALWAYS);
+            hbox.getChildren().add(comboBox);
+        }
+
+        hbox.getChildren().add(new Label("Min:"));
+
+        {
+            TextField minTextField = new TextField();
+            minTextField.setMaxWidth(80);
+            BigDecimalTextField.setUp(minTextField, outputItem.getMin(), bigDecimal -> {
+                outputItem.setMin(bigDecimal);
+                onChange.run();
+            });
+            hbox.getChildren().add(minTextField);
+        }
+
+        {
+            Label maximizeWeightLabel = new Label("Weight:");
+            hbox.getChildren().add(maximizeWeightLabel);
+        }
+
+        {
+            TextField weightTextField = new TextField();
+            weightTextField.setMaxWidth(80);
+            BigDecimalTextField.setUp(weightTextField, outputItem.getWeight(), bigDecimal -> {
+                outputItem.setWeight(bigDecimal);
+                onChange.run();
+            });
+            hbox.getChildren().add(weightTextField);
+        }
+
+        {
+            Button removeButton = new Button("Remove");
+            hbox.getChildren().add(removeButton);
+
+            removeButton.onActionProperty().set(event -> {
+                outputItems.remove(outputItem);
+                vbox.getChildren().remove(hbox);
+            });
+        }
+    }
+
+    static TitledPane createOutputRequirementsPane(List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setText("Output Requirements");
@@ -59,7 +117,7 @@ class OutputItemsPane
         addRowButton.onActionProperty().set(event -> {
             ProdPlanData.OutputItem outputItem = new ProdPlanData.OutputItem(allItems.get(0), BigDecimal.ONE, BigDecimal.ZERO);
             outputItems.add(outputItem);
-            addRow(outputItem, vbox, outputItems, allItems);
+            addRow(outputItem, vbox, outputItems, allItems, onChange);
         });
 
         Region grower = new Region();
@@ -74,60 +132,9 @@ class OutputItemsPane
         });
 
         for (ProdPlanData.OutputItem outputItem : outputItems){
-            addRow(outputItem, vbox, outputItems, allItems);
+            addRow(outputItem, vbox, outputItems, allItems, onChange);
         }
 
         return titledPane;
-    }
-
-    private static void addRow(ProdPlanData.OutputItem outputItem, VBox vbox, List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems)
-    {
-        HBox hbox = new HBox(10);
-        vbox.getChildren().add(vbox.getChildren().size() - 1, hbox);
-
-        hbox.setAlignment(Pos.BASELINE_LEFT);
-
-        {
-            ComboBox<Item> comboBox = ItemComponents.createItemComboBox(allItems);
-            comboBox.getSelectionModel().select(outputItem.getItem());
-            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-                outputItem.setItem(newValue);
-            });
-            comboBox.setMaxWidth(Double.MAX_VALUE);
-            comboBox.setPrefWidth(150);
-            HBox.setHgrow(comboBox, Priority.ALWAYS);
-            hbox.getChildren().add(comboBox);
-        }
-
-        hbox.getChildren().add(new Label("Min:"));
-
-        {
-            TextField minTextField = new TextField();
-            minTextField.setMaxWidth(80);
-            BigDecimalTextField.setUp(minTextField, outputItem.getMin(), outputItem::setMin);
-            hbox.getChildren().add(minTextField);
-        }
-
-        {
-            Label maximizeWeightLabel = new Label("Weight:");
-            hbox.getChildren().add(maximizeWeightLabel);
-        }
-
-        {
-            TextField weightTextField = new TextField();
-            weightTextField.setMaxWidth(80);
-            BigDecimalTextField.setUp(weightTextField, outputItem.getWeight(), outputItem::setWeight);
-            hbox.getChildren().add(weightTextField);
-        }
-
-        {
-            Button removeButton = new Button("Remove");
-            hbox.getChildren().add(removeButton);
-
-            removeButton.onActionProperty().set(event -> {
-                outputItems.remove(outputItem);
-                vbox.getChildren().remove(hbox);
-            });
-        }
     }
 }

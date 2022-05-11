@@ -42,7 +42,7 @@ public class ProductionPlanner
     private final BigDecimal minimizeInputItemWeight;
     private final BigDecimal balanceWeight;
     private final BigDecimal maximizeInputItemWeight;
-    private final BigDecimal minimizeByProductsWeight;
+    private final BigDecimal minimizeSurplusWeight;
 
     protected ProductionPlanner(Builder builder)
     {
@@ -55,7 +55,7 @@ public class ProductionPlanner
         this.minimizeInputItemWeight = Objects.requireNonNull(builder.minimizeInputItemWeight);
         this.balanceWeight = Objects.requireNonNull(builder.balanceWeight);
         this.maximizeInputItemWeight = Objects.requireNonNull(builder.maximizeInputItemsWeight);
-        this.minimizeByProductsWeight = Objects.requireNonNull(builder.minimizeByProductsWeight);
+        this.minimizeSurplusWeight = Objects.requireNonNull(builder.minimizeSurplusWeight);
     }
 
     private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
@@ -136,17 +136,24 @@ public class ProductionPlanner
         Map<Item, FractionExpression> itemOutputVariableMap = Item.createMap();
         Map<Item, FractionExpression> itemInputVariableMap = Item.createMap();
         Map<Recipe, FractionExpression> recipeVariableMap = Recipe.createMap();
-        FractionExpression powerExpression = FractionExpression.zero();
+        FractionExpression powerConsumedExpression = FractionExpression.zero();
 
         {
+            /*
+             * This expression is non-negative because it is non-negative for recipe variables that are all non-negative
+             */
             Map<Item, FractionExpression> itemsProducedExpressionMap = Item.createMap();
+            /*
+             * This expression is non-negative because it is non-negative for recipe variables that are all non-negative
+             */
             Map<Item, FractionExpression> itemsConsumedExpressionMap = Item.createMap();
 
             for (Recipe recipe : recipes){
                 FractionExpression recipeVariable = model.addFractionVariable();
                 model.addConstraint(recipeVariable.nonNegative());
                 recipeVariableMap.put(recipe, recipeVariable);
-                powerExpression = powerExpression.add(recipe.getPowerConsumption(), recipeVariable);
+
+                powerConsumedExpression = powerConsumedExpression.add(recipe.getPowerConsumption(), recipeVariable);
 
                 for (Recipe.RecipeItem ri : recipe.getIngredients()){
                     itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
@@ -195,28 +202,37 @@ public class ProductionPlanner
         }
 
         FractionExpression maximizedOutputItemsExpression = FractionExpression.zero();
-        FractionExpression byProductsExpression = FractionExpression.zero();
+        FractionExpression surplusExpression = FractionExpression.zero();
         FractionExpression balanceExpression = FractionExpression.zero();
 
         {
             Map<Item, BigDecimal> outputItemWeights = Item.createMap();
-            for (var entry : outputRequirements.entrySet()){
-                Item item = entry.getKey();
-                OutputRequirement outputRequirement = entry.getValue();
-
-                BigDecimal weight = outputRequirement.getMaximizeWeight();
-
-                if (weight != null && weight.signum() > 0){
-                    outputItemWeights.put(item, weight);
-                }
-            }
-
             for (Item item : items){
-                BigDecimal weight = outputItemWeights.get(item);
-                if (weight == null){
-                    byProductsExpression = byProductsExpression.add(itemOutputVariableMap.get(item));
+                BigDecimal min = BigDecimal.ZERO;
+                BigDecimal weight = null;
+
+                OutputRequirement outputRequirement = outputRequirements.get(item);
+                if (outputRequirement != null){
+                    min = outputRequirement.getItemsPerMinute();
+                    weight = outputRequirement.getMaximizeWeight();
+                    if (weight != null && weight.signum() > 0){
+                        outputItemWeights.put(item, weight);
+                    }
+                }
+
+                FractionExpression itemSurplus;
+
+                if (min.signum() == 0){
+                    itemSurplus = itemOutputVariableMap.get(item);
                 }else{
-                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(weight, itemOutputVariableMap.get(item));
+                    itemSurplus = model.addFractionVariable();
+                    model.addConstraint(itemSurplus.eq(itemOutputVariableMap.get(item).subtract(min)));
+                }
+
+                if (weight == null || weight.signum() == 0){
+                    surplusExpression = surplusExpression.add(itemSurplus);
+                }else{
+                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(weight, itemSurplus);
                 }
             }
 
@@ -261,8 +277,8 @@ public class ProductionPlanner
                 .add(balanceExpression.multiply(balanceWeight))
                 .add(inputItemsExpression.multiply(maximizeInputItemWeight))
                 .subtract(inputItemsExpression.multiply(minimizeInputItemWeight))
-                .subtract(powerExpression.multiply(powerWeight))
-                .subtract(byProductsExpression.multiply(minimizeByProductsWeight));
+                .subtract(powerConsumedExpression.multiply(powerWeight))
+                .subtract(surplusExpression.multiply(minimizeSurplusWeight));
 
         OptimizationResult result;
 
@@ -322,7 +338,7 @@ public class ProductionPlanner
         private BigDecimal minimizeInputItemWeight = BigDecimal.ZERO;
         private BigDecimal balanceWeight = BigDecimal.TEN.pow(3);
         private BigDecimal maximizeInputItemsWeight = BigDecimal.ZERO;
-        private BigDecimal minimizeByProductsWeight = BigDecimal.ZERO;
+        private BigDecimal minimizeSurplusWeight = BigDecimal.ZERO;
 
         public Builder()
         {
@@ -339,7 +355,7 @@ public class ProductionPlanner
             this.minimizeInputItemWeight = planner.minimizeInputItemWeight;
             this.balanceWeight = planner.balanceWeight;
             this.maximizeInputItemsWeight = planner.maximizeInputItemWeight;
-            this.minimizeByProductsWeight = planner.minimizeByProductsWeight;
+            this.minimizeSurplusWeight = planner.minimizeSurplusWeight;
         }
 
         public Builder addInputItem(Item item, long itemsPerMinute)
@@ -349,7 +365,7 @@ public class ProductionPlanner
 
         public Builder addInputItem(Item item, BigDecimal itemsPerMinute)
         {
-            inputItems.put(item, itemsPerMinute);
+            inputItems.compute(item, (notused, amount) -> Objects.requireNonNullElse(amount, BigDecimal.ZERO).add(itemsPerMinute));
             return this;
         }
 
@@ -438,15 +454,15 @@ public class ProductionPlanner
             return this;
         }
 
-        public Builder setPowerWeight(BigDecimal powerWeight)
+        public Builder setMinimizeSurplusWeight(BigDecimal minimizeSurplusWeight)
         {
-            this.powerWeight = powerWeight;
+            this.minimizeSurplusWeight = minimizeSurplusWeight;
             return this;
         }
 
-        public Builder setMinimizeByProductsWeight(BigDecimal minimizeByProductsWeight)
+        public Builder setPowerWeight(BigDecimal powerWeight)
         {
-            this.minimizeByProductsWeight = minimizeByProductsWeight;
+            this.powerWeight = powerWeight;
             return this;
         }
 

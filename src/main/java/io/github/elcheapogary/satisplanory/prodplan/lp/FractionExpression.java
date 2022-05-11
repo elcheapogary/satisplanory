@@ -12,10 +12,21 @@ package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Map;
 
 public abstract class FractionExpression
         extends Expression
 {
+    static final FractionExpression ZERO = new FractionExpression(BigDecimal.ZERO)
+    {
+        @Override
+        Map<? extends Variable, ? extends BigDecimal> getVariableValues()
+        {
+            return Collections.emptyMap();
+        }
+    };
+
     FractionExpression(BigDecimal constantValue)
     {
         super(constantValue);

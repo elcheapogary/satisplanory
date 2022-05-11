@@ -36,6 +36,46 @@ import javafx.scene.layout.VBox;
 
 class InputItemsPane
 {
+    private static void addRow(VBox container, ProdPlanData.InputItem inputItem, List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems)
+    {
+        HBox hBox = new HBox(10);
+        container.getChildren().add(container.getChildren().size() - 1, hBox);
+
+        hBox.setAlignment(Pos.BASELINE_LEFT);
+
+        ComboBox<Item> comboBox = ItemComponents.createItemComboBox(allItems);
+        comboBox.setPrefWidth(150);
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+        comboBox.getSelectionModel().select(inputItem.getItem());
+        comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> inputItem.setItem(newValue));
+        HBox.setHgrow(comboBox, Priority.ALWAYS);
+        hBox.getChildren().add(comboBox);
+
+        {
+            Label amountPerMinuteLabel = new Label("Amount per minute:");
+            amountPerMinuteLabel.prefWidthProperty().bind(amountPerMinuteLabel.minWidthProperty());
+            HBox.setHgrow(amountPerMinuteLabel, Priority.NEVER);
+            hBox.getChildren().add(amountPerMinuteLabel);
+        }
+
+        TextField tf = new TextField();
+        tf.setMaxWidth(80);
+        BigDecimalTextField.setUp(tf, inputItem.getAmount(), inputItem::setAmount);
+        HBox.setHgrow(tf, Priority.NEVER);
+        hBox.getChildren().add(tf);
+
+        tf.setText(BigDecimalUtils.normalize(inputItem.getAmount()).toString());
+
+        Button removeButton = new Button("Remove");
+        HBox.setHgrow(removeButton, Priority.NEVER);
+        hBox.getChildren().add(removeButton);
+
+        removeButton.onActionProperty().setValue(event -> {
+            container.getChildren().remove(hBox);
+            inputItems.remove(inputItem);
+        });
+    }
+
     static TitledPane createInputItemsPane(List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)
     {
         TitledPane titledPane = new TitledPane();
@@ -94,47 +134,5 @@ class InputItemsPane
         }
 
         return titledPane;
-    }
-
-    private static void addRow(VBox container, ProdPlanData.InputItem inputItem, List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems)
-    {
-        HBox hBox = new HBox(10);
-        container.getChildren().add(container.getChildren().size() - 1, hBox);
-
-        hBox.setAlignment(Pos.BASELINE_LEFT);
-
-        ComboBox<Item> comboBox = ItemComponents.createItemComboBox(allItems);
-        comboBox.setPrefWidth(150);
-        comboBox.setMaxWidth(Double.MAX_VALUE);
-        comboBox.getSelectionModel().select(inputItem.getItem());
-        comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            inputItem.setItem(newValue);
-        });
-        HBox.setHgrow(comboBox, Priority.ALWAYS);
-        hBox.getChildren().add(comboBox);
-
-        {
-            Label amountPerMinuteLabel = new Label("Amount per minute:");
-            amountPerMinuteLabel.prefWidthProperty().bind(amountPerMinuteLabel.minWidthProperty());
-            HBox.setHgrow(amountPerMinuteLabel, Priority.NEVER);
-            hBox.getChildren().add(amountPerMinuteLabel);
-        }
-
-        TextField tf = new TextField();
-        tf.setMaxWidth(80);
-        BigDecimalTextField.setUp(tf, inputItem.getAmount(), inputItem::setAmount);
-        HBox.setHgrow(tf, Priority.NEVER);
-        hBox.getChildren().add(tf);
-
-        tf.setText(BigDecimalUtils.normalize(inputItem.getAmount()).toString());
-
-        Button removeButton = new Button("Remove");
-        HBox.setHgrow(removeButton, Priority.NEVER);
-        hBox.getChildren().add(removeButton);
-
-        removeButton.onActionProperty().setValue(event -> {
-            container.getChildren().remove(hBox);
-            inputItems.remove(inputItem);
-        });
     }
 }

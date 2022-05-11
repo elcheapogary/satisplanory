@@ -12,7 +12,12 @@ You can get the latest version here: https://github.com/elcheapogary/satisplanor
 2. Extract the zip file (to anywhere, it doesn't matter)
 3. Run `satisplanory.exe` in the extracted zip folder
 
-The first time you run it, you will be prompted to select your Satisfactory installation directory. Don't worry, it makes no changes to the Satisfactory installation - it just reads the item and recipe data from the Satisfactory installation. Just browse to whereever your Satisfactory installation is and select the `Satisfactory` folder.
+Satisplanory uses recipe and item information from your Satisfactory installation. Don't worry, we make
+no changes to the Satisfactory installation, we just read some data to use in calculations. The first time
+you run Satisplanory, it will try and figure out where you have Satisfactory installed. If it cannot find
+Satisfactory, you will be prompted to select your Satisfactory installation directory. Just browse to where
+ever your Satisfactory installation is and select it. On Steam the folder should be called `Satisfactory`,
+on Epic, it should be `SatisfactoryEarlyAccess` or `SatisfactoryExperimental`.
 
 ## Discord
 

@@ -371,7 +371,7 @@ class GraphPane
             }
         });
 
-        ScrollPane sp = new ZoomableScrollPane(createGraphPane(plan.toGraph(), GraphPane::createNodeComponent, GraphPane::createEdgeComponent, selectedNodeProperty));
+        ScrollPane sp = ZoomableScrollPane.create(createGraphPane(plan.toGraph(), GraphPane::createNodeComponent, GraphPane::createEdgeComponent, selectedNodeProperty));
         sp.setPannable(true);
         bp.setCenter(sp);
         return bp;

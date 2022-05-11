@@ -43,7 +43,7 @@ public abstract class Expression
 
     public static FractionExpression zero()
     {
-        return constant(0);
+        return FractionExpression.ZERO;
     }
 
     public FractionExpression add(BigDecimal constantValue)
