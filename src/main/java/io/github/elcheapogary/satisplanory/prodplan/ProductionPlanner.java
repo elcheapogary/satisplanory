@@ -230,9 +230,9 @@ public class ProductionPlanner
                 }
 
                 if (weight == null || weight.signum() == 0){
-                    surplusExpression = surplusExpression.add(itemSurplus);
+                    surplusExpression = surplusExpression.add(item.toDisplayAmount(BigFraction.ONE), itemSurplus);
                 }else{
-                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(weight, itemSurplus);
+                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(item.toDisplayAmount(weight), itemSurplus);
                 }
             }
 
@@ -246,7 +246,7 @@ public class ProductionPlanner
                         Item item = entry.getKey();
                         BigDecimal weight = entry.getValue();
 
-                        model.addConstraint(itemOutputVariableMap.get(item).eq(balanceVariable.multiply(weight)));
+                        model.addConstraint(itemOutputVariableMap.get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
                     }
                 }else{
                     List<Item> maxItems = new ArrayList<>(outputItemWeights.keySet());
@@ -258,8 +258,8 @@ public class ProductionPlanner
                             FractionExpression balanceVariable = model.addFractionVariable();
                             balanceExpression = balanceExpression.add(balanceVariable);
                             model.addConstraint(balanceVariable.nonNegative());
-                            model.addConstraint(itemOutputVariableMap.get(a).gte(balanceVariable.multiply(outputItemWeights.get(a))));
-                            model.addConstraint(itemOutputVariableMap.get(b).gte(balanceVariable.multiply(outputItemWeights.get(b))));
+                            model.addConstraint(itemOutputVariableMap.get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(outputItemWeights.get(a)))));
+                            model.addConstraint(itemOutputVariableMap.get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(outputItemWeights.get(b)))));
                         }
                     }
                 }
@@ -268,8 +268,10 @@ public class ProductionPlanner
 
         FractionExpression inputItemsExpression = FractionExpression.zero();
 
-        for (FractionExpression e : itemInputVariableMap.values()){
-            inputItemsExpression = inputItemsExpression.add(e);
+        for (var entry : itemInputVariableMap.entrySet()){
+            Item item = entry.getKey();
+            FractionExpression expression = entry.getValue();
+            inputItemsExpression = inputItemsExpression.add(item.toDisplayAmount(BigFraction.ONE), expression);
         }
 
         FractionExpression objectiveFunction = FractionExpression.zero()
