@@ -101,6 +101,7 @@ class OutputItemsPane
         titledPane.setCollapsible(true);
 
         VBox vbox = new VBox(10);
+
         {
             BorderPane.setMargin(vbox, new Insets(10));
             ScrollPane scrollPane = new ScrollPane(new BorderPane(vbox));
@@ -108,8 +109,21 @@ class OutputItemsPane
             titledPane.setContent(scrollPane);
         }
 
+        {
+            Label help = new Label("Add desired output items. \"Min\" is the minimum number of items per minute. "
+                    + "If \"Weight\" is set to a number greater than zero, and the \"Maximize Output Items\" "
+                    + "optimization target is selected in \"Settings\", then the calculator will attempt to create "
+                    + "as many of these items as possible, trying to balance the amount of each output item according "
+                    + "to its weight.");
+            help.setWrapText(true);
+            vbox.getChildren().add(help);
+        }
+
+        VBox table = new VBox(10);
+        vbox.getChildren().add(table);
+
         HBox buttons = new HBox(10);
-        vbox.getChildren().add(buttons);
+        table.getChildren().add(buttons);
 
         Button addRowButton = new Button("Add Item");
         buttons.getChildren().add(addRowButton);
@@ -117,7 +131,7 @@ class OutputItemsPane
         addRowButton.onActionProperty().set(event -> {
             ProdPlanData.OutputItem outputItem = new ProdPlanData.OutputItem(allItems.get(0), BigDecimal.ONE, BigDecimal.ZERO);
             outputItems.add(outputItem);
-            addRow(outputItem, vbox, outputItems, allItems, onChange);
+            addRow(outputItem, table, outputItems, allItems, onChange);
         });
 
         Region grower = new Region();
@@ -128,11 +142,11 @@ class OutputItemsPane
         buttons.getChildren().add(removeAllButton);
         removeAllButton.onActionProperty().set(event -> {
             outputItems.clear();
-            vbox.getChildren().remove(0, vbox.getChildren().size() - 1);
+            table.getChildren().remove(0, table.getChildren().size() - 1);
         });
 
         for (ProdPlanData.OutputItem outputItem : outputItems){
-            addRow(outputItem, vbox, outputItems, allItems, onChange);
+            addRow(outputItem, table, outputItems, allItems, onChange);
         }
 
         return titledPane;

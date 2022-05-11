@@ -12,12 +12,15 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 
 class ProdPlanData
 {
@@ -120,5 +123,21 @@ class ProdPlanData
 
     public static class Settings
     {
+        private final ObjectProperty<OptimizationTarget> optimizationTarget = new SimpleObjectProperty<>(OptimizationTarget.MAX_OUTPUT_ITEMS);
+
+        public OptimizationTarget getOptimizationTarget()
+        {
+            return optimizationTarget.get();
+        }
+
+        public ObjectProperty<OptimizationTarget> optimizationTargetProperty()
+        {
+            return optimizationTarget;
+        }
+
+        public void setOptimizationTarget(OptimizationTarget optimizationTarget)
+        {
+            this.optimizationTarget.set(optimizationTarget);
+        }
     }
 }

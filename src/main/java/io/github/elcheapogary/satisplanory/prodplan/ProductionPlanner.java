@@ -37,12 +37,7 @@ public class ProductionPlanner
     private final Map<Item, BigDecimal> inputItems;
     private final Set<Recipe> recipes;
     private final boolean strictMaximizeRatios;
-    private final BigFraction maximizeOutputItemsWeight;
-    private final BigFraction powerWeight;
-    private final BigFraction minimizeInputItemWeight;
-    private final BigFraction balanceWeight;
-    private final BigFraction maximizeInputItemWeight;
-    private final BigFraction minimizeSurplusWeight;
+    private final OptimizationTarget optimizationTarget;
 
     protected ProductionPlanner(Builder builder)
     {
@@ -50,12 +45,7 @@ public class ProductionPlanner
         this.outputRequirements = Collections.unmodifiableMap(Item.createMap(builder.outputRequirements));
         this.recipes = Collections.unmodifiableSet(Recipe.createSet(builder.recipes));
         this.strictMaximizeRatios = builder.strictMaximizeRatios;
-        this.maximizeOutputItemsWeight = Objects.requireNonNull(builder.maximizeOutputItemWeight);
-        this.powerWeight = Objects.requireNonNull(builder.powerWeight);
-        this.minimizeInputItemWeight = Objects.requireNonNull(builder.minimizeInputItemWeight);
-        this.balanceWeight = Objects.requireNonNull(builder.balanceWeight);
-        this.maximizeInputItemWeight = Objects.requireNonNull(builder.maximizeInputItemsWeight);
-        this.minimizeSurplusWeight = Objects.requireNonNull(builder.minimizeSurplusWeight);
+        this.optimizationTarget = Objects.requireNonNull(builder.optimizationTarget);
     }
 
     private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
@@ -274,13 +264,14 @@ public class ProductionPlanner
             inputItemsExpression = inputItemsExpression.add(item.toDisplayAmount(BigFraction.ONE), expression);
         }
 
-        FractionExpression objectiveFunction = FractionExpression.zero()
-                .add(maximizedOutputItemsExpression.multiply(maximizeOutputItemsWeight))
-                .add(balanceExpression.multiply(balanceWeight))
-                .add(inputItemsExpression.multiply(maximizeInputItemWeight))
-                .subtract(inputItemsExpression.multiply(minimizeInputItemWeight))
-                .subtract(powerConsumedExpression.multiply(powerWeight))
-                .subtract(surplusExpression.multiply(minimizeSurplusWeight));
+        FractionExpression objectiveFunction = FractionExpression.zero();
+
+        objectiveFunction = switch (optimizationTarget){
+            case MAX_OUTPUT_ITEMS -> objectiveFunction.add(maximizedOutputItemsExpression)
+                    .add(BigFraction.ONE.movePointRight(6), balanceExpression);
+            case MIN_POWER -> objectiveFunction.subtract(powerConsumedExpression);
+            case MIN_INPUT_ITEMS -> objectiveFunction.subtract(inputItemsExpression);
+        };
 
         OptimizationResult result;
 
@@ -335,12 +326,7 @@ public class ProductionPlanner
         private final Map<Item, BigDecimal> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
         private boolean strictMaximizeRatios = false;
-        private BigFraction maximizeOutputItemWeight = BigFraction.ONE;
-        private BigFraction powerWeight = BigFraction.ZERO;
-        private BigFraction minimizeInputItemWeight = BigFraction.ZERO;
-        private BigFraction balanceWeight = BigFraction.ONE.movePointRight(3);
-        private BigFraction maximizeInputItemsWeight = BigFraction.ZERO;
-        private BigFraction minimizeSurplusWeight = BigFraction.ZERO;
+        private OptimizationTarget optimizationTarget = OptimizationTarget.MAX_OUTPUT_ITEMS;
 
         public Builder()
         {
@@ -352,12 +338,7 @@ public class ProductionPlanner
             this.inputItems.putAll(planner.inputItems);
             this.recipes.addAll(planner.recipes);
             this.strictMaximizeRatios = planner.strictMaximizeRatios;
-            this.maximizeOutputItemWeight = planner.maximizeOutputItemsWeight;
-            this.powerWeight = planner.powerWeight;
-            this.minimizeInputItemWeight = planner.minimizeInputItemWeight;
-            this.balanceWeight = planner.balanceWeight;
-            this.maximizeInputItemsWeight = planner.maximizeInputItemWeight;
-            this.minimizeSurplusWeight = planner.minimizeSurplusWeight;
+            this.optimizationTarget = planner.optimizationTarget;
         }
 
         public Builder addInputItem(Item item, long itemsPerMinute)
@@ -432,39 +413,9 @@ public class ProductionPlanner
             return requireOutputItemsPerMinute(item, BigDecimal.valueOf(itemsPerMinute));
         }
 
-        public Builder setBalanceWeight(BigFraction balanceWeight)
+        public Builder setOptimizationTarget(OptimizationTarget optimizationTarget)
         {
-            this.balanceWeight = balanceWeight;
-            return this;
-        }
-
-        public Builder setMaximizeInputItemsWeight(BigFraction maximizeInputItemsWeight)
-        {
-            this.maximizeInputItemsWeight = maximizeInputItemsWeight;
-            return this;
-        }
-
-        public Builder setMaximizeOutputItemWeight(BigFraction maximizeOutputItemWeight)
-        {
-            this.maximizeOutputItemWeight = maximizeOutputItemWeight;
-            return this;
-        }
-
-        public Builder setMinimizeInputItemWeight(BigFraction minimizeInputItemWeight)
-        {
-            this.minimizeInputItemWeight = minimizeInputItemWeight;
-            return this;
-        }
-
-        public Builder setMinimizeSurplusWeight(BigFraction minimizeSurplusWeight)
-        {
-            this.minimizeSurplusWeight = minimizeSurplusWeight;
-            return this;
-        }
-
-        public Builder setPowerWeight(BigFraction powerWeight)
-        {
-            this.powerWeight = powerWeight;
+            this.optimizationTarget = optimizationTarget;
             return this;
         }
 

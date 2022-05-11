@@ -88,15 +88,25 @@ class InputItemsPane
         scrollPane.setFitToWidth(true);
         titledPane.setContent(scrollPane);
 
+        {
+            Label help = new Label("Add items that are available to be used as input for the factory. Using \"Add "
+                    + "All Raw Resources\" adds all raw resources on the map.");
+            help.setWrapText(true);
+            vbox.getChildren().add(help);
+        }
+
+        VBox table = new VBox(10);
+        vbox.getChildren().add(table);
+
         HBox buttons = new HBox(10);
-        vbox.getChildren().add(buttons);
+        table.getChildren().add(buttons);
 
         Button addRowButton = new Button("Add Item");
         buttons.getChildren().add(addRowButton);
         addRowButton.onActionProperty().setValue(event -> {
             ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(allItems.get(0), BigDecimal.ZERO);
             inputItems.add(inputItem);
-            addRow(vbox, inputItem, inputItems, allItems);
+            addRow(table, inputItem, inputItems, allItems);
         });
 
         Button addMapLimitsButton = new Button("Add All Raw Resources");
@@ -107,14 +117,14 @@ class InputItemsPane
                         .ifPresent(item -> {
                             ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())));
                             inputItems.add(inputItem);
-                            addRow(vbox, inputItem, inputItems, allItems);
+                            addRow(table, inputItem, inputItems, allItems);
                         });
             }
             gameData.getItemByName("Water")
                     .ifPresent(item -> {
                         ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, BigDecimal.valueOf(999999999999L));
                         inputItems.add(inputItem);
-                        addRow(vbox, inputItem, inputItems, allItems);
+                        addRow(table, inputItem, inputItems, allItems);
                     });
         });
 
@@ -126,11 +136,11 @@ class InputItemsPane
         buttons.getChildren().add(removeAllButton);
         removeAllButton.onActionProperty().set(event -> {
             inputItems.clear();
-            vbox.getChildren().remove(0, vbox.getChildren().size() - 1);
+            table.getChildren().remove(0, table.getChildren().size() - 1);
         });
 
         for (ProdPlanData.InputItem inputItem : inputItems){
-            addRow(vbox, inputItem, inputItems, allItems);
+            addRow(table, inputItem, inputItems, allItems);
         }
 
         return titledPane;

@@ -18,12 +18,10 @@ import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanNotFeatisbleException;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
-import io.github.elcheapogary.satisplanory.ui.jfx.component.ObservableRunnable;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -102,22 +100,10 @@ public class ProdPlanTab
 
         accordion.setExpandedPane(accordion.getPanes().get(0));
 
-        ObservableValue<List<ProdPlanData.OutputItem>> outputItems;
-        {
-            ObservableList<ProdPlanData.OutputItem> tmp = FXCollections.observableList(prodPlanData.getOutputItems());
+        accordion.getPanes().add(OutputItemsPane.createOutputRequirementsPane(FXCollections.observableList(prodPlanData.getOutputItems()), allItemsObservableList, () -> {
+        }));
 
-            ObservableRunnable r = new ObservableRunnable();
-
-            accordion.getPanes().add(OutputItemsPane.createOutputRequirementsPane(tmp, allItemsObservableList, r));
-
-            outputItems = Bindings.createObjectBinding(() -> tmp, tmp, r);
-        }
-
-        ObservableList<SettingsPane.OptimizationTarget> optimizationTargets = FXCollections.observableList(new ArrayList<>());
-        optimizationTargets.add(SettingsPane.OptimizationTarget.BALANCE);
-        optimizationTargets.add(SettingsPane.OptimizationTarget.MAXIMIZE_OUTPUT_ITEMS);
-
-        accordion.getPanes().add(SettingsPane.createSettingsPane(prodPlanData.settings, outputItems, optimizationTargets));
+        accordion.getPanes().add(SettingsPane.createSettingsPane(prodPlanData.settings));
 
         accordion.getPanes().add(createHelpPane(appContext));
 
@@ -132,19 +118,7 @@ public class ProdPlanTab
 
             b.addRecipes(prodPlanData.getEnabledRecipes());
 
-            {
-                BigFraction weight = BigFraction.ONE;
-                for (SettingsPane.OptimizationTarget target : optimizationTargets){
-                    target.setWeight(b, weight);
-                    weight = weight.movePointLeft(6);
-                }
-
-                for (SettingsPane.OptimizationTarget target : SettingsPane.OptimizationTarget.values()){
-                    if (!optimizationTargets.contains(target)){
-                        target.setWeight(b, BigFraction.ZERO);
-                    }
-                }
-            }
+            b.setOptimizationTarget(prodPlanData.settings.getOptimizationTarget());
 
             for (ProdPlanData.InputItem inputItem : prodPlanData.getInputItems()){
                 if (inputItem.getAmount().signum() > 0){
@@ -153,6 +127,7 @@ public class ProdPlanTab
             }
 
             boolean hasOutputRequirement = false;
+
             for (ProdPlanData.OutputItem outputItem : prodPlanData.getOutputItems()){
                 BigDecimal min = outputItem.getMin();
 
@@ -164,16 +139,15 @@ public class ProdPlanTab
                 BigDecimal weight = outputItem.getWeight();
 
                 if (weight.signum() > 0){
-                    hasOutputRequirement = true;
                     b.maximizeOutputItem(outputItem.getItem(), weight);
                 }
             }
 
             if (!hasOutputRequirement){
                 new ExceptionDialog(appContext)
-                        .setContextMessage("No output requirements provided. Please provide output requirements.")
+                        .setContextMessage("No minimum output provided. Please set at least one Min value > 0.")
                         .setTitle("Error: No output requirements provided")
-                        .setDetailsMessage("There needs to be at least one item listed under Output Requirements that has a value\ngreater than zero for either Min or Weight.")
+                        .setDetailsMessage("There needs to be at least one item listed under Output Requirements that has a\nMin value greater than zero.")
                         .showAndWait();
                 return;
             }
