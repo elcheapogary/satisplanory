@@ -124,9 +124,8 @@ public class ProductionPlanner
         Model model = new Model();
 
         Map<Item, FractionExpression> itemOutputVariableMap = Item.createMap();
-        Map<Item, FractionExpression> itemInputVariableMap = Item.createMap();
+        Map<Item, FractionExpression> itemInputExpressionMap = Item.createMap();
         Map<Recipe, FractionExpression> recipeVariableMap = Recipe.createMap();
-        FractionExpression powerConsumedExpression = FractionExpression.zero();
 
         {
             /*
@@ -142,8 +141,6 @@ public class ProductionPlanner
                 FractionExpression recipeVariable = model.addFractionVariable();
                 model.addConstraint(recipeVariable.nonNegative());
                 recipeVariableMap.put(recipe, recipeVariable);
-
-                powerConsumedExpression = powerConsumedExpression.add(recipe.getPowerConsumption(), recipeVariable);
 
                 for (Recipe.RecipeItem ri : recipe.getIngredients()){
                     itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
@@ -170,7 +167,7 @@ public class ProductionPlanner
                     BigDecimal inputAmountPerMinute = inputItems.get(item);
                     if (inputAmountPerMinute != null){
                         inputVariable = model.addFractionVariable();
-                        itemInputVariableMap.put(item, inputVariable);
+                        itemInputExpressionMap.put(item, inputVariable);
                         model.addConstraint(inputVariable.nonNegative());
                         model.addConstraint(inputVariable.lte(inputAmountPerMinute));
                         model.addConstraint(inputVariable.eq(consumed.subtract(produced)));
@@ -259,22 +256,14 @@ public class ProductionPlanner
             }
         }
 
-        FractionExpression inputItemsExpression = FractionExpression.zero();
-
-        for (var entry : itemInputVariableMap.entrySet()){
-            Item item = entry.getKey();
-            FractionExpression expression = entry.getValue();
-            inputItemsExpression = inputItemsExpression.add(item.toDisplayAmount(BigFraction.ONE), expression);
-        }
-
-        FractionExpression objectiveFunction = FractionExpression.zero();
-
-        objectiveFunction = switch (optimizationTarget){
-            case MAX_OUTPUT_ITEMS -> objectiveFunction.add(maximizedOutputItemsExpression)
-                    .add(BigFraction.ONE.movePointRight(6), balanceExpression);
-            case MIN_POWER -> objectiveFunction.subtract(powerConsumedExpression);
-            case MIN_INPUT_ITEMS -> objectiveFunction.subtract(inputItemsExpression);
-        };
+        FractionExpression objectiveFunction = optimizationTarget.getObjectiveFunction(
+                maximizedOutputItemsExpression,
+                balanceExpression,
+                itemInputExpressionMap,
+                itemOutputVariableMap,
+                itemSurplusExpressionMap,
+                recipeVariableMap
+        );
 
         OptimizationResult result;
 
@@ -288,7 +277,7 @@ public class ProductionPlanner
 
         return new ProductionPlan(
                 getVariableValues(recipeVariableMap, Recipe::createMap, result),
-                getVariableValues(itemInputVariableMap, Item::createMap, result),
+                getVariableValues(itemInputExpressionMap, Item::createMap, result),
                 getVariableValues(itemOutputVariableMap, Item::createMap, result)
         );
     }

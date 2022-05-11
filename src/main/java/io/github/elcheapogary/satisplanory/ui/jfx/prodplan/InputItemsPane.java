@@ -74,6 +74,21 @@ class InputItemsPane
             container.getChildren().remove(hBox);
             inputItems.remove(inputItem);
         });
+
+        comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            System.out.println("New value: " + newValue);
+            if (newValue != null && newValue.getName().equals("Water")){
+                System.out.println("set set set");
+                tf.textProperty().set("999999999999");
+                inputItem.setAmount(BigDecimal.valueOf(999999999999L));
+            }
+        });
+
+        tf.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (tf.isFocused()){
+                tf.selectAll();
+            }
+        });
     }
 
     static TitledPane createInputItemsPane(List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)

@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -55,7 +56,22 @@ class SettingsPane
             settings.optimizationTargetProperty().bind(comboBox.getSelectionModel().selectedItemProperty());
             GridPane.setMargin(comboBox, new Insets(0, 0, 0, 10));
             gp.add(comboBox, 1, row);
+            row++;
+            Label l = new Label();
+            l.setWrapText(true);
+            l.textProperty().bind(Bindings.createStringBinding(() -> {
+                OptimizationTarget t = settings.getOptimizationTarget();
+                if (t == null){
+                    return "";
+                }else{
+                    return t.getDescription();
+                }
+            }, settings.optimizationTargetProperty()));
+            GridPane.setMargin(l, new Insets(10, 0, 0, 10));
+            gp.add(l, 1, row);
         }
+
+        row++;
 
         TitledPane titledPane = new TitledPane();
         titledPane.setCollapsible(true);
