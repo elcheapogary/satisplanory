@@ -395,6 +395,28 @@ public class BigFraction
         return this;
     }
 
+    public BigFraction movePointLeft(int places)
+    {
+        if (places == 0){
+            return this;
+        }else if (places > 0){
+            return divide(BigInteger.TEN.pow(places));
+        }else{
+            return multiply(BigInteger.TEN.pow(places * -1));
+        }
+    }
+
+    public BigFraction movePointRight(int places)
+    {
+        if (places == 0){
+            return this;
+        }else if (places > 0){
+            return multiply(BigInteger.TEN.pow(places));
+        }else{
+            return divide(BigInteger.TEN.pow(places * -1));
+        }
+    }
+
     public BigFraction multiply(BigFraction multiplicand)
     {
         return valueOf(numerator.multiply(multiplicand.numerator), denominator.multiply(multiplicand.denominator));
