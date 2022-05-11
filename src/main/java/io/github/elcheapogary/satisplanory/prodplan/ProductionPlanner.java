@@ -194,6 +194,7 @@ public class ProductionPlanner
         FractionExpression maximizedOutputItemsExpression = FractionExpression.zero();
         FractionExpression surplusExpression = FractionExpression.zero();
         FractionExpression balanceExpression = FractionExpression.zero();
+        Map<Item, FractionExpression> itemSurplusExpressionMap = Item.createMap();
 
         {
             Map<Item, BigDecimal> outputItemWeights = Item.createMap();
@@ -219,6 +220,8 @@ public class ProductionPlanner
                     model.addConstraint(itemSurplus.eq(itemOutputVariableMap.get(item).subtract(min)));
                 }
 
+                itemSurplusExpressionMap.put(item, itemSurplus);
+
                 if (weight == null || weight.signum() == 0){
                     surplusExpression = surplusExpression.add(item.toDisplayAmount(BigFraction.ONE), itemSurplus);
                 }else{
@@ -236,7 +239,7 @@ public class ProductionPlanner
                         Item item = entry.getKey();
                         BigDecimal weight = entry.getValue();
 
-                        model.addConstraint(itemOutputVariableMap.get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
+                        model.addConstraint(itemSurplusExpressionMap.get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
                     }
                 }else{
                     List<Item> maxItems = new ArrayList<>(outputItemWeights.keySet());
@@ -248,8 +251,8 @@ public class ProductionPlanner
                             FractionExpression balanceVariable = model.addFractionVariable();
                             balanceExpression = balanceExpression.add(balanceVariable);
                             model.addConstraint(balanceVariable.nonNegative());
-                            model.addConstraint(itemOutputVariableMap.get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(outputItemWeights.get(a)))));
-                            model.addConstraint(itemOutputVariableMap.get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(outputItemWeights.get(b)))));
+                            model.addConstraint(itemSurplusExpressionMap.get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(outputItemWeights.get(a)))));
+                            model.addConstraint(itemSurplusExpressionMap.get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(outputItemWeights.get(b)))));
                         }
                     }
                 }
