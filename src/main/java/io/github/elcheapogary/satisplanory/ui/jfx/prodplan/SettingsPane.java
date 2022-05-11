@@ -11,7 +11,7 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -250,7 +250,7 @@ class SettingsPane
                         + "produced of these items matches the ratio between their weights."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setBalanceWeight(weight);
             }
@@ -269,7 +269,7 @@ class SettingsPane
                 "Try create as much as possible of all output items with a weight > 0."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setMaximizeOutputItemWeight(weight);
             }
@@ -288,7 +288,7 @@ class SettingsPane
                 "Use as little as possible of the input items."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setMinimizeInputItemWeight(weight);
             }
@@ -307,7 +307,7 @@ class SettingsPane
                 "Use as much as possible of the input items."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setMaximizeInputItemsWeight(weight);
             }
@@ -334,7 +334,7 @@ class SettingsPane
                         + "Can also be used to avoid recipes that produce by-products."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setMinimizeSurplusWeight(weight);
             }
@@ -353,7 +353,7 @@ class SettingsPane
                 "Try and use as little power as possible."
         ){
             @Override
-            public void setWeight(ProductionPlanner.Builder pb, BigDecimal weight)
+            public void setWeight(ProductionPlanner.Builder pb, BigFraction weight)
             {
                 pb.setPowerWeight(weight);
             }
@@ -451,7 +451,7 @@ class SettingsPane
             return title;
         }
 
-        public abstract void setWeight(ProductionPlanner.Builder pb, BigDecimal weight);
+        public abstract void setWeight(ProductionPlanner.Builder pb, BigFraction weight);
     }
 
     private static class Warning

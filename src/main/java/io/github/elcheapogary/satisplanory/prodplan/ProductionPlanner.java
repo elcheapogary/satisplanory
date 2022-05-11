@@ -37,12 +37,12 @@ public class ProductionPlanner
     private final Map<Item, BigDecimal> inputItems;
     private final Set<Recipe> recipes;
     private final boolean strictMaximizeRatios;
-    private final BigDecimal maximizeOutputItemsWeight;
-    private final BigDecimal powerWeight;
-    private final BigDecimal minimizeInputItemWeight;
-    private final BigDecimal balanceWeight;
-    private final BigDecimal maximizeInputItemWeight;
-    private final BigDecimal minimizeSurplusWeight;
+    private final BigFraction maximizeOutputItemsWeight;
+    private final BigFraction powerWeight;
+    private final BigFraction minimizeInputItemWeight;
+    private final BigFraction balanceWeight;
+    private final BigFraction maximizeInputItemWeight;
+    private final BigFraction minimizeSurplusWeight;
 
     protected ProductionPlanner(Builder builder)
     {
@@ -333,12 +333,12 @@ public class ProductionPlanner
         private final Map<Item, BigDecimal> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
         private boolean strictMaximizeRatios = false;
-        private BigDecimal maximizeOutputItemWeight = BigDecimal.ONE;
-        private BigDecimal powerWeight = BigDecimal.ZERO;
-        private BigDecimal minimizeInputItemWeight = BigDecimal.ZERO;
-        private BigDecimal balanceWeight = BigDecimal.TEN.pow(3);
-        private BigDecimal maximizeInputItemsWeight = BigDecimal.ZERO;
-        private BigDecimal minimizeSurplusWeight = BigDecimal.ZERO;
+        private BigFraction maximizeOutputItemWeight = BigFraction.ONE;
+        private BigFraction powerWeight = BigFraction.ZERO;
+        private BigFraction minimizeInputItemWeight = BigFraction.ZERO;
+        private BigFraction balanceWeight = BigFraction.ONE.movePointRight(3);
+        private BigFraction maximizeInputItemsWeight = BigFraction.ZERO;
+        private BigFraction minimizeSurplusWeight = BigFraction.ZERO;
 
         public Builder()
         {
@@ -430,37 +430,37 @@ public class ProductionPlanner
             return requireOutputItemsPerMinute(item, BigDecimal.valueOf(itemsPerMinute));
         }
 
-        public Builder setBalanceWeight(BigDecimal balanceWeight)
+        public Builder setBalanceWeight(BigFraction balanceWeight)
         {
             this.balanceWeight = balanceWeight;
             return this;
         }
 
-        public Builder setMaximizeInputItemsWeight(BigDecimal maximizeInputItemsWeight)
+        public Builder setMaximizeInputItemsWeight(BigFraction maximizeInputItemsWeight)
         {
             this.maximizeInputItemsWeight = maximizeInputItemsWeight;
             return this;
         }
 
-        public Builder setMaximizeOutputItemWeight(BigDecimal maximizeOutputItemWeight)
+        public Builder setMaximizeOutputItemWeight(BigFraction maximizeOutputItemWeight)
         {
             this.maximizeOutputItemWeight = maximizeOutputItemWeight;
             return this;
         }
 
-        public Builder setMinimizeInputItemWeight(BigDecimal minimizeInputItemWeight)
+        public Builder setMinimizeInputItemWeight(BigFraction minimizeInputItemWeight)
         {
             this.minimizeInputItemWeight = minimizeInputItemWeight;
             return this;
         }
 
-        public Builder setMinimizeSurplusWeight(BigDecimal minimizeSurplusWeight)
+        public Builder setMinimizeSurplusWeight(BigFraction minimizeSurplusWeight)
         {
             this.minimizeSurplusWeight = minimizeSurplusWeight;
             return this;
         }
 
-        public Builder setPowerWeight(BigDecimal powerWeight)
+        public Builder setPowerWeight(BigFraction powerWeight)
         {
             this.powerWeight = powerWeight;
             return this;

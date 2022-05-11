@@ -23,6 +23,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -132,15 +133,15 @@ public class ProdPlanTab
             b.addRecipes(prodPlanData.getEnabledRecipes());
 
             {
-                BigDecimal weight = BigDecimal.ONE;
+                BigFraction weight = BigFraction.ONE;
                 for (SettingsPane.OptimizationTarget target : optimizationTargets){
                     target.setWeight(b, weight);
-                    weight = weight.movePointLeft(5);
+                    weight = weight.movePointLeft(6);
                 }
 
                 for (SettingsPane.OptimizationTarget target : SettingsPane.OptimizationTarget.values()){
                     if (!optimizationTargets.contains(target)){
-                        target.setWeight(b, BigDecimal.ZERO);
+                        target.setWeight(b, BigFraction.ZERO);
                     }
                 }
             }
