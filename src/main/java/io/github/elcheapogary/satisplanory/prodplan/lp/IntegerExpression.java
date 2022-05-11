@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -17,9 +18,9 @@ import java.util.Map;
 public class IntegerExpression
         extends Expression
 {
-    private final Map<? extends Variable, ? extends BigDecimal> variableValues;
+    private final Map<? extends Variable, ? extends BigFraction> variableValues;
 
-    IntegerExpression(BigDecimal constantValue, Map<? extends Variable, ? extends BigDecimal> variableValues)
+    IntegerExpression(BigFraction constantValue, Map<? extends Variable, ? extends BigFraction> variableValues)
     {
         super(constantValue);
         this.variableValues = variableValues;
@@ -31,7 +32,7 @@ public class IntegerExpression
     }
 
     @Override
-    Map<? extends Variable, ? extends BigDecimal> getVariableValues()
+    Map<? extends Variable, ? extends BigFraction> getVariableValues()
     {
         return variableValues;
     }

@@ -18,16 +18,16 @@ import java.util.Map;
 public abstract class FractionExpression
         extends Expression
 {
-    static final FractionExpression ZERO = new FractionExpression(BigDecimal.ZERO)
+    static final FractionExpression ZERO = new FractionExpression(BigFraction.ZERO)
     {
         @Override
-        Map<? extends Variable, ? extends BigDecimal> getVariableValues()
+        Map<? extends Variable, ? extends BigFraction> getVariableValues()
         {
             return Collections.emptyMap();
         }
     };
 
-    FractionExpression(BigDecimal constantValue)
+    FractionExpression(BigFraction constantValue)
     {
         super(constantValue);
     }

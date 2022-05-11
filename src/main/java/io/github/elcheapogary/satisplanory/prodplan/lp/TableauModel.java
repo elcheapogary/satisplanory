@@ -11,7 +11,6 @@
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,8 +64,8 @@ class TableauModel
 
         {
             for (Constraint constraint : constraints){
-                BigDecimal min = constraint.getMin();
-                BigDecimal max = constraint.getMax();
+                BigFraction min = constraint.getMin();
+                BigFraction max = constraint.getMax();
 
                 if (min != null && max != null && min.compareTo(max) == 0){
                     TableauVariable a = variableSet.addArtificialBasicVariable();
@@ -77,14 +76,14 @@ class TableauModel
 
                         setCoefficients(constraint, row, variableData, true);
 
-                        row.setCoefficient(a, BigDecimal.ONE);
+                        row.setCoefficient(a, BigFraction.ONE);
                     }else{
                         Row row = new Row(a, min);
                         rows.add(row);
 
                         setCoefficients(constraint, row, variableData, false);
 
-                        row.setCoefficient(a, BigDecimal.ONE);
+                        row.setCoefficient(a, BigFraction.ONE);
                     }
                 }else{
                     if (min != null && !isSingleVariableNonNegativeMinConstraint(constraint)){
@@ -97,7 +96,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigDecimal.ONE);
+                            row.setCoefficient(slack, BigFraction.ONE);
                         }else if (zeroCmp == 0){
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -106,7 +105,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigDecimal.ONE);
+                            row.setCoefficient(slack, BigFraction.ONE);
                         }else{
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -117,8 +116,8 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, false);
 
-                            row.setCoefficient(slack, BigDecimal.ONE.negate());
-                            row.setCoefficient(artificial, BigDecimal.ONE);
+                            row.setCoefficient(slack, BigFraction.ONE.negate());
+                            row.setCoefficient(artificial, BigFraction.ONE);
                         }
                     }
 
@@ -134,8 +133,8 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigDecimal.ONE.negate());
-                            row.setCoefficient(artificial, BigDecimal.ONE);
+                            row.setCoefficient(slack, BigFraction.ONE.negate());
+                            row.setCoefficient(artificial, BigFraction.ONE);
                         }else{
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -144,7 +143,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, false);
 
-                            row.setCoefficient(slack, BigDecimal.ONE);
+                            row.setCoefficient(slack, BigFraction.ONE);
                         }
                     }
                 }
@@ -162,7 +161,7 @@ class TableauModel
 
         Variable v = c.getVariables().iterator().next();
 
-        BigDecimal m = c.getVariableMultiplier(v);
+        BigFraction m = c.getVariableMultiplier(v);
 
         return m.signum() < 0 && c.getMax().signum() == 0;
     }
@@ -175,7 +174,7 @@ class TableauModel
 
         Variable v = c.getVariables().iterator().next();
 
-        BigDecimal m = c.getVariableMultiplier(v);
+        BigFraction m = c.getVariableMultiplier(v);
 
         return m.signum() > 0 && c.getMin().signum() == 0;
     }
@@ -184,7 +183,7 @@ class TableauModel
     {
         for (Constraint constraint : constraints){
             if (constraint.getVariables().size() == 1){
-                BigDecimal m = constraint.getVariableMultiplier(variable);
+                BigFraction m = constraint.getVariableMultiplier(variable);
 
                 if (m == null){
                     continue;
@@ -205,7 +204,7 @@ class TableauModel
     {
         for (Variable v : constraint.getVariables()){
             VariableData vd = variableData[v.index];
-            BigDecimal multiple = constraint.getVariableMultiplier(v);
+            BigFraction multiple = constraint.getVariableMultiplier(v);
             if (multiple.signum() != 0){
                 if (negate){
                     multiple = multiple.negate();
@@ -238,12 +237,12 @@ class TableauModel
             int rowIndex = 0;
             for (TableauModel.Row row : rows){
                 row.index = rowIndex;
-                array[rowIndex][tableauVariables.size()] = BigFraction.valueOf(row.rhs).simplify();
-                for (Map.Entry<TableauVariable, BigDecimal> entry : row.values.entrySet()){
+                array[rowIndex][tableauVariables.size()] = row.rhs.simplify();
+                for (Map.Entry<TableauVariable, BigFraction> entry : row.values.entrySet()){
                     TableauVariable c = entry.getKey();
-                    BigDecimal v = entry.getValue();
+                    BigFraction v = entry.getValue();
 
-                    array[rowIndex][c.columnIndex] = BigFraction.valueOf(v).simplify();
+                    array[rowIndex][c.columnIndex] = v.simplify();
                 }
 
                 rowIndex++;
@@ -253,14 +252,14 @@ class TableauModel
         return array;
     }
 
-    public List<TableauVariable> getArtificialVariables()
-    {
-        return artificialVariables;
-    }
-
     public List<TableauVariable> getAllVariables()
     {
         return tableauVariables;
+    }
+
+    public List<TableauVariable> getArtificialVariables()
+    {
+        return artificialVariables;
     }
 
     public List<TableauVariable> getDecisionVariables()
@@ -308,11 +307,11 @@ class TableauModel
     static class Row
     {
         public final TableauVariable basicVariable;
-        private final Map<TableauVariable, BigDecimal> values = new TreeMap<>(Comparator.comparing(TableauVariable::getName));
-        private final BigDecimal rhs;
+        private final Map<TableauVariable, BigFraction> values = new TreeMap<>(Comparator.comparing(TableauVariable::getName));
+        private final BigFraction rhs;
         public int index = -1;
 
-        public Row(TableauVariable basicVariable, BigDecimal rhs)
+        public Row(TableauVariable basicVariable, BigFraction rhs)
         {
             this.basicVariable = basicVariable;
             this.rhs = rhs;
@@ -323,7 +322,7 @@ class TableauModel
             return values.keySet();
         }
 
-        public void setCoefficient(TableauVariable tableauVariable, BigDecimal value)
+        public void setCoefficient(TableauVariable tableauVariable, BigFraction value)
         {
             values.put(tableauVariable, value);
         }

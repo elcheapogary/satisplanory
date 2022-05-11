@@ -11,7 +11,6 @@
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.math.BigDecimal;
 
 public class OptimizationResult
 {
@@ -31,13 +30,13 @@ public class OptimizationResult
 
     BigFraction getValue(Expression expression)
     {
-        BigFraction result = BigFraction.valueOf(expression.getConstantValue());
+        BigFraction result = expression.getConstantValue();
 
         for (var entry : expression.getVariableValues().entrySet()){
             Variable v = entry.getKey();
-            BigDecimal m = entry.getValue();
+            BigFraction m = entry.getValue();
 
-            result = result.add(variableValues[v.index].multiply(BigFraction.valueOf(m)));
+            result = result.add(variableValues[v.index].multiply(m));
         }
 
         return result;

@@ -12,7 +12,6 @@ package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,13 +57,13 @@ class TwoPhaseSimplexSolver
             tableauModel.getAllVariables().removeAll(tableauModel.getArtificialVariables());
             tableauModel.getAllVariables().addAll(0, tableauModel.getArtificialVariables());
 
-            TableauModel.Row firstStageObjective = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "A"), BigDecimal.ZERO);
-            firstStageObjective.setCoefficient(firstStageObjective.basicVariable, BigDecimal.ONE);
+            TableauModel.Row firstStageObjective = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "A"), BigFraction.ZERO);
+            firstStageObjective.setCoefficient(firstStageObjective.basicVariable, BigFraction.ONE);
             tableauModel.getAllVariables().add(0, firstStageObjective.basicVariable);
             tableauModel.getRows().add(0, firstStageObjective);
 
             for (TableauModel.TableauVariable a : tableauModel.getArtificialVariables()){
-                firstStageObjective.setCoefficient(a, BigDecimal.ONE);
+                firstStageObjective.setCoefficient(a, BigFraction.ONE);
             }
         }
 
@@ -95,14 +94,14 @@ class TwoPhaseSimplexSolver
     {
         TableauModel tableauModel = TableauModel.fromModel(model, extraConstraints);
 
-        TableauModel.Row objectiveFunctionRow = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "P"), BigDecimal.ZERO);
-        objectiveFunctionRow.setCoefficient(objectiveFunctionRow.basicVariable, BigDecimal.ONE);
+        TableauModel.Row objectiveFunctionRow = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "P"), BigFraction.ZERO);
+        objectiveFunctionRow.setCoefficient(objectiveFunctionRow.basicVariable, BigFraction.ONE);
         tableauModel.getAllVariables().add(0, objectiveFunctionRow.basicVariable);
         tableauModel.getRows().add(0, objectiveFunctionRow);
 
         for (var entry : objectiveFunction.getVariableValues().entrySet()){
             Variable variable = entry.getKey();
-            BigDecimal weight = entry.getValue();
+            BigFraction weight = entry.getValue();
 
             TableauModel.VariableData vd = tableauModel.getVariableData()[variable.index];
 

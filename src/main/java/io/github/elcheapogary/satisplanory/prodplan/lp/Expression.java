@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,21 +20,26 @@ import java.util.TreeMap;
 
 public abstract class Expression
 {
-    private final BigDecimal constantValue;
+    private final BigFraction constantValue;
 
-    Expression(BigDecimal constantValue)
+    Expression(BigFraction constantValue)
     {
         this.constantValue = constantValue;
     }
 
-    public static FractionExpression constant(BigDecimal value)
+    public static FractionExpression constant(BigFraction value)
     {
         return new ConcreteFractionExpression(value, Collections.emptyMap());
     }
 
+    public static FractionExpression constant(BigDecimal value)
+    {
+        return constant(BigFraction.valueOf(value));
+    }
+
     public static FractionExpression constant(long value)
     {
-        return constant(BigDecimal.valueOf(value));
+        return constant(BigFraction.valueOf(value));
     }
 
     public static FractionExpression constant(double value)
@@ -46,14 +52,19 @@ public abstract class Expression
         return FractionExpression.ZERO;
     }
 
-    public FractionExpression add(BigDecimal constantValue)
+    public FractionExpression add(BigFraction constantValue)
     {
         return new ConcreteFractionExpression(this.constantValue.add(constantValue), getVariableValues());
     }
 
+    public FractionExpression add(BigDecimal constantValue)
+    {
+        return add(BigFraction.valueOf(constantValue));
+    }
+
     public FractionExpression add(long constantValue)
     {
-        return add(BigDecimal.valueOf(constantValue));
+        return add(BigFraction.valueOf(constantValue));
     }
 
     public FractionExpression add(double constantValue)
@@ -66,15 +77,15 @@ public abstract class Expression
         return add(1, expression);
     }
 
-    public FractionExpression add(BigDecimal multiplier, Expression expression)
+    public FractionExpression add(BigFraction multiplier, Expression expression)
     {
-        Map<Variable, BigDecimal> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
+        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
 
         m.putAll(getVariableValues());
 
         for (var entry : expression.getVariableValues().entrySet()){
             m.compute(entry.getKey(), (variable2, existingMultiplier) ->
-                    Objects.requireNonNullElse(existingMultiplier, BigDecimal.ZERO)
+                    Objects.requireNonNullElse(existingMultiplier, BigFraction.ZERO)
                             .add(multiplier.multiply(entry.getValue()))
             );
         }
@@ -82,9 +93,14 @@ public abstract class Expression
         return new ConcreteFractionExpression(constantValue.add(multiplier.multiply(expression.constantValue)), m);
     }
 
+    public FractionExpression add(BigDecimal multiplier, Expression expression)
+    {
+        return add(BigFraction.valueOf(multiplier), expression);
+    }
+
     public FractionExpression add(long multiplier, Expression expression)
     {
-        return add(BigDecimal.valueOf(multiplier), expression);
+        return add(BigFraction.valueOf(multiplier), expression);
     }
 
     public FractionExpression add(double multiplier, Expression expression)
@@ -92,14 +108,19 @@ public abstract class Expression
         return add(BigDecimal.valueOf(multiplier), expression);
     }
 
-    public Constraint eq(BigDecimal amount)
+    public Constraint eq(BigFraction amount)
     {
         return new Constraint(getVariableValues(), amount.subtract(constantValue), amount.subtract(constantValue));
     }
 
+    public Constraint eq(BigDecimal amount)
+    {
+        return eq(BigFraction.valueOf(amount));
+    }
+
     public Constraint eq(long amount)
     {
-        return eq(BigDecimal.valueOf(amount));
+        return eq(BigFraction.valueOf(amount));
     }
 
     public Constraint eq(double amount)
@@ -112,26 +133,31 @@ public abstract class Expression
         return this.subtract(expression).eq(0);
     }
 
-    BigDecimal getConstantValue()
+    BigFraction getConstantValue()
     {
         return constantValue;
     }
 
-    abstract Map<? extends Variable, ? extends BigDecimal> getVariableValues();
+    abstract Map<? extends Variable, ? extends BigFraction> getVariableValues();
 
     public Constraint gte(Expression expression)
     {
         return this.subtract(expression).gte(0);
     }
 
-    public Constraint gte(BigDecimal amount)
+    public Constraint gte(BigFraction amount)
     {
         return new Constraint(getVariableValues(), amount.subtract(constantValue), null);
     }
 
+    public Constraint gte(BigDecimal amount)
+    {
+        return gte(BigFraction.valueOf(amount));
+    }
+
     public Constraint gte(long amount)
     {
-        return gte(BigDecimal.valueOf(amount));
+        return gte(BigFraction.valueOf(amount));
     }
 
     public Constraint gte(double amount)
@@ -139,9 +165,14 @@ public abstract class Expression
         return gte(BigDecimal.valueOf(amount));
     }
 
-    public Constraint lte(BigDecimal amount)
+    public Constraint lte(BigFraction amount)
     {
         return new Constraint(getVariableValues(), null, amount.subtract(constantValue));
+    }
+
+    public Constraint lte(BigDecimal amount)
+    {
+        return lte(BigFraction.valueOf(amount));
     }
 
     public Constraint lte(long amount)
@@ -161,7 +192,7 @@ public abstract class Expression
 
     public FractionExpression multiply(long value)
     {
-        return multiply(BigDecimal.valueOf(value));
+        return multiply(BigFraction.valueOf(value));
     }
 
     public FractionExpression multiply(double value)
@@ -169,9 +200,9 @@ public abstract class Expression
         return multiply(BigDecimal.valueOf(value));
     }
 
-    public FractionExpression multiply(BigDecimal value)
+    public FractionExpression multiply(BigFraction value)
     {
-        Map<Variable, BigDecimal> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
+        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
 
         for (var entry : getVariableValues().entrySet()){
             m.put(entry.getKey(), entry.getValue().multiply(value));
@@ -180,9 +211,14 @@ public abstract class Expression
         return new ConcreteFractionExpression(constantValue.multiply(value), m);
     }
 
+    public FractionExpression multiply(BigDecimal value)
+    {
+        return multiply(BigFraction.valueOf(value));
+    }
+
     public FractionExpression negate()
     {
-        Map<Variable, BigDecimal> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
+        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
 
         for (var entry : getVariableValues().entrySet()){
             m.put(entry.getKey(), entry.getValue().negate());
@@ -201,6 +237,11 @@ public abstract class Expression
         return subtract(1, expression);
     }
 
+    public FractionExpression subtract(BigFraction multiplier, Expression expression)
+    {
+        return add(multiplier.negate(), expression);
+    }
+
     public FractionExpression subtract(BigDecimal multiplier, Expression expression)
     {
         return add(multiplier.negate(), expression);
@@ -214,6 +255,11 @@ public abstract class Expression
     public FractionExpression subtract(double multiplier, Expression expression)
     {
         return subtract(BigDecimal.valueOf(multiplier), expression);
+    }
+
+    public FractionExpression subtract(BigFraction constantValue)
+    {
+        return add(constantValue.negate());
     }
 
     public FractionExpression subtract(BigDecimal constantValue)
@@ -243,9 +289,9 @@ public abstract class Expression
     private static class ConcreteFractionExpression
             extends FractionExpression
     {
-        private final Map<? extends Variable, ? extends BigDecimal> variableValues;
+        private final Map<? extends Variable, ? extends BigFraction> variableValues;
 
-        public ConcreteFractionExpression(BigDecimal constantValue, Map<? extends Variable, ? extends BigDecimal> variableValues)
+        public ConcreteFractionExpression(BigFraction constantValue, Map<? extends Variable, ? extends BigFraction> variableValues)
         {
             super(constantValue);
             this.variableValues = variableValues;
@@ -261,7 +307,7 @@ public abstract class Expression
         }
 
         @Override
-        Map<? extends Variable, ? extends BigDecimal> getVariableValues()
+        Map<? extends Variable, ? extends BigFraction> getVariableValues()
         {
             return variableValues;
         }

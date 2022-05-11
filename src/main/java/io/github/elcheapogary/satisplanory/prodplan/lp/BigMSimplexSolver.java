@@ -13,7 +13,6 @@ package io.github.elcheapogary.satisplanory.prodplan.lp;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,7 +56,7 @@ class BigMSimplexSolver
         final BigFraction[] costs = new BigFraction[cols - 1];
         Arrays.fill(costs, BigFraction.ZERO);
 
-        BigDecimal maxCoefficient = BigDecimal.ZERO;
+        BigFraction maxCoefficient = BigFraction.ZERO;
 
         for (Constraint c : model.getConstraints()){
             for (Variable v : c.getVariables()){
@@ -71,26 +70,24 @@ class BigMSimplexSolver
             }
         }
 
-        for (BigDecimal a : objectiveFunction.getVariableValues().values()){
+        for (BigFraction a : objectiveFunction.getVariableValues().values()){
             maxCoefficient = maxCoefficient.max(a.abs());
         }
 
         for (Variable variable : model.getVariables()){
             TableauModel.VariableData vd = tableauModel.getVariableData()[variable.index];
-            BigDecimal weight = objectiveFunction.getVariableValues().get(variable);
+            BigFraction weight = objectiveFunction.getVariableValues().get(variable);
             if (weight != null && weight.signum() != 0){
-                BigFraction weightFraction = BigFraction.valueOf(weight);
-
-                costs[vd.primaryTableauVariable.columnIndex] = weightFraction;
+                costs[vd.primaryTableauVariable.columnIndex] = weight;
 
                 if (vd.secondaryTableauVariable != null){
-                    costs[vd.secondaryTableauVariable.columnIndex] = weightFraction.negate();
+                    costs[vd.secondaryTableauVariable.columnIndex] = weight.negate();
                 }
             }
         }
 
         {
-            BigFraction M = BigFraction.valueOf(maxCoefficient).multiply(-100);
+            BigFraction M = maxCoefficient.multiply(-100);
             for (TableauModel.TableauVariable v : tableauModel.getArtificialVariables()){
                 costs[v.columnIndex] = M;
             }

@@ -10,35 +10,35 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
 public class Constraint
 {
-    private final Map<? extends Variable, ? extends BigDecimal> variableValues;
-    private final BigDecimal min;
-    private final BigDecimal max;
+    private final Map<? extends Variable, ? extends BigFraction> variableValues;
+    private final BigFraction min;
+    private final BigFraction max;
 
-    Constraint(Map<? extends Variable, ? extends BigDecimal> variableValues, BigDecimal min, BigDecimal max)
+    Constraint(Map<? extends Variable, ? extends BigFraction> variableValues, BigFraction min, BigFraction max)
     {
         this.variableValues = Collections.unmodifiableMap(variableValues);
         this.min = min;
         this.max = max;
     }
 
-    BigDecimal getMax()
+    BigFraction getMax()
     {
         return max;
     }
 
-    BigDecimal getMin()
+    BigFraction getMin()
     {
         return min;
     }
 
-    BigDecimal getVariableMultiplier(Variable variable)
+    BigFraction getVariableMultiplier(Variable variable)
     {
         return variableValues.get(variable);
     }

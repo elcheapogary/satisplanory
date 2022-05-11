@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collections;
 import java.util.Map;
 
@@ -21,7 +21,7 @@ class Variable
 
     Variable(int index)
     {
-        super(BigDecimal.ZERO);
+        super(BigFraction.ZERO);
         this.index = index;
     }
 
@@ -40,9 +40,9 @@ class Variable
     }
 
     @Override
-    Map<? extends Variable, ? extends BigDecimal> getVariableValues()
+    Map<? extends Variable, ? extends BigFraction> getVariableValues()
     {
-        return Collections.singletonMap(this, BigDecimal.ONE);
+        return Collections.singletonMap(this, BigFraction.ONE);
     }
 
     @Override

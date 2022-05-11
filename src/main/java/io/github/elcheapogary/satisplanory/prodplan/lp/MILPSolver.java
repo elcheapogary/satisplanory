@@ -151,8 +151,8 @@ class MILPSolver
 
             for (var entry2 : expression.getVariableValues().entrySet()){
                 Variable variable = entry2.getKey();
-                BigDecimal amount = entry2.getValue();
-                cost = cost.add(fraction.multiply(BigFraction.valueOf(amount.multiply(Objects.requireNonNullElse(objectiveFunction.getVariableValues().get(variable), BigDecimal.ZERO)))));
+                BigFraction amount = entry2.getValue();
+                cost = cost.add(fraction.multiply(amount.multiply(Objects.requireNonNullElse(objectiveFunction.getVariableValues().get(variable), BigFraction.ZERO))));
             }
 
             expressionData.add(new ExpressionData(expression, integerValue, cost));
