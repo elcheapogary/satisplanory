@@ -246,6 +246,17 @@ public class OverviewTab
             col.cellValueFactoryProperty().set(param -> Bindings.createObjectBinding(() -> param.getValue().numberOfMachines.get(), param.getValue().numberOfMachines));
         }
 
+        tableView.setSortPolicy(param -> {
+            Comparator<MachinesRow> comparator = Comparators.sortLast(resourceLine -> resourceLine.machineName.equals("Totals"));
+
+            if (param.getComparator() != null){
+                comparator = comparator.thenComparing(param.getComparator());
+            }
+
+            FXCollections.sort(param.getItems(), comparator);
+            return true;
+        });
+
         TitledPane tp = new TitledPane();
         tp.setText("Machines");
         tp.setContent(vbox);
