@@ -132,14 +132,12 @@ class InputItemsPane
                         .ifPresent(item -> {
                             ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())));
                             inputItems.add(inputItem);
-                            addRow(table, inputItem, inputItems, allItems);
                         });
             }
             gameData.getItemByName("Water")
                     .ifPresent(item -> {
                         ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, BigDecimal.valueOf(999999999999L));
                         inputItems.add(inputItem);
-                        addRow(table, inputItem, inputItems, allItems);
                     });
         });
 
