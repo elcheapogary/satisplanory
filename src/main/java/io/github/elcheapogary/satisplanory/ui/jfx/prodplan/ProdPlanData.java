@@ -17,10 +17,8 @@ import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPl
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -69,7 +67,7 @@ class ProdPlanData
         });
     }
 
-    public Set<Recipe> getEnabledRecipes()
+    public ObservableSet<Recipe> getEnabledRecipes()
     {
         return enabledRecipes;
     }
@@ -91,8 +89,8 @@ class ProdPlanData
 
     public static class InputItem
     {
-        private Item item;
         private final ObjectProperty<BigDecimal> amount = new SimpleObjectProperty<>();
+        private Item item;
 
         public InputItem(Item item, BigDecimal amount)
         {

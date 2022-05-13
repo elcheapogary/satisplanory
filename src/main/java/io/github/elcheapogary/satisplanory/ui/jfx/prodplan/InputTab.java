@@ -35,13 +35,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
+import javafx.collections.SetChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -259,7 +260,7 @@ class InputTab
         return titledPane;
     }
 
-    private static TitledPane createRecipeSelectionList(String title, Predicate<Recipe> predicate, Collection<? extends Recipe> recipes, Set<Recipe> enabledRecipes, Function<Recipe, ObservableValue<Boolean>> searchFunction)
+    private static TitledPane createRecipeSelectionList(String title, Predicate<Recipe> predicate, Collection<? extends Recipe> recipes, ObservableSet<Recipe> enabledRecipes, Function<Recipe, ObservableValue<Boolean>> searchFunction)
     {
         TitledPane t = new TitledPane();
         t.setText(title);
@@ -318,6 +319,13 @@ class InputTab
                 if (enabledRecipes.contains(recipe)){
                     cb.setSelected(true);
                 }
+                enabledRecipes.addListener((SetChangeListener<Recipe>) change -> {
+                    if (change.wasRemoved() && change.getElementRemoved() == recipe){
+                        cb.setSelected(false);
+                    }else if (change.wasAdded() && change.getElementAdded() == recipe){
+                        cb.setSelected(true);
+                    }
+                });
                 vbox.getChildren().add(cb);
                 checkboxes.add(cb);
                 cb.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -333,7 +341,7 @@ class InputTab
         return t;
     }
 
-    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, Set<Recipe> enabledRecipes, ObservableList<Item> allItems)
+    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, ObservableSet<Recipe> enabledRecipes, ObservableList<Item> allItems)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setCollapsible(false);
