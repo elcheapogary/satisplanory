@@ -21,7 +21,8 @@ on Epic, it should be `SatisfactoryEarlyAccess` or `SatisfactoryExperimental`.
 
 ## Discord
 
-Join our Discord at https://discord.gg/NncUggkwQB to be notified of new version, provide feedback, or to ask for help.
+Join our Discord at https://discord.gg/NncUggkwQB to be notified of new version, provide feedback, request features,
+or to ask for help.
 
 ## Alternatives
 

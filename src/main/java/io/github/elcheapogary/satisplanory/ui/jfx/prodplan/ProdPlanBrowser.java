@@ -1,0 +1,437 @@
+/*
+ * Copyright (c) 2022 elcheapogary
+ *
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ */
+
+package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
+
+import io.github.elcheapogary.satisplanory.model.GameData;
+import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
+import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
+import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import javafx.beans.binding.Bindings;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.cell.TextFieldListCell;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
+import javafx.util.StringConverter;
+import org.controlsfx.control.Notifications;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+public class ProdPlanBrowser
+{
+    private ProdPlanBrowser()
+    {
+    }
+
+    public static Tab create(AppContext appContext, GameData gameData)
+    {
+        Tab tab = new Tab("Production Plans");
+        tab.setClosable(false);
+
+        tab.setContent(createBody(appContext, gameData));
+
+        return tab;
+    }
+
+    private static Region createBody(AppContext appContext, GameData gameData)
+    {
+        HBox hbox = new HBox();
+        hbox.setFillHeight(true);
+
+        TabPane tabPane = new TabPane();
+
+        Node list = createList(appContext, gameData, tabPane);
+        HBox.setHgrow(list, Priority.NEVER);
+        hbox.getChildren().add(list);
+
+        HBox.setHgrow(tabPane, Priority.ALWAYS);
+        hbox.getChildren().add(tabPane);
+
+        return hbox;
+    }
+
+    private static Node createList(AppContext appContext, GameData gameData, TabPane tabPane)
+    {
+        ObservableMap<PersistentProductionPlan, Tab> tabMap = FXCollections.observableMap(new HashMap<>());
+        VBox vbox = new VBox(10);
+        vbox.setStyle("-fx-border-width: 0px 1px 0px 0px; -fx-border-color: -fx-box-border;");
+        vbox.setPadding(new Insets(10));
+
+        vbox.setFillWidth(true);
+
+        HBox buttons = new HBox(10);
+        vbox.getChildren().add(buttons);
+
+        Button newPlanButton = new Button("Create new");
+        HBox.setHgrow(newPlanButton, Priority.NEVER);
+        buttons.getChildren().add(newPlanButton);
+
+        {
+            Region grower = new Region();
+            grower.setPrefHeight(0);
+            grower.setPrefWidth(0);
+            HBox.setHgrow(grower, Priority.ALWAYS);
+            buttons.getChildren().add(grower);
+        }
+
+        Button deleteButton = new Button("Delete");
+        HBox.setHgrow(deleteButton, Priority.NEVER);
+        buttons.getChildren().add(deleteButton);
+
+        ListView<PersistentProductionPlan> list = new ListView<>(appContext.getPersistentData().getProductionPlans());
+        VBox.setVgrow(list, Priority.ALWAYS);
+        vbox.getChildren().add(list);
+
+        list.setPrefWidth(250);
+
+        newPlanButton.onActionProperty().set(event -> {
+            PersistentProductionPlan persistentProductionPlan = new PersistentProductionPlan();
+            for (Recipe r : gameData.getRecipes()){
+                persistentProductionPlan.getInput().getRecipes().getRecipeNames().add(r.getName());
+            }
+            persistentProductionPlan.nameProperty().addListener((observable, oldValue, newValue) -> list.refresh());
+            appContext.getPersistentData().getProductionPlans().add(persistentProductionPlan);
+            Tab tab = ProdPlanTab.create(appContext, gameData, persistentProductionPlan);
+            tab.onClosedProperty().set(e -> tabMap.remove(persistentProductionPlan));
+            tabMap.put(persistentProductionPlan, tab);
+            list.getSelectionModel().select(persistentProductionPlan);
+            tabPane.getTabs().add(tab);
+            tabPane.getSelectionModel().select(tab);
+        });
+
+        list.onMouseClickedProperty().set(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2){
+                PersistentProductionPlan plan = list.getSelectionModel().getSelectedItem();
+
+                if (plan != null){
+                    Tab tab = tabMap.get(plan);
+                    if (tab == null){
+                        tab = ProdPlanTab.create(appContext, gameData, plan);
+                        tab.onClosedProperty().set(e -> tabMap.remove(plan));
+                        tabMap.put(plan, tab);
+                    }
+                    if (!tabPane.getTabs().contains(tab)){
+                        tabPane.getTabs().add(tab);
+                    }
+                    tabPane.getSelectionModel().select(tab);
+                }
+            }
+        });
+
+        for (PersistentProductionPlan p : appContext.getPersistentData().getProductionPlans()){
+            p.nameProperty().addListener((observable, oldValue, newValue) -> list.refresh());
+        }
+
+        list.setCellFactory(param -> new TextFieldListCell<>(new StringConverter<>()
+        {
+            @Override
+            public PersistentProductionPlan fromString(String string)
+            {
+                return null;
+            }
+
+            @Override
+            public String toString(PersistentProductionPlan object)
+            {
+                return object.getName();
+            }
+        }));
+
+        deleteButton.disableProperty().bind(Bindings.createBooleanBinding(() -> {
+            PersistentProductionPlan p = list.getSelectionModel().selectedItemProperty().get();
+            if (p == null){
+                return true;
+            }
+            return tabMap.containsKey(p);
+        }, list.getSelectionModel().selectedItemProperty(), tabMap));
+
+        deleteButton.onActionProperty().set(event -> {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            for (String styleSheet : Style.getStyleSheets(appContext)){
+                alert.getDialogPane().getStylesheets().add(styleSheet);
+            }
+            alert.setTitle("Confirm delete");
+            alert.setContentText("Are you sure you want to delete this production plan?");
+            alert.getButtonTypes().clear();
+            alert.getButtonTypes().add(ButtonType.YES);
+            alert.getButtonTypes().add(ButtonType.NO);
+
+            if (alert.showAndWait().orElse(null) == ButtonType.YES){
+                list.getItems().remove(list.getSelectionModel().getSelectedItem());
+            }
+        });
+
+        HBox importExportButtons = new HBox(10);
+        vbox.getChildren().add(importExportButtons);
+
+        MenuButton importButton = new MenuButton("Import");
+        importButton.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(importButton, Priority.ALWAYS);
+        importExportButtons.getChildren().add(importButton);
+
+        MenuButton exportButton = new MenuButton("Export");
+        exportButton.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(exportButton, Priority.ALWAYS);
+        importExportButtons.getChildren().add(exportButton);
+
+        exportButton.disableProperty().bind(Bindings.createBooleanBinding(() -> list.getSelectionModel().selectedItemProperty().get() == null, list.getSelectionModel().selectedItemProperty()));
+
+        MenuItem importFromLinkMenuItem = new MenuItem("From link");
+        importButton.getItems().add(importFromLinkMenuItem);
+
+        importFromLinkMenuItem.onActionProperty().set(event -> {
+            PersistentProductionPlan plan = importFromLink(appContext);
+            if (plan != null){
+                appContext.getPersistentData().getProductionPlans().add(plan);
+                Tab tab = ProdPlanTab.create(appContext, gameData, plan);
+                tab.onClosedProperty().set(e -> tabMap.remove(plan));
+                tabMap.put(plan, tab);
+                tabPane.getTabs().add(tab);
+                tabPane.getSelectionModel().select(tab);
+            }
+        });
+
+        MenuItem importFromFileMenuItem = new MenuItem("From file");
+        importButton.getItems().add(importFromFileMenuItem);
+
+        importFromFileMenuItem.onActionProperty().set(event -> {
+            PersistentProductionPlan plan = importPlanFromFile(appContext, importButton.getScene().getWindow());
+            if (plan != null){
+                appContext.getPersistentData().getProductionPlans().add(plan);
+                Tab tab = ProdPlanTab.create(appContext, gameData, plan);
+                tab.onClosedProperty().set(e -> tabMap.remove(plan));
+                tabMap.put(plan, tab);
+                tabPane.getTabs().add(tab);
+                tabPane.getSelectionModel().select(tab);
+            }
+        });
+
+        MenuItem exportToLinkMenuItem = new MenuItem("To link");
+        exportButton.getItems().add(exportToLinkMenuItem);
+
+        exportToLinkMenuItem.onActionProperty().set(event -> {
+            exportToLink(appContext, list.getSelectionModel().getSelectedItem());
+        });
+
+        MenuItem exportToFileMenuItem = new MenuItem("To file");
+        exportButton.getItems().add(exportToFileMenuItem);
+
+        exportToFileMenuItem.onActionProperty().set(event -> {
+            exportToFile(exportButton.getScene().getWindow(), appContext, list.getSelectionModel().getSelectedItem());
+        });
+
+        return vbox;
+    }
+
+    private static PersistentProductionPlan importFromLink(AppContext appContext)
+    {
+        TextInputDialog dialog = new TextInputDialog();
+
+        dialog.setHeaderText("");
+        dialog.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+
+        dialog.setTitle("Input URL");
+        dialog.setHeaderText("Please enter the link/URL below");
+        dialog.setContentText("URL:");
+
+        String url = dialog.showAndWait().orElse(null);
+
+        if (url != null){
+            try {
+                return new TaskProgressDialog(appContext)
+                        .setTitle("Importing link")
+                        .setContentText("Downloading and importing link")
+                        .setCancellable(true)
+                        .runTask(taskContext -> {
+                            HttpRequest request = HttpRequest.newBuilder(new URI(url))
+                                    .GET()
+                                    .build();
+
+                            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+                            if (response.statusCode() != 200){
+                                throw new IOException("Response code: " + response.statusCode());
+                            }
+
+                            JSONObject json = new JSONObject(response.body());
+
+                            return new PersistentProductionPlan(json);
+                        }).get();
+            }catch (Exception e){
+                new ExceptionDialog(appContext)
+                        .setTitle("Error importing from link")
+                        .setContextMessage("An error occurred while importing from link")
+                        .setException(e)
+                        .showAndWait();
+            }
+        }
+
+        return null;
+    }
+
+    private static void exportToFile(Window parentWindow, AppContext appContext, PersistentProductionPlan plan)
+    {
+        FileChooser fc = new FileChooser();
+        if (appContext.getPersistentData().getPreferences().getLastImportExportDirectory() != null && appContext.getPersistentData().getPreferences().getLastImportExportDirectory().isDirectory()){
+            fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
+        }
+        fc.setTitle("Select output file");
+        fc.setInitialFileName(plan.getName() + ".json");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON files", "*.json"));
+        File f = fc.showSaveDialog(parentWindow);
+        if (f != null){
+            appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
+            try {
+                try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
+                    plan.toJson().write(w, 4, 0);
+                }
+                Notifications.create()
+                        .position(Pos.TOP_CENTER)
+                        .title("Production plan exported")
+                        .text("The production plan was exported successfully")
+                        .show();
+            }catch (IOException e){
+                new ExceptionDialog(appContext)
+                        .setTitle("Error exporting plan")
+                        .setContextMessage("An error occurred while exporting the plan to file")
+                        .setException(e)
+                        .showAndWait();
+            }
+        }
+    }
+
+    private static void exportToLink(AppContext appContext, PersistentProductionPlan plan)
+    {
+        try {
+            String url = new TaskProgressDialog(appContext)
+                    .setTitle("Exporting to link")
+                    .setContentText("Busy uploading the production plan to the Internet")
+                    .setCancellable(true)
+                    .runTask(taskContext -> {
+                        StringWriter sw = new StringWriter();
+                        plan.toJson().write(sw, 4, 0);
+
+                        JSONObject json = new JSONObject();
+                        JSONArray jsonSectionsArray = new JSONArray();
+                        json.put("sections", jsonSectionsArray);
+                        JSONObject jsonSection = new JSONObject();
+                        jsonSectionsArray.put(jsonSection);
+                        jsonSection.put("contents", sw.toString());
+
+                        HttpRequest request = HttpRequest.newBuilder(new URI("https://api.paste.ee/v1/pastes"))
+                                .header("Content-Type", "application/json")
+                                .header("X-Auth-Token", "uwr65sq3CxBFuAerU5i5IAd0xw0RyPd98CwpodBSb")
+                                .POST(HttpRequest.BodyPublishers.ofString(json.toString(), StandardCharsets.UTF_8))
+                                .build();
+
+                        HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+                        if (response.statusCode() != 200 && response.statusCode() != 201){
+                            throw new IOException("Returned status code: " + response.statusCode());
+                        }
+
+                        String s = response.body();
+
+                        json = new JSONObject(s);
+
+                        if (!json.has("id")){
+                            throw new IOException("Response does not have id: " + s);
+                        }
+
+                        return "https://paste.ee/r/" + json.getString("id") + "/0";
+                    })
+                    .get();
+            ClipboardContent content = new ClipboardContent();
+            content.putString(url);
+            Clipboard.getSystemClipboard().setContent(content);
+            Notifications.create()
+                    .position(Pos.TOP_CENTER)
+                    .title("Link copied to clipboard")
+                    .text("The link has been copied to your clipboard")
+                    .show();
+        }catch (Exception e){
+            new ExceptionDialog(appContext)
+                    .setTitle("Error exporting to link")
+                    .setContextMessage("Error exporting to link")
+                    .setException(e)
+                    .showAndWait();
+        }
+    }
+
+    private static PersistentProductionPlan importPlanFromFile(AppContext appContext, Window parentWindow)
+    {
+        FileChooser fc = new FileChooser();
+        if (appContext.getPersistentData().getPreferences().getLastImportExportDirectory() != null && appContext.getPersistentData().getPreferences().getLastImportExportDirectory().isDirectory()){
+            fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
+        }
+        fc.setTitle("Select file to import");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON files", "*.json"));
+        File f = fc.showOpenDialog(parentWindow);
+        if (f != null){
+            appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
+
+            try {
+                try (Reader r = new InputStreamReader(new BufferedInputStream(new FileInputStream(f)), StandardCharsets.UTF_8)) {
+                    return new PersistentProductionPlan(new JSONObject(new JSONTokener(r)));
+                }
+            }catch (IOException | JSONException e){
+                new ExceptionDialog(appContext)
+                        .setTitle("Error importing production plan")
+                        .setContextMessage("An error occurred while importing the production plan")
+                        .setException(e)
+                        .showAndWait();
+            }
+        }
+
+        return null;
+    }
+}

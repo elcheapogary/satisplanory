@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
@@ -27,7 +28,7 @@ class SettingsPane
     {
     }
 
-    public static TitledPane createSettingsPane(ProdPlanData.Settings settings)
+    public static TitledPane createSettingsPane(PersistentProductionPlan.Input.Settings settings)
     {
         GridPane gp = new GridPane();
         gp.setPadding(new Insets(10));
@@ -52,8 +53,8 @@ class SettingsPane
             ComboBox<OptimizationTarget> comboBox = new ComboBox<>();
             comboBox.setEditable(false);
             comboBox.getItems().addAll(OptimizationTarget.values());
-            comboBox.getSelectionModel().select(OptimizationTarget.MAX_OUTPUT_ITEMS);
-            settings.optimizationTargetProperty().bind(comboBox.getSelectionModel().selectedItemProperty());
+            comboBox.getSelectionModel().select(settings.getOptimizationTarget());
+            comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> settings.setOptimizationTarget(newValue));
             GridPane.setMargin(comboBox, new Insets(0, 0, 0, 10));
             gp.add(comboBox, 1, row);
             row++;

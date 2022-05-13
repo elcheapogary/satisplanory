@@ -24,13 +24,17 @@ import java.io.File;
 import java.io.IOException;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import org.controlsfx.control.Notifications;
 
 public class Main
         extends Application
 {
+    private AppContext appContext = new AppContext();
+
     public static void main(String[] args)
     {
         launch(args);
@@ -46,7 +50,6 @@ public class Main
             // do nothing for now
         }
         Style.init();
-        final AppContext appContext = new AppContext();
         appContext.setPersistentData(persistentData);
         stage.getIcons().clear();
         stage.getIcons().add(new Image(MainPane.class.getResource("icon/sp-16.png").toString()));
@@ -93,12 +96,16 @@ public class Main
                         if (satisfactoryInstallation != null){
                             var gameData = SatisfactoryDataLoader.loadSatisfactoryData(satisfactoryInstallation).build();
                             appContext.getPersistentData().setSatisfactoryPath(satisfactoryInstallation.getAbsolutePath());
-                            appContext.queuePersistData();
                             Platform.runLater(() -> appContext.setGameData(gameData));
                         }
                         return null;
                     })
                     .get();
+            Notifications.create()
+                    .position(Pos.TOP_CENTER)
+                    .title("Remember to check for updates")
+                    .text("See Help -> About for links")
+                    .show();
         }catch (Exception e){
             new ExceptionDialog(appContext)
                     .setTitle("Error loading Satisfactory data")
@@ -106,5 +113,12 @@ public class Main
                     .setException(e)
                     .showAndWait();
         }
+    }
+
+    @Override
+    public void stop()
+            throws Exception
+    {
+        SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
     }
 }

@@ -32,7 +32,7 @@ public class ProductionPlan
     private final Map<Item, BigFraction> inputItemAmounts;
     private final Map<Item, BigFraction> outputItemAmounts;
 
-    ProductionPlan(Map<Recipe, BigFraction> recipeAmounts, Map<Item, BigFraction> inputItemAmounts, Map<Item, BigFraction> outputItemAmounts)
+    public ProductionPlan(Map<Recipe, BigFraction> recipeAmounts, Map<Item, BigFraction> inputItemAmounts, Map<Item, BigFraction> outputItemAmounts)
     {
         this.recipeAmounts = recipeAmounts;
         this.inputItemAmounts = inputItemAmounts;

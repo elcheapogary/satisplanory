@@ -10,21 +10,31 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class PersistentData
 {
     private final StringProperty satisfactoryPath = new SimpleStringProperty();
     private final Preferences preferences;
+    private final ObservableList<PersistentProductionPlan> productionPlans;
 
     public PersistentData()
     {
         this.preferences = new Preferences();
+        this.productionPlans = FXCollections.observableList(new ArrayList<>());
     }
 
     public PersistentData(JSONObject json)
@@ -33,11 +43,23 @@ public class PersistentData
         this.preferences = Optional.ofNullable(json.optJSONObject("preferences"))
                 .map(Preferences::new)
                 .orElseGet(Preferences::new);
+        this.productionPlans = FXCollections.observableList(new ArrayList<>());
+        JSONArray jsonProductionPlans = json.optJSONArray("productionPlans");
+        if (jsonProductionPlans != null){
+            for (int i = 0; i < jsonProductionPlans.length(); i++){
+                productionPlans.add(new PersistentProductionPlan(jsonProductionPlans.getJSONObject(i)));
+            }
+        }
     }
 
     public Preferences getPreferences()
     {
         return preferences;
+    }
+
+    public ObservableList<PersistentProductionPlan> getProductionPlans()
+    {
+        return productionPlans;
     }
 
     public String getSatisfactoryPath()
@@ -62,23 +84,44 @@ public class PersistentData
         json.put("satisfactoryPath", satisfactoryPath.get());
         json.put("preferences", preferences.toJson());
 
+        json.put("productionPlans", new JSONArray(
+                productionPlans.stream()
+                        .map(PersistentProductionPlan::toJson)
+                        .collect(Collectors.toList())
+        ));
+
         return json;
     }
 
     public static class Preferences
     {
         private final UIPreferences uiPreferences;
+        private final ObjectProperty<File> lastImportExportDirectory = new SimpleObjectProperty<>();
 
         public Preferences()
         {
             this.uiPreferences = new UIPreferences();
         }
 
-        public Preferences(JSONObject jsonObject)
+        public Preferences(JSONObject json)
         {
-            this.uiPreferences = Optional.ofNullable(jsonObject.optJSONObject("ui"))
+            this.uiPreferences = Optional.ofNullable(json.optJSONObject("ui"))
                     .map(UIPreferences::new)
                     .orElseGet(UIPreferences::new);
+
+            if (json.has("lastImportExportDirectory")){
+                lastImportExportDirectory.set(new File(json.getString("lastImportExportDirectory")));
+            }
+        }
+
+        public File getLastImportExportDirectory()
+        {
+            return lastImportExportDirectory.get();
+        }
+
+        public void setLastImportExportDirectory(File lastImportExportDirectory)
+        {
+            this.lastImportExportDirectory.set(lastImportExportDirectory);
         }
 
         public UIPreferences getUiPreferences()
@@ -86,10 +129,18 @@ public class PersistentData
             return uiPreferences;
         }
 
+        public ObjectProperty<File> lastImportExportDirectoryProperty()
+        {
+            return lastImportExportDirectory;
+        }
+
         JSONObject toJson()
         {
             JSONObject json = new JSONObject();
             json.put("ui", uiPreferences.toJson());
+            if (lastImportExportDirectory.getValue() != null){
+                json.put("lastImportExportDirectory", lastImportExportDirectory.getValue().getAbsolutePath());
+            }
             return json;
         }
 

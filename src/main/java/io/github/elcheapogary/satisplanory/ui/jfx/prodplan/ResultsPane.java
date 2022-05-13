@@ -16,10 +16,14 @@ import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import io.github.elcheapogary.satisplanory.util.Comparators;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +55,12 @@ class ResultsPane
     {
     }
 
-    public static Node createResultsTabContent(MultiPlan results)
+    public static void setUpTabs(AppContext appContext, ProdPlanData prodPlanData, MultiPlan results, TabPane tabPane, Tab errorTab, Tab overviewTab, Tab graphTab, Tab tableTab)
     {
         if (results.isUnmodifiedPlanFeasible()){
-            return createProductionPlanTabPane(results.getUnmodifiedPlan());
+            tabPane.getTabs().remove(errorTab);
+            updatePersistentPlan(prodPlanData.getPersistentProductionPlan(), results.getUnmodifiedPlan());
+            setUpPlanTabs(results.getUnmodifiedPlan(), tabPane, overviewTab, graphTab, tableTab);
         }else{
             BorderPane bp = new BorderPane();
             bp.setPadding(new Insets(10));
@@ -74,19 +80,33 @@ class ResultsPane
             if (results.canCreatePlanByAddingResources()){
                 vbox.getChildren().add(createWordWrapLabel("A production plan is possible with the configured recipes, but requires the addition of the following input items:"));
                 vbox.getChildren().add(createMissingResourcesTable(results));
-                Button button = new Button("Show this plan");
+                Button button = new Button("Use this plan");
                 vbox.getChildren().add(button);
 
-                button.onActionProperty().set(event -> bp.setCenter(createTitledProductionPane("Production plan with missing input items", results.getPlanWithAllItems())));
+                button.onActionProperty().set(event -> {
+                    for (var entry : results.getMissingResources().entrySet()){
+                        if (entry.getValue().signum() > 0){
+                            prodPlanData.getInputItems().add(new ProdPlanData.InputItem(entry.getKey(), entry.getValue()));
+                        }
+                    }
+                    updatePersistentPlan(prodPlanData.getPersistentProductionPlan(), results.getPlanWithAllItems());
+                    setUpPlanTabs(results.getPlanWithAllItems(), tabPane, overviewTab, graphTab, tableTab);
+                    tabPane.getTabs().remove(errorTab);
+                });
             }
 
             if (results.canCreatePlanByAddingRecipes()){
                 vbox.getChildren().add(createWordWrapLabel("A production plan is possible with the configured input items, but requires the following recipes:"));
                 vbox.getChildren().add(createMissingRecipesList(results));
-                Button button = new Button("Show this plan");
+                Button button = new Button("Use this plan");
                 vbox.getChildren().add(button);
 
-                button.onActionProperty().set(event -> bp.setCenter(createTitledProductionPane("Production plan with missing recipes", results.getPlanWithAllRecipes())));
+                button.onActionProperty().set(event -> {
+                    prodPlanData.getEnabledRecipes().addAll(results.getMissingRecipes());
+                    updatePersistentPlan(prodPlanData.getPersistentProductionPlan(), results.getPlanWithAllRecipes());
+                    setUpPlanTabs(results.getPlanWithAllRecipes(), tabPane, overviewTab, graphTab, tableTab);
+                    tabPane.getTabs().remove(errorTab);
+                });
             }
 
             if (results.canCreatePlanByAddingResourcesAndRecipes()){
@@ -99,13 +119,30 @@ class ResultsPane
                     HBox.setHgrow(n, Priority.ALWAYS);
                     hbox.getChildren().add(n);
                 }
-                Button button = new Button("Show this plan");
+                Button button = new Button("Use this plan");
                 vbox.getChildren().add(button);
 
-                button.onActionProperty().set(event -> bp.setCenter(createTitledProductionPane("Production plan with missing recipes and input items", results.getPlanWithAllItemsAndRecipes())));
+                button.onActionProperty().set(event -> {
+                    for (var entry : results.getMissingResources().entrySet()){
+                        if (entry.getValue().signum() > 0){
+                            prodPlanData.getInputItems().add(new ProdPlanData.InputItem(entry.getKey(), entry.getValue()));
+                        }
+                    }
+                    prodPlanData.getEnabledRecipes().addAll(results.getMissingRecipes());
+                    updatePersistentPlan(prodPlanData.getPersistentProductionPlan(), results.getPlanWithAllItemsAndRecipes());
+                    setUpPlanTabs(results.getPlanWithAllItemsAndRecipes(), tabPane, overviewTab, graphTab, tableTab);
+                    tabPane.getTabs().remove(errorTab);
+                });
             }
 
-            return bp;
+            errorTab.setContent(bp);
+            tabPane.getTabs().remove(overviewTab);
+            tabPane.getTabs().remove(graphTab);
+            tabPane.getTabs().remove(tableTab);
+            if (!tabPane.getTabs().contains(errorTab)){
+                tabPane.getTabs().add(errorTab);
+            }
+            tabPane.getSelectionModel().select(errorTab);
         }
     }
 
@@ -181,39 +218,55 @@ class ResultsPane
         return tableView;
     }
 
-    private static TitledPane createTitledProductionPane(String title, ProductionPlan plan)
+    private static void updatePersistentPlan(PersistentProductionPlan persistentProductionPlan, ProductionPlan plan)
     {
-        TitledPane titledPane = new TitledPane();
-        titledPane.setText(title);
-        titledPane.setContent(createProductionPlanTabPane(plan));
-        titledPane.setMaxHeight(Double.MAX_VALUE);
-        return titledPane;
+        PersistentProductionPlan.Plan persistentPlan = new PersistentProductionPlan.Plan();
+
+        for (Item item : plan.getInputItems()){
+            persistentProductionPlan.getInput().getInputItems().compute(item.getName(), (s, amount) ->
+                    Objects.requireNonNullElse(amount, BigDecimal.ZERO).max(plan.getInputItemsPerMinute(item).toBigDecimal(6, RoundingMode.UP)));
+            persistentPlan.getInputItems().put(item.getName(), plan.getInputItemsPerMinute(item));
+        }
+
+        for (Item item : plan.getOutputItems()){
+            persistentPlan.getOutputItems().put(item.getName(), plan.getOutputItemsPerMinute(item));
+        }
+
+        for (Recipe recipe : plan.getRecipes()){
+            persistentPlan.getRecipes().put(recipe.getName(), plan.getNumberOfMachinesWithRecipe(recipe));
+        }
+
+        persistentProductionPlan.setPlan(persistentPlan);
     }
 
-    private static Node createProductionPlanTabPane(ProductionPlan plan)
+    public static void setUpPlanTabs(ProductionPlan plan, TabPane tabPane, Tab overviewTab, Tab graphTab, Tab tableTab)
     {
-        TabPane tabPane = new TabPane();
+        overviewTab.setContent(OverviewTab.create(plan));
 
-        {
-            Tab graphTab = new Tab("Graph");
-            graphTab.setClosable(false);
+        if (!tabPane.getTabs().contains(overviewTab)){
+            tabPane.getTabs().add(overviewTab);
+        }
+
+        graphTab.setContent(GraphPane.createGraphPane(plan));
+
+        if (!tabPane.getTabs().contains(graphTab)){
             tabPane.getTabs().add(graphTab);
-            graphTab.setContent(GraphPane.createGraphPane(plan));
         }
 
-        {
-            Tab tableTab = new Tab("Table");
-            tableTab.setClosable(false);
+        tabPane.getSelectionModel().select(graphTab);
+
+        tableTab.setContent(createProductionPlanTableView(plan));
+
+        if (!tabPane.getTabs().contains(tableTab)){
             tabPane.getTabs().add(tableTab);
-            tableTab.setContent(createProductionPlanTableView(plan));
         }
-
-        return tabPane;
     }
 
     private static Node createProductionPlanTableView(ProductionPlan plan)
     {
         TableView<Row> tableView = new TableView<>();
+
+        tableView.setPrefWidth(0);
 
         Set<Item> items = Item.createSet();
 
@@ -292,6 +345,18 @@ class ResultsPane
 
             tableView.getItems().add(new Row("Output Items", null, null, inputItems));
         }
+
+        tableView.setSortPolicy(param -> {
+            Comparator<Row> comparator = Comparators.<Row>sortFirst(row -> row.name.equals("Input Items"))
+                    .thenComparing(Comparators.sortLast(row -> row.name.equals("Output Items")));
+
+            if (param.getComparator() != null){
+                comparator = comparator.thenComparing(param.getComparator());
+            }
+
+            FXCollections.sort(param.getItems(), comparator);
+            return true;
+        });
 
         return tableView;
     }

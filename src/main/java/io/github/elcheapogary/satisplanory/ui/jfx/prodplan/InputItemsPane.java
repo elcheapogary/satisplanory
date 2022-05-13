@@ -19,6 +19,8 @@ import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -61,6 +63,7 @@ class InputItemsPane
         TextField tf = new TextField();
         tf.setMaxWidth(80);
         BigDecimalTextField.setUp(tf, inputItem.getAmount(), inputItem::setAmount);
+        inputItem.amountProperty().addListener((observable, oldValue, newValue) -> tf.setText(Objects.requireNonNullElse(newValue, BigDecimal.ZERO).toString()));
         HBox.setHgrow(tf, Priority.NEVER);
         hBox.getChildren().add(tf);
 
@@ -76,9 +79,7 @@ class InputItemsPane
         });
 
         comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            System.out.println("New value: " + newValue);
             if (newValue != null && newValue.getName().equals("Water")){
-                System.out.println("set set set");
                 tf.textProperty().set("999999999999");
                 inputItem.setAmount(BigDecimal.valueOf(999999999999L));
             }
@@ -91,7 +92,7 @@ class InputItemsPane
         });
     }
 
-    static TitledPane createInputItemsPane(List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)
+    static TitledPane createInputItemsPane(ObservableList<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setText("Input Items");
@@ -121,7 +122,6 @@ class InputItemsPane
         addRowButton.onActionProperty().setValue(event -> {
             ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(allItems.get(0), BigDecimal.ZERO);
             inputItems.add(inputItem);
-            addRow(table, inputItem, inputItems, allItems);
         });
 
         Button addMapLimitsButton = new Button("Add All Raw Resources");
@@ -157,6 +157,16 @@ class InputItemsPane
         for (ProdPlanData.InputItem inputItem : inputItems){
             addRow(table, inputItem, inputItems, allItems);
         }
+
+        inputItems.addListener((ListChangeListener<ProdPlanData.InputItem>) c -> {
+            while (c.next()){
+                if (c.wasAdded()){
+                    for (ProdPlanData.InputItem inputItem : c.getAddedSubList()){
+                        addRow(table, inputItem, inputItems, allItems);
+                    }
+                }
+            }
+        });
 
         return titledPane;
     }

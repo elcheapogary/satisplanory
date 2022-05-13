@@ -13,7 +13,8 @@ package io.github.elcheapogary.satisplanory.ui.jfx;
 import io.github.elcheapogary.satisplanory.Satisplanory;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
-import io.github.elcheapogary.satisplanory.ui.jfx.prodplan.ProdPlanTab;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
+import io.github.elcheapogary.satisplanory.ui.jfx.prodplan.ProdPlanBrowser;
 import java.io.IOException;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
@@ -21,6 +22,7 @@ import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.BorderPane;
@@ -33,9 +35,18 @@ public class MainPane
     {
     }
 
-    private static Menu createFileMenu(Application application, Stage stage)
+    private static Menu createFileMenu(Application application, Stage stage, AppContext appContext)
     {
         Menu fileMenu = new Menu("File");
+
+        MenuItem saveMenuItem = new MenuItem("Save");
+        fileMenu.getItems().add(saveMenuItem);
+
+        saveMenuItem.onActionProperty().set(event -> {
+            SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
+        });
+
+        fileMenu.getItems().add(new SeparatorMenuItem());
 
         MenuItem exitMenuItem = new MenuItem("Exit");
         fileMenu.getItems().add(exitMenuItem);
@@ -88,7 +99,7 @@ public class MainPane
     {
         MenuBar mainMenuBar = new MenuBar();
 
-        mainMenuBar.getMenus().add(createFileMenu(application, stage));
+        mainMenuBar.getMenus().add(createFileMenu(application, stage, appContext));
         mainMenuBar.getMenus().add(createOptionsMenu(appContext));
         mainMenuBar.getMenus().add(createHelpMenu(application, stage, appContext, mainTabPane));
 
@@ -104,9 +115,6 @@ public class MainPane
         darkModeMenuItem.setText("Dark mode");
         BooleanProperty darkModeProperty = appContext.getPersistentData().getPreferences().getUiPreferences().darkModeEnabledProperty();
         darkModeMenuItem.selectedProperty().bindBidirectional(darkModeProperty);
-        darkModeProperty.addListener((observable, oldValue, newValue) -> {
-            appContext.queuePersistData();
-        });
 
         return menu;
     }
@@ -122,7 +130,7 @@ public class MainPane
             if (gameData != null){
                 tabPane.getTabs().remove(homeTab);
                 tabPane.getTabs().add(CodexPane.createTab(gameData));
-                tabPane.getTabs().add(ProdPlanTab.create(appContext, gameData));
+                tabPane.getTabs().add(ProdPlanBrowser.create(appContext, gameData));
             }
         });
 

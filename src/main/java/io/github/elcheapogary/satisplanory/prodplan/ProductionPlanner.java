@@ -192,6 +192,7 @@ public class ProductionPlanner
         FractionExpression surplusExpression = FractionExpression.zero();
         FractionExpression balanceExpression = FractionExpression.zero();
         Map<Item, FractionExpression> itemSurplusExpressionMap = Item.createMap();
+        boolean hasMaximizedOutputItems;
 
         {
             Map<Item, BigDecimal> outputItemWeights = Item.createMap();
@@ -226,6 +227,8 @@ public class ProductionPlanner
                 }
             }
 
+            hasMaximizedOutputItems = !outputItemWeights.isEmpty();
+
             if (outputItemWeights.size() > 1){
                 if (strictMaximizeRatios){
                     FractionExpression balanceVariable = model.addFractionVariable();
@@ -257,13 +260,13 @@ public class ProductionPlanner
         }
 
         FractionExpression objectiveFunction = optimizationTarget.getObjectiveFunction(
+                hasMaximizedOutputItems,
                 maximizedOutputItemsExpression,
                 balanceExpression,
                 itemInputExpressionMap,
                 itemOutputVariableMap,
                 itemSurplusExpressionMap,
-                recipeVariableMap
-        );
+                recipeVariableMap);
 
         OptimizationResult result;
 
@@ -318,7 +321,7 @@ public class ProductionPlanner
         private final Map<Item, BigDecimal> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
         private boolean strictMaximizeRatios = false;
-        private OptimizationTarget optimizationTarget = OptimizationTarget.MAX_OUTPUT_ITEMS;
+        private OptimizationTarget optimizationTarget = OptimizationTarget.DEFAULT;
 
         public Builder()
         {
