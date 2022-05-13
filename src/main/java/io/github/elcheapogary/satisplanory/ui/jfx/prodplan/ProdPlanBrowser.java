@@ -88,6 +88,7 @@ public class ProdPlanBrowser
         hbox.setFillHeight(true);
 
         TabPane tabPane = new TabPane();
+        tabPane.setPrefWidth(0);
 
         Node list = createList(appContext, gameData, tabPane);
         HBox.setHgrow(list, Priority.NEVER);

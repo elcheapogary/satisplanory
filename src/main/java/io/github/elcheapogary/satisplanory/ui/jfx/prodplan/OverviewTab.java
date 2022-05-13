@@ -58,6 +58,7 @@ public class OverviewTab
         vBox.getChildren().add(accordion);
 
         accordion.getPanes().add(createResourcePane(plan));
+        accordion.setExpandedPane(accordion.getPanes().get(0));
         accordion.getPanes().add(createMachinesPane(plan));
 
         return vBox;
