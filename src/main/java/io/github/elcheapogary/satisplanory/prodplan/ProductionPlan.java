@@ -61,7 +61,7 @@ public class ProductionPlan
 
     public BigFraction getOutputItemsPerMinute(Item item)
     {
-        return Objects.requireNonNullElse(outputItemAmounts.get(item), BigFraction.ZERO);
+        return Objects.requireNonNullElse(outputItemAmounts.get(item), BigFraction.ZERO).simplify();
     }
 
     public Collection<? extends Recipe> getRecipes()

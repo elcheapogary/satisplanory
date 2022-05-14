@@ -202,7 +202,7 @@ public class ProductionPlanner
 
                 OutputRequirement outputRequirement = outputRequirements.get(item);
                 if (outputRequirement != null){
-                    min = outputRequirement.getItemsPerMinute();
+                    min = Objects.requireNonNullElse(outputRequirement.getItemsPerMinute(), min);
                     weight = outputRequirement.getMaximizeWeight();
                     if (weight != null && weight.signum() > 0){
                         outputItemWeights.put(item, weight);
@@ -349,7 +349,10 @@ public class ProductionPlanner
 
         public Builder addOutputItem(Item item, BigDecimal itemsPerMinute, BigDecimal weight)
         {
-            outputRequirements.put(item, new OutputRequirement(itemsPerMinute, weight));
+            outputRequirements.compute(item, (item1, existing) -> new OutputRequirement(
+                    Optional.ofNullable(existing).map(OutputRequirement::getItemsPerMinute).orElse(BigDecimal.ZERO).add(Objects.requireNonNullElse(itemsPerMinute, BigDecimal.ZERO)),
+                    Optional.ofNullable(existing).map(OutputRequirement::getMaximizeWeight).orElse(BigDecimal.ZERO).max(Objects.requireNonNullElse(weight, BigDecimal.ZERO))
+            ));
             return this;
         }
 
@@ -372,35 +375,17 @@ public class ProductionPlanner
 
         public Builder maximizeOutputItem(Item item, long weight)
         {
-            return addOutputItem(item, null, BigDecimal.valueOf(weight));
+            return maximizeOutputItem(item, BigDecimal.valueOf(weight));
         }
 
         public Builder maximizeOutputItem(Item item, BigDecimal weight)
         {
-            outputRequirements.compute(item, (item1, outputRequirement) -> {
-                Optional<OutputRequirement> o = Optional.ofNullable(outputRequirement);
-
-                return new OutputRequirement(
-                        o.map(OutputRequirement::getItemsPerMinute).orElse(null),
-                        o.map(OutputRequirement::getMaximizeWeight).orElse(BigDecimal.ZERO)
-                                .max(weight)
-                );
-            });
-            return this;
+            return addOutputItem(item, BigDecimal.ZERO, weight);
         }
 
         public Builder requireOutputItemsPerMinute(Item item, BigDecimal itemsPerMinute)
         {
-            outputRequirements.compute(item, (item1, outputRequirement) -> {
-                Optional<OutputRequirement> o = Optional.ofNullable(outputRequirement);
-
-                return new OutputRequirement(
-                        o.map(OutputRequirement::getItemsPerMinute).orElse(BigDecimal.ZERO)
-                                .add(itemsPerMinute),
-                        o.map(OutputRequirement::getMaximizeWeight).orElse(null)
-                );
-            });
-            return this;
+            return addOutputItem(item, itemsPerMinute, BigDecimal.ZERO);
         }
 
         public Builder requireOutputItemsPerMinute(Item item, long itemsPerMinute)
