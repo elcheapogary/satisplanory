@@ -12,7 +12,6 @@ package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
 import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -128,7 +127,7 @@ public class PersistentProductionPlan
             }
 
             if (json.has("maximizedOutputItems")){
-                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
+                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
             }
         }
 
