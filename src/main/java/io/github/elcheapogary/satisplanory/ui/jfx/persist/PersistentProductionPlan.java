@@ -12,6 +12,7 @@ package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
 import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -40,7 +41,11 @@ public class PersistentProductionPlan
     }
 
     public PersistentProductionPlan(JSONObject json)
+            throws UnsupportedVersionException
     {
+        if (!json.has("v") || !json.getString("v").equals("1.0")){
+            throw new UnsupportedVersionException();
+        }
         this.input = new Input(json.getJSONObject("input"));
         if (json.has("name")){
             this.name.set(json.getString("name"));

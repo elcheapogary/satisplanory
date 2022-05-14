@@ -16,6 +16,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -428,6 +429,17 @@ public class ProdPlanBrowser
                 new ExceptionDialog(appContext)
                         .setTitle("Error importing production plan")
                         .setContextMessage("An error occurred while importing the production plan")
+                        .setException(e)
+                        .showAndWait();
+            }catch (UnsupportedVersionException e){
+                new ExceptionDialog(appContext)
+                        .setTitle("Requires newer version of Satisplanory")
+                        .setContextMessage("Unsupported production plan format, please upgrade Satisplanory")
+                        .setDetailsMessage("The production plan you are trying to import was created with a newer version of Satisplanory.\n"
+                                + "\n"
+                                + "This version of Satisplanory does not support the newer file format.\n"
+                                + "\n"
+                                + "Please upgrade Satisplanory to allow importing this plan. See Help -> About for links.")
                         .setException(e)
                         .showAndWait();
             }

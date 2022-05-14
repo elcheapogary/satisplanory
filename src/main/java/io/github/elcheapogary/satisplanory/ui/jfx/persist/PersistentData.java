@@ -38,7 +38,11 @@ public class PersistentData
     }
 
     public PersistentData(JSONObject json)
+            throws UnsupportedVersionException
     {
+        if (json.has("v") && Double.parseDouble(json.getString("v")) > 1.2){
+            throw new UnsupportedVersionException();
+        }
         this.satisfactoryPath.set(json.optString("satisfactoryPath"));
         this.preferences = Optional.ofNullable(json.optJSONObject("preferences"))
                 .map(Preferences::new)
@@ -80,6 +84,8 @@ public class PersistentData
     JSONObject toJson()
     {
         JSONObject json = new JSONObject();
+
+        json.put("v", "1.2");
 
         json.put("satisfactoryPath", satisfactoryPath.get());
         json.put("preferences", preferences.toJson());
