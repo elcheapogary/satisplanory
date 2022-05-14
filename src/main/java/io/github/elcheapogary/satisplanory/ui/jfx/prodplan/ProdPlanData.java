@@ -90,11 +90,11 @@ class ProdPlanData
     public static class InputItem
     {
         private final ObjectProperty<BigDecimal> amount = new SimpleObjectProperty<>();
-        private Item item;
+        private final ObjectProperty<Item> item = new SimpleObjectProperty<>();
 
         public InputItem(Item item, BigDecimal amount)
         {
-            this.item = item;
+            this.item.set(item);
             this.amount.set(amount);
         }
 
@@ -115,12 +115,17 @@ class ProdPlanData
 
         public Item getItem()
         {
-            return item;
+            return item.get();
         }
 
         public void setItem(Item item)
         {
-            this.item = item;
+            this.item.set(item);
+        }
+
+        public ObjectProperty<Item> itemProperty()
+        {
+            return item;
         }
     }
 
