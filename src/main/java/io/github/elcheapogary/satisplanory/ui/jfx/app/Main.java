@@ -19,6 +19,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentData;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
+import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import java.io.File;
 import java.io.IOException;
@@ -43,14 +44,7 @@ public class Main
     @Override
     public void start(Stage stage)
     {
-        PersistentData persistentData = new PersistentData();
-        try {
-            persistentData = SatisplanoryPersistence.load();
-        }catch (IOException e){
-            // do nothing for now
-        }
         Style.init();
-        appContext.setPersistentData(persistentData);
         stage.getIcons().clear();
         stage.getIcons().add(new Image(MainPane.class.getResource("icon/sp-16.png").toString()));
         stage.getIcons().add(new Image(MainPane.class.getResource("icon/sp-32.png").toString()));
@@ -59,6 +53,30 @@ public class Main
         stage.getIcons().add(new Image(MainPane.class.getResource("icon/sp-256.png").toString()));
         stage.setMaximized(true);
         stage.setTitle(Satisplanory.getApplicationName());
+        appContext.setPersistentData(new PersistentData());
+        try {
+            appContext.setPersistentData(SatisplanoryPersistence.load());
+        }catch (IOException e){
+            new ExceptionDialog(appContext)
+                    .setTitle("Error loading Satisplanory data")
+                    .setContextMessage("An error occurred while attempting to load the Satisplanory data")
+                    .setDetailsMessage("Satisplanory was not able to load this file: " + SatisplanoryPersistence.getJsonFile().getAbsolutePath())
+                    .setException(e)
+                    .showAndWait();
+            Platform.exit();
+        }catch (UnsupportedVersionException e){
+            new ExceptionDialog(appContext)
+                    .setTitle("Data is from newer version of Satisplanory")
+                    .setContextMessage("Your Satisplanory data is from a newer version - please use that version")
+                    .setDetailsMessage("Your data stored in " + SatisplanoryPersistence.getJsonFile().getAbsolutePath() + " "
+                            + "is from a newer version of Satisplanory. Using an older version may result in data loss. "
+                            + "You must have a newer version at some point. Please continue using that version.\n\n"
+                            + "You can always download the latest version at:\n"
+                            + "    https://github.com/elcheapogary/satisplanory/")
+                    .setException(e)
+                    .showAndWait();
+            Platform.exit();
+        }
         Scene scene = new Scene(MainPane.createMainPane(this, stage, appContext));
         scene.getStylesheets().add(Style.getCustomStylesheet());
         if (appContext.getPersistentData().getPreferences().getUiPreferences().isDarkModeEnabled()){

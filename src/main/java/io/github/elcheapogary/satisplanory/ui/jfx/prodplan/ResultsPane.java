@@ -224,7 +224,8 @@ class ResultsPane
 
         for (Item item : plan.getInputItems()){
             persistentProductionPlan.getInput().getInputItems().compute(item.getName(), (s, amount) ->
-                    Objects.requireNonNullElse(amount, BigDecimal.ZERO).max(plan.getInputItemsPerMinute(item).toBigDecimal(6, RoundingMode.UP)));
+                    Objects.requireNonNullElse(amount, BigDecimal.ZERO)
+                            .max(item.toDisplayAmount(plan.getInputItemsPerMinute(item)).toBigDecimal(6, RoundingMode.UP)));
             persistentPlan.getInputItems().put(item.getName(), plan.getInputItemsPerMinute(item));
         }
 

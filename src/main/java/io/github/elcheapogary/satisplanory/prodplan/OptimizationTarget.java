@@ -27,7 +27,8 @@ public enum OptimizationTarget
         FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
             if (hasMaximizedOutputItems){
-                return MAX_OUTPUT_ITEMS.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap);
+                return MAX_OUTPUT_ITEMS.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap)
+                        .add(BigFraction.ONE.movePointLeft(12), MIN_RESOURCE_SCARCITY.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap));
             }else{
                 return MIN_RESOURCE_SCARCITY.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap);
             }

@@ -48,8 +48,7 @@ class InputItemsPane
         ComboBox<Item> comboBox = ItemComponents.createItemComboBox(allItems);
         comboBox.setPrefWidth(150);
         comboBox.setMaxWidth(Double.MAX_VALUE);
-        comboBox.getSelectionModel().select(inputItem.getItem());
-        comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> inputItem.setItem(newValue));
+        comboBox.valueProperty().bindBidirectional(inputItem.itemProperty());
         HBox.setHgrow(comboBox, Priority.ALWAYS);
         hBox.getChildren().add(comboBox);
 
@@ -78,8 +77,8 @@ class InputItemsPane
             inputItems.remove(inputItem);
         });
 
-        comboBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null && newValue.getName().equals("Water")){
+        inputItem.itemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue != oldValue && newValue.getName().equals("Water")){
                 tf.textProperty().set("999999999999");
                 inputItem.setAmount(BigDecimal.valueOf(999999999999L));
             }

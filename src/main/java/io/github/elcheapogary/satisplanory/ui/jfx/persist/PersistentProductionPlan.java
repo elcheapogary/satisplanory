@@ -40,7 +40,11 @@ public class PersistentProductionPlan
     }
 
     public PersistentProductionPlan(JSONObject json)
+            throws UnsupportedVersionException
     {
+        if (!json.has("v") || !json.getString("v").equals("1.0")){
+            throw new UnsupportedVersionException();
+        }
         this.input = new Input(json.getJSONObject("input"));
         if (json.has("name")){
             this.name.set(json.getString("name"));
@@ -123,7 +127,7 @@ public class PersistentProductionPlan
             }
 
             if (json.has("maximizedOutputItems")){
-                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
+                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
             }
         }
 

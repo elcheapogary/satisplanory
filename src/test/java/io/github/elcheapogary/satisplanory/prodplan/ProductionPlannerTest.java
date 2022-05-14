@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.test.TestGameData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProductionPlannerTest
 {
@@ -53,6 +55,41 @@ public class ProductionPlannerTest
 
         assertOutputItems(plan, gd, "Iron Plate", 20);
         assertOutputItems(plan, gd, "Iron Rod", 20);
+    }
+
+    @Test
+    public void testBalancePlasticAndFuel()
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    {
+        TestGameData gd = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gd == null);
+
+        ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
+
+        pb.setOptimizationTarget(OptimizationTarget.DEFAULT);
+
+        Item plastic = gd.requireItemByName("Plastic");
+        Item fuel = gd.requireItemByName("Fuel");
+        Item crudeOil = gd.requireItemByName("Crude Oil");
+        Item water = gd.requireItemByName("Water");
+
+        pb.addInputItem(water, water.fromDisplayAmount(BigDecimal.valueOf(999999999999L)));
+        pb.addInputItem(crudeOil, crudeOil.fromDisplayAmount(BigDecimal.valueOf(360)));
+
+        pb.requireOutputItemsPerMinute(plastic, 20);
+        pb.maximizeOutputItem(plastic, 1);
+        pb.maximizeOutputItem(fuel, 1);
+
+        pb.addRecipes(gd.getRecipes());
+
+        ProductionPlan plan = pb.build().createPlan();
+
+        BigFraction nPlastic = plan.getOutputItemsPerMinute(plastic);
+        BigFraction nFuel = plan.getOutputItemsPerMinute(fuel);
+
+        assertTrue(nPlastic.compareTo(BigFraction.valueOf(20)) > 0);
+        assertEquals(plastic.toDisplayAmount(nPlastic).subtract(20), fuel.toDisplayAmount(nFuel));
     }
 
     @Test

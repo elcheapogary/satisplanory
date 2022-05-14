@@ -34,7 +34,7 @@ public class SatisplanoryPersistence
     {
     }
 
-    private static File getJsonFile()
+    public static File getJsonFile()
     {
         String osName = System.getProperty("os.name");
 
@@ -70,7 +70,7 @@ public class SatisplanoryPersistence
     }
 
     public static PersistentData load()
-            throws IOException
+            throws IOException, UnsupportedVersionException
     {
         File jsonFile = getJsonFile();
 

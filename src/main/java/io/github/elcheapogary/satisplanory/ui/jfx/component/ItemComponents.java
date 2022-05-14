@@ -30,12 +30,6 @@ public class ItemComponents
             @Override
             public Item fromString(String string)
             {
-                for (Item i : items){
-                    if (i.getName().equals(string)){
-                        return i;
-                    }
-                }
-
                 return null;
             }
 

@@ -50,7 +50,7 @@ public enum MatterState
 
     public BigFraction fromDisplayAmount(BigFraction amount)
     {
-        return amount.multiply(1000);
+        return amount.multiply(1000).simplify();
     }
 
     public BigDecimal toDisplayAmount(BigDecimal amount)
@@ -60,6 +60,6 @@ public enum MatterState
 
     public BigFraction toDisplayAmount(BigFraction amount)
     {
-        return amount.divide(1000);
+        return amount.divide(1000).simplify();
     }
 }
