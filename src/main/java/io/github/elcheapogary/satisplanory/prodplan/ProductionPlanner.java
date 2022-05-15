@@ -373,6 +373,12 @@ public class ProductionPlanner
             return new ProductionPlanner(this);
         }
 
+        public Builder clearOutputItems()
+        {
+            this.outputRequirements.clear();
+            return this;
+        }
+
         public Builder maximizeOutputItem(Item item, long weight)
         {
             return maximizeOutputItem(item, BigDecimal.valueOf(weight));

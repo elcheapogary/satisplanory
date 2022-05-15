@@ -81,8 +81,12 @@ public class ProdPlanUtils
 
     private static void removeMaximizeWeights(ProductionPlanner planner, ProductionPlanner.Builder newPlanner)
     {
+        newPlanner.clearOutputItems();
         for (Item item : planner.getOutputItems()){
-            newPlanner.addOutputItem(item, planner.getOutputItemMinimumPerMinute(item), BigDecimal.ZERO);
+            BigDecimal min = planner.getOutputItemMinimumPerMinute(item);
+            if (min != null && min.signum() > 0){
+                newPlanner.requireOutputItemsPerMinute(item, min);
+            }
         }
     }
 
