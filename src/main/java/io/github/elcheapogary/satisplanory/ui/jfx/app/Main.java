@@ -35,6 +35,7 @@ public class Main
         extends Application
 {
     private AppContext appContext = new AppContext();
+    private boolean saveOnExit = false;
 
     public static void main(String[] args)
     {
@@ -63,20 +64,23 @@ public class Main
                     .setDetailsMessage("Satisplanory was not able to load this file: " + SatisplanoryPersistence.getJsonFile().getAbsolutePath())
                     .setException(e)
                     .showAndWait();
-            Platform.exit();
+            return;
         }catch (UnsupportedVersionException e){
             new ExceptionDialog(appContext)
                     .setTitle("Data is from newer version of Satisplanory")
                     .setContextMessage("Your Satisplanory data is from a newer version - please use that version")
-                    .setDetailsMessage("Your data stored in " + SatisplanoryPersistence.getJsonFile().getAbsolutePath() + " "
-                            + "is from a newer version of Satisplanory. Using an older version may result in data loss. "
-                            + "You must have a newer version at some point. Please continue using that version.\n\n"
-                            + "You can always download the latest version at:\n"
+                    .setDetailsMessage("Your data stored in:\n\n    " + SatisplanoryPersistence.getJsonFile().getAbsolutePath()
+                            + "\n\n"
+                            + "is from a newer version of Satisplanory. Using an older version may result in data\n"
+                            + "loss. You must have used a newer version at some point. Please continue using\n"
+                            + "that version.\n\n"
+                            + "You can always download the latest version at:\n\n"
                             + "    https://github.com/elcheapogary/satisplanory/")
                     .setException(e)
                     .showAndWait();
-            Platform.exit();
+            return;
         }
+        saveOnExit = true;
         Scene scene = new Scene(MainPane.createMainPane(this, stage, appContext));
         scene.getStylesheets().add(Style.getCustomStylesheet());
         if (appContext.getPersistentData().getPreferences().getUiPreferences().isDarkModeEnabled()){
@@ -137,6 +141,8 @@ public class Main
     public void stop()
             throws Exception
     {
-        SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
+        if (saveOnExit){
+            SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
+        }
     }
 }
