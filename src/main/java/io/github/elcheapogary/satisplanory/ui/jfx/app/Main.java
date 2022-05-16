@@ -63,7 +63,7 @@ public class Main
                     .setDetailsMessage("Satisplanory was not able to load this file: " + SatisplanoryPersistence.getJsonFile().getAbsolutePath())
                     .setException(e)
                     .showAndWait();
-            Platform.exit();
+            return;
         }catch (UnsupportedVersionException e){
             new ExceptionDialog(appContext)
                     .setTitle("Data is from newer version of Satisplanory")
@@ -75,7 +75,7 @@ public class Main
                             + "    https://github.com/elcheapogary/satisplanory/")
                     .setException(e)
                     .showAndWait();
-            Platform.exit();
+            return;
         }
         Scene scene = new Scene(MainPane.createMainPane(this, stage, appContext));
         scene.getStylesheets().add(Style.getCustomStylesheet());
