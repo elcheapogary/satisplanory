@@ -10,58 +10,107 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
-import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 
-public class ProdPlanTab
+class ProdPlanTab
 {
-    private ProdPlanTab(){}
-
-    public static Tab create(AppContext appContext, GameData gameData, PersistentProductionPlan persistentPlan)
+    private ProdPlanTab()
     {
-        Tab retv = new Tab();
-        retv.setClosable(true);
+    }
 
-        StringProperty planNameProperty = persistentPlan.nameProperty();
+    public static Tab create(AppContext appContext, ProdPlanModel model)
+    {
+        Tab tab = new Tab();
+        tab.setClosable(true);
 
+        setUpTabHeading(tab, model);
+
+        TabPane tabPane = new TabPane();
+        tab.setContent(tabPane);
+
+        tabPane.getTabs().add(InputTab.create(appContext, model));
+
+        final Tab errorTab = ErrorTab.create(model);
+        final Tab overviewTab = OverviewTab.create(model);
+        final Tab graphTab = GraphTab.create(model);
+        final Tab tableTab = TableTab.create(model);
+
+        addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab);
+
+        model.planProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
+
+        model.multiPlanProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
+
+        return tab;
+    }
+
+    private static void addRemoveTabs(ProdPlanModel model, TabPane tabPane, Tab errorTab, Tab overviewTab, Tab graphTab, Tab tableTab)
+    {
+        if (model.getPlan() == null){
+            tabPane.getTabs().remove(overviewTab);
+            tabPane.getTabs().remove(graphTab);
+            tabPane.getTabs().remove(tableTab);
+
+            if (model.getMultiPlan() != null){
+                if (!tabPane.getTabs().contains(errorTab)){
+                    /*
+                     * There is a bug somewhere in JavaFX that causes an IndexOutOfBoundsException if we don't add at
+                     * the right index here. After removing the previous tabs, somewhere in the bowels, it still
+                     * attempts to add at index 4, not 1, and that causes an issue.
+                     *
+                     * Inserting at index 1 fixes that.
+                     */
+                    tabPane.getTabs().add(1, errorTab);
+                }
+                tabPane.getSelectionModel().select(errorTab);
+            }else{
+                tabPane.getTabs().remove(errorTab);
+            }
+        }else{
+            tabPane.getTabs().remove(errorTab);
+            /*
+             * Have to add at index here to avoid bug described above.
+             */
+            tabPane.getTabs().add(1, overviewTab);
+            tabPane.getTabs().add(2, graphTab);
+            tabPane.getTabs().add(3, tableTab);
+            tabPane.getSelectionModel().select(graphTab);
+        }
+    }
+
+    private static void setUpTabHeading(Tab tab, ProdPlanModel model)
+    {
         Label label = new Label();
-        label.textProperty().bind(planNameProperty);
-        retv.setGraphic(label);
+        label.textProperty().bind(model.nameProperty());
+        tab.setGraphic(label);
 
         TextField tf = new TextField();
+
         tf.onActionProperty().set(event -> {
             String name = tf.getText();
             if (!name.isBlank()){
-                planNameProperty.set(name);
+                model.setName(name);
             }
-            retv.setGraphic(label);
+            tab.setGraphic(label);
         });
+
         tf.focusedProperty().addListener((observable, oldValue, focused) -> {
             if (!focused){
-                retv.setGraphic(label);
+                tab.setGraphic(label);
             }
         });
 
         label.onMouseClickedProperty().set(event -> {
             if (event.getClickCount() == 2){
-                tf.setText(planNameProperty.getValue());
-                retv.setGraphic(tf);
+                tf.setText(model.getName());
+                tab.setGraphic(tf);
                 tf.selectAll();
                 tf.requestFocus();
             }
         });
-
-        TabPane subTabPane = new TabPane();
-        InputTab.addInputTab(appContext, gameData, subTabPane, new ProdPlanData(gameData, persistentPlan));
-        retv.setContent(subTabPane);
-
-        return retv;
     }
 }

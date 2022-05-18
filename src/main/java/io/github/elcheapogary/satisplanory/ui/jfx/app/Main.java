@@ -34,7 +34,7 @@ import org.controlsfx.control.Notifications;
 public class Main
         extends Application
 {
-    private AppContext appContext = new AppContext();
+    private final AppContext appContext = new AppContext();
     private boolean saveOnExit = false;
 
     public static void main(String[] args)
@@ -139,7 +139,6 @@ public class Main
 
     @Override
     public void stop()
-            throws Exception
     {
         if (saveOnExit){
             SatisplanoryPersistence.save(appContext, appContext.getPersistentData());

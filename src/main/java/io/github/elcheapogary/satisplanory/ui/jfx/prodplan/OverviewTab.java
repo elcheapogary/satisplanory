@@ -35,20 +35,46 @@ import javafx.scene.Node;
 import javafx.scene.control.Accordion;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-public class OverviewTab
+class OverviewTab
 {
     private OverviewTab()
     {
     }
 
-    public static Node create(ProductionPlan plan)
+    public static Tab create(ProdPlanModel model)
+    {
+        Tab tab = new Tab();
+        tab.setClosable(false);
+        tab.setText("Overview");
+
+        setContent(tab, model.getPlan());
+
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, newValue));
+
+        tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
+
+        return tab;
+    }
+
+    private static void setContent(Tab tab, ProductionPlan plan)
+    {
+        if (plan == null){
+            tab.setContent(new Pane());
+        }else{
+            tab.setContent(createOverview(plan));
+        }
+    }
+
+    private static Node createOverview(ProductionPlan plan)
     {
         VBox vBox = new VBox(10);
         vBox.setPadding(new Insets(10));

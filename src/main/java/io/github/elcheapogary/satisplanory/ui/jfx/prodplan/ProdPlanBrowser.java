@@ -34,7 +34,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.function.Consumer;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -103,6 +105,15 @@ public class ProdPlanBrowser
 
     private static Node createList(AppContext appContext, GameData gameData, TabPane tabPane)
     {
+        interface PlanOpener
+        {
+            default void openPlan(PersistentProductionPlan plan)
+            {
+                openPlan(plan, null);
+            }
+
+            void openPlan(PersistentProductionPlan plan, Consumer<? super ProdPlanModel> modelConfigurator);
+        }
         ObservableMap<PersistentProductionPlan, Tab> tabMap = FXCollections.observableMap(new HashMap<>());
         VBox vbox = new VBox(10);
         vbox.setStyle("-fx-border-width: 0px 1px 0px 0px; -fx-border-color: -fx-box-border;");
@@ -110,7 +121,7 @@ public class ProdPlanBrowser
 
         vbox.setFillWidth(true);
 
-        HBox buttons = new HBox(10);
+        HBox buttons = new HBox(0);
         vbox.getChildren().add(buttons);
 
         Button newPlanButton = new Button("Create new");
@@ -120,7 +131,21 @@ public class ProdPlanBrowser
         {
             Region grower = new Region();
             grower.setPrefHeight(0);
-            grower.setPrefWidth(0);
+            grower.setPrefWidth(10);
+            grower.setMinWidth(10);
+            HBox.setHgrow(grower, Priority.ALWAYS);
+            buttons.getChildren().add(grower);
+        }
+
+        Button duplicateButton = new Button("Duplicate");
+        HBox.setHgrow(duplicateButton, Priority.NEVER);
+        buttons.getChildren().add(duplicateButton);
+
+        {
+            Region grower = new Region();
+            grower.setPrefHeight(0);
+            grower.setPrefWidth(10);
+            grower.setMinWidth(10);
             HBox.setHgrow(grower, Priority.ALWAYS);
             buttons.getChildren().add(grower);
         }
@@ -129,25 +154,45 @@ public class ProdPlanBrowser
         HBox.setHgrow(deleteButton, Priority.NEVER);
         buttons.getChildren().add(deleteButton);
 
+        appContext.getPersistentData().getProductionPlans().sort(Comparator.comparing(PersistentProductionPlan::getName));
+
         ListView<PersistentProductionPlan> list = new ListView<>(appContext.getPersistentData().getProductionPlans());
         VBox.setVgrow(list, Priority.ALWAYS);
         vbox.getChildren().add(list);
 
         list.setPrefWidth(250);
 
-        newPlanButton.onActionProperty().set(event -> {
-            PersistentProductionPlan persistentProductionPlan = new PersistentProductionPlan();
-            for (Recipe r : gameData.getRecipes()){
-                persistentProductionPlan.getInput().getRecipes().getRecipeNames().add(r.getName());
+        PlanOpener planOpener = (plan, modelConfigurator) -> {
+            Tab tab = tabMap.get(plan);
+            if (tab == null){
+                ProdPlanModel model = ProdPlanModel.fromPersistent(gameData, plan);
+                model.nameProperty().addListener((observable, oldValue, newValue) -> {
+                    appContext.getPersistentData().getProductionPlans().sort(Comparator.comparing(PersistentProductionPlan::getName));
+                    list.refresh();
+                });
+                if (modelConfigurator != null){
+                    modelConfigurator.accept(model);
+                }
+                tab = ProdPlanTab.create(appContext, model);
+                tab.onClosedProperty().set(e -> tabMap.remove(plan));
+                tabMap.put(plan, tab);
             }
-            persistentProductionPlan.nameProperty().addListener((observable, oldValue, newValue) -> list.refresh());
-            appContext.getPersistentData().getProductionPlans().add(persistentProductionPlan);
-            Tab tab = ProdPlanTab.create(appContext, gameData, persistentProductionPlan);
-            tab.onClosedProperty().set(e -> tabMap.remove(persistentProductionPlan));
-            tabMap.put(persistentProductionPlan, tab);
-            list.getSelectionModel().select(persistentProductionPlan);
-            tabPane.getTabs().add(tab);
+            if (!tabPane.getTabs().contains(tab)){
+                tabPane.getTabs().add(tab);
+            }
+            list.getSelectionModel().select(plan);
             tabPane.getSelectionModel().select(tab);
+        };
+
+        newPlanButton.onActionProperty().set(event -> {
+            PersistentProductionPlan plan = new PersistentProductionPlan();
+            appContext.getPersistentData().getProductionPlans().add(plan);
+            planOpener.openPlan(plan, model -> {
+                for (Recipe recipe : gameData.getRecipes()){
+                    model.getEnabledRecipes().add(recipe);
+                }
+                model.getSettings().getOptimizationTargets().addAll(OptimizationTargetModel.MAXIMIZE_OUTPUT_ITEMS, OptimizationTargetModel.MINIMIZE_RESOURCE_SCARCITY);
+            });
         });
 
         list.onMouseClickedProperty().set(event -> {
@@ -155,23 +200,10 @@ public class ProdPlanBrowser
                 PersistentProductionPlan plan = list.getSelectionModel().getSelectedItem();
 
                 if (plan != null){
-                    Tab tab = tabMap.get(plan);
-                    if (tab == null){
-                        tab = ProdPlanTab.create(appContext, gameData, plan);
-                        tab.onClosedProperty().set(e -> tabMap.remove(plan));
-                        tabMap.put(plan, tab);
-                    }
-                    if (!tabPane.getTabs().contains(tab)){
-                        tabPane.getTabs().add(tab);
-                    }
-                    tabPane.getSelectionModel().select(tab);
+                    planOpener.openPlan(plan);
                 }
             }
         });
-
-        for (PersistentProductionPlan p : appContext.getPersistentData().getProductionPlans()){
-            p.nameProperty().addListener((observable, oldValue, newValue) -> list.refresh());
-        }
 
         list.setCellFactory(param -> new TextFieldListCell<>(new StringConverter<>()
         {
@@ -212,6 +244,26 @@ public class ProdPlanBrowser
             }
         });
 
+        duplicateButton.disableProperty().bind(Bindings.createBooleanBinding(() -> list.getSelectionModel().selectedItemProperty().get() == null, list.getSelectionModel().selectedItemProperty()));
+
+        duplicateButton.onActionProperty().set(event -> {
+            PersistentProductionPlan p = list.getSelectionModel().getSelectedItem();
+
+            PersistentProductionPlan n = new PersistentProductionPlan();
+            try {
+                n.loadJson(p.toJson());
+                n.setName(n.getName() + " (Copy)");
+                appContext.getPersistentData().getProductionPlans().add(n);
+                planOpener.openPlan(n);
+            }catch (UnsupportedVersionException e){
+                new ExceptionDialog(appContext)
+                        .setTitle("Error duplicating plan")
+                        .setContextMessage("This should never happen")
+                        .setException(e)
+                        .showAndWait();
+            }
+        });
+
         HBox importExportButtons = new HBox(10);
         vbox.getChildren().add(importExportButtons);
 
@@ -234,11 +286,7 @@ public class ProdPlanBrowser
             PersistentProductionPlan plan = importFromLink(appContext);
             if (plan != null){
                 appContext.getPersistentData().getProductionPlans().add(plan);
-                Tab tab = ProdPlanTab.create(appContext, gameData, plan);
-                tab.onClosedProperty().set(e -> tabMap.remove(plan));
-                tabMap.put(plan, tab);
-                tabPane.getTabs().add(tab);
-                tabPane.getSelectionModel().select(tab);
+                planOpener.openPlan(plan);
             }
         });
 
@@ -249,27 +297,19 @@ public class ProdPlanBrowser
             PersistentProductionPlan plan = importPlanFromFile(appContext, importButton.getScene().getWindow());
             if (plan != null){
                 appContext.getPersistentData().getProductionPlans().add(plan);
-                Tab tab = ProdPlanTab.create(appContext, gameData, plan);
-                tab.onClosedProperty().set(e -> tabMap.remove(plan));
-                tabMap.put(plan, tab);
-                tabPane.getTabs().add(tab);
-                tabPane.getSelectionModel().select(tab);
+                planOpener.openPlan(plan);
             }
         });
 
         MenuItem exportToLinkMenuItem = new MenuItem("To link");
         exportButton.getItems().add(exportToLinkMenuItem);
 
-        exportToLinkMenuItem.onActionProperty().set(event -> {
-            exportToLink(appContext, list.getSelectionModel().getSelectedItem());
-        });
+        exportToLinkMenuItem.onActionProperty().set(event -> exportToLink(appContext, list.getSelectionModel().getSelectedItem()));
 
         MenuItem exportToFileMenuItem = new MenuItem("To file");
         exportButton.getItems().add(exportToFileMenuItem);
 
-        exportToFileMenuItem.onActionProperty().set(event -> {
-            exportToFile(exportButton.getScene().getWindow(), appContext, list.getSelectionModel().getSelectedItem());
-        });
+        exportToFileMenuItem.onActionProperty().set(event -> exportToFile(exportButton.getScene().getWindow(), appContext, list.getSelectionModel().getSelectedItem()));
 
         return vbox;
     }
@@ -306,7 +346,9 @@ public class ProdPlanBrowser
 
                             JSONObject json = new JSONObject(response.body());
 
-                            return new PersistentProductionPlan(json);
+                            PersistentProductionPlan plan = new PersistentProductionPlan();
+                            plan.loadJson(json);
+                            return plan;
                         }).get();
             }catch (Exception e){
                 new ExceptionDialog(appContext)
@@ -423,7 +465,9 @@ public class ProdPlanBrowser
 
             try {
                 try (Reader r = new InputStreamReader(new BufferedInputStream(new FileInputStream(f)), StandardCharsets.UTF_8)) {
-                    return new PersistentProductionPlan(new JSONObject(new JSONTokener(r)));
+                    PersistentProductionPlan plan = new PersistentProductionPlan();
+                    plan.loadJson(new JSONObject(new JSONTokener(r)));
+                    return plan;
                 }
             }catch (IOException | JSONException e){
                 new ExceptionDialog(appContext)

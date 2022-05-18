@@ -19,37 +19,16 @@ import java.util.Map;
 
 public enum OptimizationTarget
 {
-    DEFAULT(
-            "Default",
-            "Uses \"Maximize Output Items\" if there are any output items with a maximize weight, otherwise uses \"Minimize Resource Scarcity\""
-    ){
+    MAX_OUTPUT_ITEMS(24){
         @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
-            if (hasMaximizedOutputItems){
-                return MAX_OUTPUT_ITEMS.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap)
-                        .add(BigFraction.ONE.movePointLeft(12), MIN_RESOURCE_SCARCITY.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap));
-            }else{
-                return MIN_RESOURCE_SCARCITY.getObjectiveFunction(hasMaximizedOutputItems, maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap);
-            }
+            return maximizedOutputItems.add(BigFraction.ONE.movePointLeft(6), balance);
         }
     },
-    MAX_OUTPUT_ITEMS(
-            "Maximize Output Items",
-            "Generate as much of the output items with a weight > 0"
-    ){
+    MIN_POWER{
         @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
-        {
-            return maximizedOutputItems.add(BigFraction.ONE.movePointRight(6), balance);
-        }
-    },
-    MIN_POWER(
-            "Minimize Power Consumption",
-            "Generate a plan that uses as little power as possible"
-    ){
-        @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
             FractionExpression powerConsumption = FractionExpression.zero();
 
@@ -63,12 +42,9 @@ public enum OptimizationTarget
             return FractionExpression.zero().subtract(powerConsumption);
         }
     },
-    MIN_BUILDINGS(
-            "Minimize Number Of Buildings",
-            "Use as few buildings as possible"
-    ){
+    MIN_BUILDINGS{
         @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
             FractionExpression retv = FractionExpression.zero();
 
@@ -79,28 +55,29 @@ public enum OptimizationTarget
             return retv;
         }
     },
-    MIN_INPUT_ITEMS(
-            "Minimize Input Items",
-            "Use as little of the input items as possible"
-    ){
+    MAX_INPUT_ITEMS{
         @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
             FractionExpression retv = FractionExpression.zero();
 
             for (FractionExpression e : itemInputMap.values()){
-                retv = retv.subtract(e);
+                retv = retv.add(e);
             }
 
             return retv;
         }
     },
-    MIN_RESOURCE_SCARCITY(
-            "Minimize Resource Scarcity",
-            "Use as little scarce resources as possible. This will prefer using more abundant resources."
-    ){
+    MIN_INPUT_ITEMS{
         @Override
-        FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        {
+            return FractionExpression.zero().subtract(MAX_INPUT_ITEMS.getObjectiveFunction(maximizedOutputItems, balance, itemInputMap, itemOutputMap, itemSurplusMap, recipeMap));
+        }
+    },
+    MIN_RESOURCE_SCARCITY{
+        @Override
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
             Map<String, Long> limits = SatisfactoryData.getResourceExtractionLimits();
             FractionExpression retv = FractionExpression.zero();
@@ -118,32 +95,37 @@ public enum OptimizationTarget
 
             return retv;
         }
+    },
+    MIN_BYPRODUCTS{
+        @Override
+        FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
+        {
+            FractionExpression retv = FractionExpression.zero();
+
+            for (FractionExpression e : itemSurplusMap.values()){
+                retv = retv.subtract(e);
+            }
+
+            return retv;
+        }
     };
 
-    private final String displayName;
-    private final String description;
+    private final int ordersOfMagnitude;
 
-    OptimizationTarget(String displayName, String description)
+    OptimizationTarget()
     {
-        this.displayName = displayName;
-        this.description = description;
+        this(6);
     }
 
-    public String getDescription()
+    OptimizationTarget(int ordersOfMagnitude)
     {
-        return description;
+        this.ordersOfMagnitude = ordersOfMagnitude;
     }
 
-    public String getDisplayName()
-    {
-        return displayName;
-    }
+    abstract FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap);
 
-    abstract FractionExpression getObjectiveFunction(boolean hasMaximizedOutputItems, FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap);
-
-    @Override
-    public String toString()
+    int getOrdersOfMagnitude()
     {
-        return displayName;
+        return ordersOfMagnitude;
     }
 }

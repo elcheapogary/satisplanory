@@ -10,12 +10,11 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
-import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import java.math.BigDecimal;
-import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PersistentProductionPlanTests
 {
@@ -31,9 +30,10 @@ public class PersistentProductionPlanTests
         a.getMaximizedOutputItems().put("d", BigDecimal.valueOf(4));
         a.getOutputItemsPerMinute().put("e", BigDecimal.valueOf(5));
         a.getOutputItemsPerMinute().put("f", BigDecimal.valueOf(6));
-        a.getSettings().setOptimizationTarget(OptimizationTarget.MIN_BUILDINGS);
+        a.getSettings().getOptimizationTargets().add("ZZ");
 
-        PersistentProductionPlan.Input b = new PersistentProductionPlan.Input(a.toJson());
+        PersistentProductionPlan.Input b = new PersistentProductionPlan.Input();
+        b.loadJson_2_0(a.toJson());
 
         assertEquals(a.toJson().toString(), b.toJson().toString());
 
@@ -53,6 +53,7 @@ public class PersistentProductionPlanTests
         assertEquals(BigDecimal.valueOf(5), b.getOutputItemsPerMinute().get("e"));
         assertEquals(BigDecimal.valueOf(6), b.getOutputItemsPerMinute().get("f"));
 
-        assertSame(OptimizationTarget.MIN_BUILDINGS, b.getSettings().getOptimizationTarget());
+        assertEquals(1, b.getSettings().getOptimizationTargets().size());
+        assertEquals("ZZ", b.getSettings().getOptimizationTargets().get(0));
     }
 }

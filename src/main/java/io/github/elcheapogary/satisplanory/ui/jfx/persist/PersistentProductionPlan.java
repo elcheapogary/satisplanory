@@ -10,48 +10,26 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
-import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableMap;
-import javafx.collections.ObservableSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class PersistentProductionPlan
 {
-    private final StringProperty name = new SimpleStringProperty("Unnamed Factory");
-    private final Input input;
+    private final Input input = new Input();
+    private String name = "Unnamed Factory";
     private Plan plan;
 
     public PersistentProductionPlan()
     {
-        this.input = new Input();
-    }
-
-    public PersistentProductionPlan(JSONObject json)
-            throws UnsupportedVersionException
-    {
-        if (!json.has("v") || !json.getString("v").equals("1.0")){
-            throw new UnsupportedVersionException();
-        }
-        this.input = new Input(json.getJSONObject("input"));
-        if (json.has("name")){
-            this.name.set(json.getString("name"));
-        }
-        if (json.has("plan")){
-            this.plan = new Plan(json.getJSONObject("plan"));
-        }
     }
 
     public Input getInput()
@@ -61,12 +39,12 @@ public class PersistentProductionPlan
 
     public String getName()
     {
-        return name.get();
+        return name;
     }
 
     public void setName(String name)
     {
-        this.name.set(name);
+        this.name = name;
     }
 
     public Plan getPlan()
@@ -79,18 +57,35 @@ public class PersistentProductionPlan
         this.plan = plan;
     }
 
-    public StringProperty nameProperty()
+    public void loadJson(JSONObject json)
+            throws UnsupportedVersionException
     {
-        return name;
+        if (!json.has("v")){
+            throw new UnsupportedVersionException();
+        }
+        String version = json.getString("v");
+        if (version.equals("1.0")){
+            this.input.loadJson_1_0(json.getJSONObject("input"));
+        }else if (version.equals("2.0")){
+            this.input.loadJson_2_0(json.getJSONObject("input"));
+        }else{
+            throw new UnsupportedVersionException();
+        }
+        if (json.has("name")){
+            this.name = json.getString("name");
+        }
+        if (json.has("plan")){
+            this.plan = new Plan(json.getJSONObject("plan"));
+        }
     }
 
     public JSONObject toJson()
     {
         JSONObject json = new JSONObject();
 
-        json.put("v", "1.0");
+        json.put("v", "2.0");
         json.put("input", input.toJson());
-        json.put("name", name.get());
+        json.put("name", name);
 
         if (plan != null){
             json.put("plan", plan.toJson());
@@ -101,22 +96,54 @@ public class PersistentProductionPlan
 
     public static class Input
     {
-        private final RecipeSet recipes;
-        private final Settings settings;
-        private final ObservableMap<String, BigDecimal> inputItems = FXCollections.observableMap(new TreeMap<>());
-        private final ObservableMap<String, BigDecimal> outputItemsPerMinute = FXCollections.observableMap(new TreeMap<>());
-        private final ObservableMap<String, BigDecimal> maximizedOutputItems = FXCollections.observableMap(new TreeMap<>());
+        private final RecipeSet recipes = new RecipeSet();
+        private final Settings settings = new Settings();
+        private final Map<String, BigDecimal> inputItems = new TreeMap<>();
+        private final Map<String, BigDecimal> outputItemsPerMinute = new TreeMap<>();
+        private final Map<String, BigDecimal> maximizedOutputItems = new TreeMap<>();
 
         public Input()
         {
-            this.recipes = new RecipeSet();
-            this.settings = new Settings();
         }
 
-        public Input(JSONObject json)
+        private static Map<String, BigDecimal> toMap(JSONObject json)
         {
-            this.settings = new Settings(json.getJSONObject("settings"));
-            this.recipes = new RecipeSet(json.getJSONObject("recipes"));
+            Map<String, BigDecimal> map = new TreeMap<>();
+            for (String key : json.keySet()){
+                map.put(key, json.getBigDecimal(key));
+            }
+            return map;
+        }
+
+        public Map<String, BigDecimal> getInputItems()
+        {
+            return inputItems;
+        }
+
+        public Map<String, BigDecimal> getMaximizedOutputItems()
+        {
+            return maximizedOutputItems;
+        }
+
+        public Map<String, BigDecimal> getOutputItemsPerMinute()
+        {
+            return outputItemsPerMinute;
+        }
+
+        public RecipeSet getRecipes()
+        {
+            return recipes;
+        }
+
+        public Settings getSettings()
+        {
+            return settings;
+        }
+
+        public void loadJson_1_0(JSONObject json)
+        {
+            this.settings.loadJson_1_0(json.getJSONObject("settings"));
+            this.recipes.loadJson(json.getJSONObject("recipes"));
 
             if (json.has("inputItems")){
                 this.inputItems.putAll(toMap(json.getJSONObject("inputItems")));
@@ -131,38 +158,22 @@ public class PersistentProductionPlan
             }
         }
 
-        private static Map<String, BigDecimal> toMap(JSONObject json)
+        public void loadJson_2_0(JSONObject json)
         {
-            Map<String, BigDecimal> map = new TreeMap<>();
-            for (String key : json.keySet()){
-                map.put(key, json.getBigDecimal(key));
+            this.settings.loadJson_2_0(json.getJSONObject("settings"));
+            this.recipes.loadJson(json.getJSONObject("recipes"));
+
+            if (json.has("inputItems")){
+                this.inputItems.putAll(toMap(json.getJSONObject("inputItems")));
             }
-            return map;
-        }
 
-        public ObservableMap<String, BigDecimal> getInputItems()
-        {
-            return inputItems;
-        }
+            if (json.has("outputItemsPerMinute")){
+                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("outputItemsPerMinute")));
+            }
 
-        public ObservableMap<String, BigDecimal> getMaximizedOutputItems()
-        {
-            return maximizedOutputItems;
-        }
-
-        public ObservableMap<String, BigDecimal> getOutputItemsPerMinute()
-        {
-            return outputItemsPerMinute;
-        }
-
-        public RecipeSet getRecipes()
-        {
-            return recipes;
-        }
-
-        public Settings getSettings()
-        {
-            return settings;
+            if (json.has("maximizedOutputItems")){
+                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
+            }
         }
 
         JSONObject toJson()
@@ -180,13 +191,18 @@ public class PersistentProductionPlan
 
         public static class RecipeSet
         {
-            private final ObservableSet<String> recipeNames = FXCollections.observableSet(new TreeSet<>());
+            private final Set<String> recipeNames = new TreeSet<>();
 
             public RecipeSet()
             {
             }
 
-            public RecipeSet(JSONObject json)
+            public Set<String> getRecipeNames()
+            {
+                return recipeNames;
+            }
+
+            public void loadJson(JSONObject json)
             {
                 if (json.has("recipeNames")){
                     JSONArray jsonArray = json.getJSONArray("recipeNames");
@@ -195,11 +211,6 @@ public class PersistentProductionPlan
                         recipeNames.add(jsonArray.getString(i));
                     }
                 }
-            }
-
-            public ObservableSet<String> getRecipeNames()
-            {
-                return recipeNames;
             }
 
             public JSONObject toJson()
@@ -214,44 +225,43 @@ public class PersistentProductionPlan
 
         public static class Settings
         {
-            private final ObjectProperty<OptimizationTarget> optimizationTarget = new SimpleObjectProperty<>(OptimizationTarget.DEFAULT);
+            private final List<String> optimizationTargets = new LinkedList<>();
 
             public Settings()
             {
             }
 
-            public Settings(JSONObject json)
+            public List<String> getOptimizationTargets()
+            {
+                return optimizationTargets;
+            }
+
+            public void loadJson_1_0(JSONObject json)
             {
                 if (json.has("optimizationTarget")){
-                    try {
-                        optimizationTarget.set(OptimizationTarget.valueOf(json.getString("optimizationTarget")));
-                    }catch (NoSuchElementException ignore){
+                    switch (json.getString("optimizationTarget")){
+                        case "":{
+                            break;
+                        }
                     }
                 }
             }
 
-            public OptimizationTarget getOptimizationTarget()
+            public void loadJson_2_0(JSONObject json)
             {
-                return optimizationTarget.get();
-            }
-
-            public void setOptimizationTarget(OptimizationTarget optimizationTarget)
-            {
-                this.optimizationTarget.set(optimizationTarget);
-            }
-
-            public ObjectProperty<OptimizationTarget> optimizationTargetProperty()
-            {
-                return optimizationTarget;
+                if (json.has("optimizationTargets")){
+                    JSONArray array = json.getJSONArray("optimizationTargets");
+                    for (int i = 0; i < array.length(); i++){
+                        optimizationTargets.add(array.getString(i));
+                    }
+                }
             }
 
             JSONObject toJson()
             {
                 JSONObject json = new JSONObject();
 
-                if (optimizationTarget.getValue() != null){
-                    json.put("optimizationTarget", optimizationTarget.getValue().name());
-                }
+                json.put("optimizationTargets", optimizationTargets);
 
                 return json;
             }
@@ -260,9 +270,9 @@ public class PersistentProductionPlan
 
     public static class Plan
     {
-        private final ObservableMap<String, BigFraction> inputItems = FXCollections.observableMap(new TreeMap<>());
-        private final ObservableMap<String, BigFraction> outputItems = FXCollections.observableMap(new TreeMap<>());
-        private final ObservableMap<String, BigFraction> recipes = FXCollections.observableMap(new TreeMap<>());
+        private final Map<String, BigFraction> inputItems = new TreeMap<>();
+        private final Map<String, BigFraction> outputItems = new TreeMap<>();
+        private final Map<String, BigFraction> recipes = new TreeMap<>();
 
         public Plan()
         {
@@ -300,17 +310,17 @@ public class PersistentProductionPlan
             return map;
         }
 
-        public ObservableMap<String, BigFraction> getInputItems()
+        public Map<String, BigFraction> getInputItems()
         {
             return inputItems;
         }
 
-        public ObservableMap<String, BigFraction> getOutputItems()
+        public Map<String, BigFraction> getOutputItems()
         {
             return outputItems;
         }
 
-        public ObservableMap<String, BigFraction> getRecipes()
+        public Map<String, BigFraction> getRecipes()
         {
             return recipes;
         }

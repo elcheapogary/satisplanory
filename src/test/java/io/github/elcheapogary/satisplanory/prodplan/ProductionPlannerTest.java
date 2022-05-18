@@ -44,6 +44,9 @@ public class ProductionPlannerTest
 
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
+        builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEM_BALANCE);
+        builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
+
         builder.addInputItem(gd.requireItemByName("Iron Ingot"), 50);
 
         builder.addOutputItem(gd.requireItemByName("Iron Rod"), null, BigDecimal.ONE);
@@ -67,7 +70,8 @@ public class ProductionPlannerTest
 
         ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
 
-        pb.setOptimizationTarget(OptimizationTarget.DEFAULT);
+        pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEM_BALANCE)
+                .addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
         Item plastic = gd.requireItemByName("Plastic");
         Item fuel = gd.requireItemByName("Fuel");

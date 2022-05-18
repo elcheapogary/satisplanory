@@ -37,7 +37,7 @@ public class ProductionPlanner
     private final Map<Item, BigDecimal> inputItems;
     private final Set<Recipe> recipes;
     private final boolean strictMaximizeRatios;
-    private final OptimizationTarget optimizationTarget;
+    private final List<OptimizationTarget> optimizationTargets;
 
     protected ProductionPlanner(Builder builder)
     {
@@ -45,7 +45,7 @@ public class ProductionPlanner
         this.outputRequirements = Collections.unmodifiableMap(Item.createMap(builder.outputRequirements));
         this.recipes = Collections.unmodifiableSet(Recipe.createSet(builder.recipes));
         this.strictMaximizeRatios = builder.strictMaximizeRatios;
-        this.optimizationTarget = Objects.requireNonNull(builder.optimizationTarget);
+        this.optimizationTargets = List.copyOf(builder.optimizationTargets);
     }
 
     private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
@@ -192,7 +192,6 @@ public class ProductionPlanner
         FractionExpression surplusExpression = FractionExpression.zero();
         FractionExpression balanceExpression = FractionExpression.zero();
         Map<Item, FractionExpression> itemSurplusExpressionMap = Item.createMap();
-        boolean hasMaximizedOutputItems;
 
         {
             Map<Item, BigDecimal> outputItemWeights = Item.createMap();
@@ -227,8 +226,6 @@ public class ProductionPlanner
                 }
             }
 
-            hasMaximizedOutputItems = !outputItemWeights.isEmpty();
-
             if (outputItemWeights.size() > 1){
                 if (strictMaximizeRatios){
                     FractionExpression balanceVariable = model.addFractionVariable();
@@ -243,6 +240,7 @@ public class ProductionPlanner
                     }
                 }else{
                     List<Item> maxItems = new ArrayList<>(outputItemWeights.keySet());
+                    Map<Item, FractionExpression> perItemBalanceVariableMap = Item.createMap();
                     for (int i = 0; i < maxItems.size() - 1; i++){
                         Item a = maxItems.get(i);
                         for (int j = i + 1; j < maxItems.size(); j++){
@@ -253,20 +251,45 @@ public class ProductionPlanner
                             model.addConstraint(balanceVariable.nonNegative());
                             model.addConstraint(itemSurplusExpressionMap.get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(outputItemWeights.get(a)))));
                             model.addConstraint(itemSurplusExpressionMap.get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(outputItemWeights.get(b)))));
+
+                            model.addConstraint(perItemBalanceVariableMap.computeIfAbsent(a, item -> model.addFractionVariable()).lte(balanceVariable));
+                            model.addConstraint(perItemBalanceVariableMap.computeIfAbsent(b, item -> model.addFractionVariable()).lte(balanceVariable));
                         }
                     }
+
+                    balanceExpression = balanceExpression.divide(BigFraction.ONE.movePointRight(6));
+
+                    FractionExpression finalVariable = model.addFractionVariable();
+
+                    for (FractionExpression v : perItemBalanceVariableMap.values()){
+                        balanceExpression = balanceExpression.add(v);
+                        model.addConstraint(v.gte(finalVariable));
+                    }
+
+                    balanceExpression = balanceExpression.divide(BigFraction.ONE.movePointRight(6));
+
+                    balanceExpression = balanceExpression.add(finalVariable);
                 }
             }
         }
 
-        FractionExpression objectiveFunction = optimizationTarget.getObjectiveFunction(
-                hasMaximizedOutputItems,
-                maximizedOutputItemsExpression,
-                balanceExpression,
-                itemInputExpressionMap,
-                itemOutputVariableMap,
-                itemSurplusExpressionMap,
-                recipeVariableMap);
+        FractionExpression objectiveFunction = FractionExpression.zero();
+
+        {
+            BigFraction multiplier = BigFraction.ONE;
+
+            for (OptimizationTarget t : optimizationTargets){
+                objectiveFunction = objectiveFunction.add(multiplier, t.getObjectiveFunction(
+                        maximizedOutputItemsExpression,
+                        balanceExpression,
+                        itemInputExpressionMap,
+                        itemOutputVariableMap,
+                        itemSurplusExpressionMap,
+                        recipeVariableMap
+                ));
+                multiplier = multiplier.movePointLeft(t.getOrdersOfMagnitude());
+            }
+        }
 
         OptimizationResult result;
 
@@ -320,8 +343,8 @@ public class ProductionPlanner
         private final Map<Item, OutputRequirement> outputRequirements = Item.createMap();
         private final Map<Item, BigDecimal> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
+        private final List<OptimizationTarget> optimizationTargets = new LinkedList<>();
         private boolean strictMaximizeRatios = false;
-        private OptimizationTarget optimizationTarget = OptimizationTarget.DEFAULT;
 
         public Builder()
         {
@@ -333,7 +356,7 @@ public class ProductionPlanner
             this.inputItems.putAll(planner.inputItems);
             this.recipes.addAll(planner.recipes);
             this.strictMaximizeRatios = planner.strictMaximizeRatios;
-            this.optimizationTarget = planner.optimizationTarget;
+            this.optimizationTargets.addAll(planner.optimizationTargets);
         }
 
         public Builder addInputItem(Item item, long itemsPerMinute)
@@ -344,6 +367,18 @@ public class ProductionPlanner
         public Builder addInputItem(Item item, BigDecimal itemsPerMinute)
         {
             inputItems.compute(item, (notused, amount) -> Objects.requireNonNullElse(amount, BigDecimal.ZERO).add(itemsPerMinute));
+            return this;
+        }
+
+        public Builder addOptimizationTarget(OptimizationTarget target)
+        {
+            this.optimizationTargets.add(target);
+            return this;
+        }
+
+        public Builder addOptimizationTargets(Collection<? extends OptimizationTarget> targets)
+        {
+            this.optimizationTargets.addAll(targets);
             return this;
         }
 
@@ -373,10 +408,21 @@ public class ProductionPlanner
             return new ProductionPlanner(this);
         }
 
+        public Builder clearOptimizationTargets()
+        {
+            optimizationTargets.clear();
+            return this;
+        }
+
         public Builder clearOutputItems()
         {
             this.outputRequirements.clear();
             return this;
+        }
+
+        public List<OptimizationTarget> getOptimizationTargets()
+        {
+            return optimizationTargets;
         }
 
         public Builder maximizeOutputItem(Item item, long weight)
@@ -397,12 +443,6 @@ public class ProductionPlanner
         public Builder requireOutputItemsPerMinute(Item item, long itemsPerMinute)
         {
             return requireOutputItemsPerMinute(item, BigDecimal.valueOf(itemsPerMinute));
-        }
-
-        public Builder setOptimizationTarget(OptimizationTarget optimizationTarget)
-        {
-            this.optimizationTarget = optimizationTarget;
-            return this;
         }
 
         public Builder setStrictMaximizeRatios(boolean strictMaximizeRatios)

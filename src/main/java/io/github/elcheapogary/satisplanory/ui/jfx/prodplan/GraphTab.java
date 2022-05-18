@@ -47,6 +47,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tab;
 import javafx.scene.control.TitledPane;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -72,12 +73,36 @@ import org.eclipse.draw2d.geometry.Insets;
 import org.eclipse.draw2d.graph.DirectedGraph;
 import org.eclipse.draw2d.graph.DirectedGraphLayout;
 
-class GraphPane
+class GraphTab
 {
     private static final PseudoClass SELECTED = PseudoClass.getPseudoClass("selected");
 
-    private GraphPane()
+    private GraphTab()
     {
+    }
+
+    public static Tab create(ProdPlanModel model)
+    {
+        Tab tab = new Tab();
+        tab.setClosable(false);
+        tab.setText("Graph");
+
+        setContent(tab, model.getPlan());
+
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, newValue));
+
+        tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
+
+        return tab;
+    }
+
+    private static void setContent(Tab tab, ProductionPlan plan)
+    {
+        if (plan == null){
+            tab.setContent(new Pane());
+        }else{
+            tab.setContent(createGraphPane(plan));
+        }
     }
 
     private static Region createNodeComponent(ProdPlanNodeData nodeData, BooleanBinding selectedBinding)
@@ -358,7 +383,7 @@ class GraphPane
         }
     }
 
-    public static Region createGraphPane(ProductionPlan plan)
+    private static Region createGraphPane(ProductionPlan plan)
     {
         BorderPane bp = new BorderPane();
         ObjectProperty<Node<ProdPlanNodeData, ProdPlanEdgeData>> selectedNodeProperty = new SimpleObjectProperty<>();
@@ -371,7 +396,7 @@ class GraphPane
             }
         });
 
-        ScrollPane sp = ZoomableScrollPane.create(createGraphPane(plan.toGraph(), GraphPane::createNodeComponent, GraphPane::createEdgeComponent, selectedNodeProperty));
+        ScrollPane sp = ZoomableScrollPane.create(createGraphPane(plan.toGraph(), GraphTab::createNodeComponent, GraphTab::createEdgeComponent, selectedNodeProperty));
         sp.setPannable(true);
         bp.setCenter(sp);
         return bp;

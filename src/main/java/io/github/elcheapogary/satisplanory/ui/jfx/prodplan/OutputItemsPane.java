@@ -36,7 +36,7 @@ class OutputItemsPane
     {
     }
 
-    private static void addRow(ProdPlanData.OutputItem outputItem, VBox vbox, List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
+    private static void addRow(ProdPlanModel.OutputItem outputItem, VBox vbox, List<ProdPlanModel.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
     {
         HBox hbox = new HBox(10);
         vbox.getChildren().add(vbox.getChildren().size() - 1, hbox);
@@ -94,10 +94,10 @@ class OutputItemsPane
         }
     }
 
-    static TitledPane createOutputRequirementsPane(List<ProdPlanData.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
+    static TitledPane createOutputRequirementsPane(List<ProdPlanModel.OutputItem> outputItems, ObservableList<Item> allItems, Runnable onChange)
     {
         TitledPane titledPane = new TitledPane();
-        titledPane.setText("Output Requirements");
+        titledPane.setText("Output Items");
         titledPane.setCollapsible(true);
 
         VBox vbox = new VBox(10);
@@ -129,7 +129,7 @@ class OutputItemsPane
         buttons.getChildren().add(addRowButton);
 
         addRowButton.onActionProperty().set(event -> {
-            ProdPlanData.OutputItem outputItem = new ProdPlanData.OutputItem(allItems.get(0), BigDecimal.ONE, BigDecimal.ZERO);
+            ProdPlanModel.OutputItem outputItem = new ProdPlanModel.OutputItem(allItems.get(0), BigDecimal.ONE, BigDecimal.ZERO);
             outputItems.add(outputItem);
             addRow(outputItem, table, outputItems, allItems, onChange);
         });
@@ -145,7 +145,7 @@ class OutputItemsPane
             table.getChildren().remove(0, table.getChildren().size() - 1);
         });
 
-        for (ProdPlanData.OutputItem outputItem : outputItems){
+        for (ProdPlanModel.OutputItem outputItem : outputItems){
             addRow(outputItem, table, outputItems, allItems, onChange);
         }
 

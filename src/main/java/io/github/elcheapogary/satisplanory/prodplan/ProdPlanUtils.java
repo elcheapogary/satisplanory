@@ -81,6 +81,8 @@ public class ProdPlanUtils
 
     private static void removeMaximizeWeights(ProductionPlanner planner, ProductionPlanner.Builder newPlanner)
     {
+        newPlanner.getOptimizationTargets().remove(OptimizationTarget.MAX_OUTPUT_ITEMS);
+
         newPlanner.clearOutputItems();
         for (Item item : planner.getOutputItems()){
             BigDecimal min = planner.getOutputItemMinimumPerMinute(item);
@@ -111,9 +113,7 @@ public class ProdPlanUtils
 
                 for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
                     gameData.getItemByName(entry.getKey())
-                            .ifPresent(item -> {
-                                pb.addInputItem(item, entry.getValue());
-                            });
+                            .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
                 }
 
                 try {
@@ -144,9 +144,7 @@ public class ProdPlanUtils
 
                 for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
                     gameData.getItemByName(entry.getKey())
-                            .ifPresent(item -> {
-                                pb.addInputItem(item, entry.getValue());
-                            });
+                            .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
                 }
 
                 pb.addRecipes(gameData.getRecipes());

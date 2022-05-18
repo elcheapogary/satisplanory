@@ -38,7 +38,7 @@ import javafx.scene.layout.VBox;
 
 class InputItemsPane
 {
-    private static void addRow(VBox container, ProdPlanData.InputItem inputItem, List<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems)
+    private static void addRow(VBox container, ProdPlanModel.InputItem inputItem, List<ProdPlanModel.InputItem> inputItems, ObservableList<Item> allItems)
     {
         HBox hBox = new HBox(10);
         container.getChildren().add(container.getChildren().size() - 1, hBox);
@@ -91,7 +91,7 @@ class InputItemsPane
         });
     }
 
-    static TitledPane createInputItemsPane(ObservableList<ProdPlanData.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)
+    static TitledPane createInputItemsPane(ObservableList<ProdPlanModel.InputItem> inputItems, ObservableList<Item> allItems, GameData gameData)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setText("Input Items");
@@ -119,7 +119,7 @@ class InputItemsPane
         Button addRowButton = new Button("Add Item");
         buttons.getChildren().add(addRowButton);
         addRowButton.onActionProperty().setValue(event -> {
-            ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(allItems.get(0), BigDecimal.ZERO);
+            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(allItems.get(0), BigDecimal.ZERO);
             inputItems.add(inputItem);
         });
 
@@ -129,13 +129,13 @@ class InputItemsPane
             for (Map.Entry<String, Long> entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
                 gameData.getItemByName(entry.getKey())
                         .ifPresent(item -> {
-                            ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())));
+                            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())));
                             inputItems.add(inputItem);
                         });
             }
             gameData.getItemByName("Water")
                     .ifPresent(item -> {
-                        ProdPlanData.InputItem inputItem = new ProdPlanData.InputItem(item, BigDecimal.valueOf(999999999999L));
+                        ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, BigDecimal.valueOf(999999999999L));
                         inputItems.add(inputItem);
                     });
         });
@@ -151,14 +151,14 @@ class InputItemsPane
             table.getChildren().remove(0, table.getChildren().size() - 1);
         });
 
-        for (ProdPlanData.InputItem inputItem : inputItems){
+        for (ProdPlanModel.InputItem inputItem : inputItems){
             addRow(table, inputItem, inputItems, allItems);
         }
 
-        inputItems.addListener((ListChangeListener<ProdPlanData.InputItem>) c -> {
+        inputItems.addListener((ListChangeListener<ProdPlanModel.InputItem>) c -> {
             while (c.next()){
                 if (c.wasAdded()){
-                    for (ProdPlanData.InputItem inputItem : c.getAddedSubList()){
+                    for (ProdPlanModel.InputItem inputItem : c.getAddedSubList()){
                         addRow(table, inputItem, inputItems, allItems);
                     }
                 }

@@ -108,6 +108,32 @@ public abstract class Expression
         return add(BigDecimal.valueOf(multiplier), expression);
     }
 
+    public FractionExpression divide(long value)
+    {
+        return divide(BigFraction.valueOf(value));
+    }
+
+    public FractionExpression divide(double value)
+    {
+        return divide(BigDecimal.valueOf(value));
+    }
+
+    public FractionExpression divide(BigFraction value)
+    {
+        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
+
+        for (var entry : getVariableValues().entrySet()){
+            m.put(entry.getKey(), entry.getValue().divide(value));
+        }
+
+        return new ConcreteFractionExpression(constantValue.divide(value), m);
+    }
+
+    public FractionExpression divide(BigDecimal value)
+    {
+        return divide(BigFraction.valueOf(value));
+    }
+
     public Constraint eq(BigFraction amount)
     {
         return new Constraint(getVariableValues(), amount.subtract(constantValue), amount.subtract(constantValue));

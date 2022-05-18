@@ -10,21 +10,17 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
-import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanNotFeatisbleException;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
-import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -33,11 +29,10 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -54,7 +49,6 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.GridPane;
@@ -71,40 +65,43 @@ class InputTab
     {
     }
 
-    public static void addInputTab(AppContext appContext, GameData gameData, TabPane tabPane, ProdPlanData prodPlanData)
+    public static Tab create(AppContext appContext, ProdPlanModel model)
     {
-        HBox hbox = new HBox(10);
-        hbox.setAlignment(Pos.TOP_CENTER);
-        hbox.setPadding(new Insets(10));
+        Tab tab = new Tab("Input");
+        tab.setClosable(false);
+        tab.setContent(createBody(appContext, model));
+        return tab;
+    }
 
-        Tab inputTab = new Tab("Input");
-        inputTab.setClosable(false);
-        inputTab.setContent(hbox);
-        tabPane.getTabs().add(inputTab);
+    public static Node createBody(AppContext appContext, ProdPlanModel model)
+    {
+        HBox body = new HBox(10);
+        body.setAlignment(Pos.TOP_CENTER);
+        body.setPadding(new Insets(10));
 
-        ObservableList<Item> allItemsObservableList = FXCollections.observableList(new ArrayList<>(gameData.getItems()));
+        ObservableList<Item> allItemsObservableList = FXCollections.observableList(new ArrayList<>(appContext.getGameData().getItems()));
 
-        Region n = createRecipesPane(gameData.getRecipes(), prodPlanData.getEnabledRecipes(), allItemsObservableList);
+        Region n = createRecipesPane(appContext.getGameData().getRecipes(), model, allItemsObservableList);
         HBox.setHgrow(n, Priority.NEVER);
-        hbox.getChildren().add(n);
+        body.getChildren().add(n);
 
         VBox vbox = new VBox(10);
         vbox.setPrefWidth(0);
         HBox.setHgrow(vbox, Priority.ALWAYS);
-        hbox.getChildren().add(vbox);
+        body.getChildren().add(vbox);
 
         Accordion accordion = new Accordion();
         VBox.setVgrow(accordion, Priority.ALWAYS);
         vbox.getChildren().add(accordion);
 
-        accordion.getPanes().add(InputItemsPane.createInputItemsPane(prodPlanData.getInputItems(), allItemsObservableList, gameData));
+        accordion.getPanes().add(InputItemsPane.createInputItemsPane(model.getInputItems(), allItemsObservableList, appContext.getGameData()));
 
         accordion.setExpandedPane(accordion.getPanes().get(0));
 
-        accordion.getPanes().add(OutputItemsPane.createOutputRequirementsPane(FXCollections.observableList(prodPlanData.getOutputItems()), allItemsObservableList, () -> {
+        accordion.getPanes().add(OutputItemsPane.createOutputRequirementsPane(FXCollections.observableList(model.getOutputItems()), allItemsObservableList, () -> {
         }));
 
-        accordion.getPanes().add(SettingsPane.createSettingsPane(prodPlanData.settings));
+        accordion.getPanes().add(SettingsPane.createSettingsPane(model.getSettings(), model.getOutputItems()));
 
         accordion.getPanes().add(createHelpPane(appContext));
 
@@ -112,23 +109,16 @@ class InputTab
         button.setMaxWidth(Double.MAX_VALUE);
         vbox.getChildren().add(button);
 
-        final Tab errorTab = new Tab("Not possible");
-        errorTab.setClosable(true);
-        final Tab overviewTab = new Tab("Overview");
-        overviewTab.setClosable(false);
-        final Tab graphTab = new Tab("Graph");
-        graphTab.setClosable(false);
-        final Tab tableTab = new Tab("Table");
-        tableTab.setClosable(false);
-
         button.onActionProperty().set(event -> {
             ProductionPlanner.Builder b = new ProductionPlanner.Builder();
 
-            b.addRecipes(prodPlanData.getEnabledRecipes());
+            b.addRecipes(model.getEnabledRecipes());
 
-            b.setOptimizationTarget(prodPlanData.settings.getOptimizationTarget());
+            for (OptimizationTargetModel otm : model.getSettings().getOptimizationTargets()){
+                b.addOptimizationTarget(otm.getOptimizationTarget());
+            }
 
-            for (ProdPlanData.InputItem inputItem : prodPlanData.getInputItems()){
+            for (ProdPlanModel.InputItem inputItem : model.getInputItems()){
                 if (inputItem.getAmount().signum() > 0){
                     b.addInputItem(inputItem.getItem(), inputItem.getItem().fromDisplayAmount(inputItem.getAmount()));
                 }
@@ -136,7 +126,7 @@ class InputTab
 
             boolean hasOutputRequirement = false;
 
-            for (ProdPlanData.OutputItem outputItem : prodPlanData.getOutputItems()){
+            for (ProdPlanModel.OutputItem outputItem : model.getOutputItems()){
                 BigDecimal min = outputItem.getMin();
 
                 if (min.signum() > 0){
@@ -160,8 +150,6 @@ class InputTab
                 return;
             }
 
-            updatePersistentProdPlan(prodPlanData, prodPlanData.getPersistentProductionPlan());
-
             MultiPlan plan;
 
             try {
@@ -169,7 +157,7 @@ class InputTab
                         .setTitle("Calculating")
                         .setContentText("Calculating production plan")
                         .setCancellable(true)
-                        .runTask(taskContext -> ProdPlanUtils.getMultiPlan(gameData, b.build()))
+                        .runTask(taskContext -> ProdPlanUtils.getMultiPlan(appContext.getGameData(), b.build()))
                         .get();
             }catch (TaskProgressDialog.TaskCancelledException e){
                 return;
@@ -190,53 +178,15 @@ class InputTab
                 return;
             }
 
-            ResultsPane.setUpTabs(appContext, prodPlanData, plan, tabPane, errorTab, overviewTab, graphTab, tableTab);
+            if (plan.isUnmodifiedPlanFeasible()){
+                model.setPlan(plan.getUnmodifiedPlan());
+            }else{
+                model.setPlan(null);
+                model.setMultiPlan(plan);
+            }
         });
 
-        if (prodPlanData.getPersistentProductionPlan().getPlan() != null){
-            Map<Item, BigFraction> inputItemsMap = Item.createMap();
-            Map<Item, BigFraction> outputItemsMap = Item.createMap();
-            Map<Recipe, BigFraction> recipeMap = Recipe.createMap();
-
-            for (var entry : prodPlanData.getPersistentProductionPlan().getPlan().getInputItems().entrySet()){
-                gameData.getItemByName(entry.getKey()).ifPresent(item -> inputItemsMap.put(item, entry.getValue()));
-            }
-
-            for (var entry : prodPlanData.getPersistentProductionPlan().getPlan().getOutputItems().entrySet()){
-                gameData.getItemByName(entry.getKey()).ifPresent(item -> outputItemsMap.put(item, entry.getValue()));
-            }
-
-            for (var entry : prodPlanData.getPersistentProductionPlan().getPlan().getRecipes().entrySet()){
-                gameData.getRecipeByName(entry.getKey()).ifPresent(recipe -> recipeMap.put(recipe, entry.getValue()));
-            }
-
-            ProductionPlan p = new ProductionPlan(recipeMap, inputItemsMap, outputItemsMap);
-
-            ResultsPane.setUpPlanTabs(p, tabPane, overviewTab, graphTab, tableTab);
-        }
-    }
-
-    private static void updatePersistentProdPlan(ProdPlanData data, PersistentProductionPlan persistentProductionPlan)
-    {
-        persistentProductionPlan.getInput().getInputItems().clear();
-
-        for (ProdPlanData.InputItem inputItem : data.getInputItems()){
-            persistentProductionPlan.getInput().getInputItems().compute(inputItem.getItem().getName(), (item, existingAmount) -> Objects.requireNonNullElse(existingAmount, BigDecimal.ZERO).add(inputItem.getAmount()));
-        }
-
-        persistentProductionPlan.getInput().getOutputItemsPerMinute().clear();
-        persistentProductionPlan.getInput().getMaximizedOutputItems().clear();
-
-        for (ProdPlanData.OutputItem outputItem : data.getOutputItems()){
-            if (outputItem.getMin().signum() > 0){
-                persistentProductionPlan.getInput().getOutputItemsPerMinute().compute(outputItem.getItem().getName(), (s, existingAmount) -> Objects.requireNonNullElse(existingAmount, BigDecimal.ZERO).add(outputItem.getMin()));
-            }
-            if (outputItem.getWeight().signum() > 0){
-                persistentProductionPlan.getInput().getMaximizedOutputItems().compute(outputItem.getItem().getName(), (s, existingAmount) -> Objects.requireNonNullElse(existingAmount, BigDecimal.ZERO).max(outputItem.getWeight()));
-            }
-        }
-
-        persistentProductionPlan.setPlan(null);
+        return body;
     }
 
     private static TitledPane createHelpPane(AppContext appContext)
@@ -341,7 +291,7 @@ class InputTab
         return t;
     }
 
-    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, ObservableSet<Recipe> enabledRecipes, ObservableList<Item> allItems)
+    private static TitledPane createRecipesPane(Collection<? extends Recipe> recipes, ProdPlanModel model, ObservableList<Item> allItems)
     {
         TitledPane titledPane = new TitledPane();
         titledPane.setCollapsible(false);
@@ -349,6 +299,20 @@ class InputTab
 
         VBox vBox = new VBox(10);
         vBox.setPadding(new Insets(10, 25, 10, 10));
+
+        {
+            Button useCurrentRecipesButton = new Button("Current plan recipes only");
+            vBox.getChildren().add(useCurrentRecipesButton);
+
+            useCurrentRecipesButton.setMaxWidth(Double.MAX_VALUE);
+
+            useCurrentRecipesButton.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
+
+            useCurrentRecipesButton.onActionProperty().set(event -> {
+                model.getEnabledRecipes().clear();
+                model.getEnabledRecipes().addAll(model.getPlan().getRecipes());
+            });
+        }
 
         ObservableValue<String> searchStringValue;
         ObservableValue<Item> producesItem;
@@ -412,11 +376,11 @@ class InputTab
             vBox.getChildren().add(hBox);
             hBox.setFillHeight(true);
 
-            Node defaultRecipes = createRecipeSelectionList("Default Recipes", recipe -> !recipe.isAlternateRecipe(), recipes, enabledRecipes, displayValueFactory);
+            Node defaultRecipes = createRecipeSelectionList("Default Recipes", recipe -> !recipe.isAlternateRecipe(), recipes, model.getEnabledRecipes(), displayValueFactory);
             HBox.setHgrow(defaultRecipes, Priority.ALWAYS);
             hBox.getChildren().add(defaultRecipes);
 
-            Node alternateRecipes = createRecipeSelectionList("Alternate Recipes", Recipe::isAlternateRecipe, recipes, enabledRecipes, displayValueFactory);
+            Node alternateRecipes = createRecipeSelectionList("Alternate Recipes", Recipe::isAlternateRecipe, recipes, model.getEnabledRecipes(), displayValueFactory);
             HBox.setHgrow(alternateRecipes, Priority.ALWAYS);
             hBox.getChildren().add(alternateRecipes);
         }

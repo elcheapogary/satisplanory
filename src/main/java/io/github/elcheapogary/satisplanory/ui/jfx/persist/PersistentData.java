@@ -40,7 +40,7 @@ public class PersistentData
     public PersistentData(JSONObject json)
             throws UnsupportedVersionException
     {
-        if (json.has("v") && Double.parseDouble(json.getString("v")) > 1.2){
+        if (json.has("v") && Double.parseDouble(json.getString("v")) > 1.3){
             throw new UnsupportedVersionException();
         }
         this.satisfactoryPath.set(json.optString("satisfactoryPath"));
@@ -51,7 +51,9 @@ public class PersistentData
         JSONArray jsonProductionPlans = json.optJSONArray("productionPlans");
         if (jsonProductionPlans != null){
             for (int i = 0; i < jsonProductionPlans.length(); i++){
-                productionPlans.add(new PersistentProductionPlan(jsonProductionPlans.getJSONObject(i)));
+                PersistentProductionPlan plan = new PersistentProductionPlan();
+                plan.loadJson(jsonProductionPlans.getJSONObject(i));
+                productionPlans.add(plan);
             }
         }
     }
@@ -85,7 +87,7 @@ public class PersistentData
     {
         JSONObject json = new JSONObject();
 
-        json.put("v", "1.2");
+        json.put("v", "1.3");
 
         json.put("satisfactoryPath", satisfactoryPath.get());
         json.put("preferences", preferences.toJson());

@@ -51,7 +51,7 @@
                 you.
             </p>
         </dd>
-        <dt>Output Requirements</dt>
+        <dt>Output Items</dt>
         <dd>
             <p>
                 These are the items you would like the production lines to produce.
@@ -81,17 +81,24 @@
                 Rods, even if output ratio would no longer match what is configured.
             </p>
         </dd>
-        <dt>Settings</dt>
+        <dt>Optimization Targets</dt>
         <dd>
             <p>
-                Here you can configure options for the calculator.
+                Here you can configure what the calculator should optimize for - what it is trying to achieve. There are various
+                different targets which you can enable or disable and arrange in order of importance to you.
             </p>
         </dd>
     </dl>
 
     <hr>
 
-    <p><b>Maximizing Output vs Recipe Selection</b></p>
+    <p><b>Maximizing Output Items vs other optimization targets</b></p>
+
+    <p>
+        Maximizing output items is when one or more of your output items has a weight greater than zero, and the
+        <i>Maximize Output Items</i> optimization target is enabled (and near the top). This means the calculator
+        should create a plan that produces as much of the output items with a weight greater than zero as possible.
+    </p>
 
     <p>
         When maximizing output items, there is usually only a single combination of recipes that produces the most
@@ -100,24 +107,52 @@
     </p>
 
     <p>
-        If you want to maximize output <i>and</i> use one of the optimization targets to select recipes according to
-        those rules (like <i>Minimize Power Consumption</i>), then do the following:
+        If you are trying to use another optimization target, like <i>Minimize Power Consumption</i>, and also want to
+        create as many of an output item as possible it can get tricky, as <i>Maximize Output Items</i> and
+        <i>Minimize Power Consumption</i> are usually contradictory. If you make <i>Maximize Output Items</i> more
+        important, then the calculator will select the plan that produces the most output items without considering
+        power (unless multiple recipe combinations result in the same maximum output items). If you make
+        <i>Minimize Power Consumption</i> more important, then the calculator will generate a minimal plan that uses as
+        little power as possible and not create as many of the output item as possible.
+    </p>
+
+    <p>
+        Here is a strategy for maximizing output items subject to another optimization target:
     </p>
 
     <ol>
-        <li>First set a minimum amount for each output item.</li>
-        <li>Then, run the calculator using the desired optimization target.</li>
         <li>
-            This will create a plan that is not necessarily optimized for maximum output, but it allows you so see
-            the input items and recipes used when using the desired optimization target. Change your input items to
-            the input items used by the plan, and change the amounts to the amounts of these input items you have
-            available in the area.
+            Set <i>Input Items</i> to what you have available, or add all raw resources to see what you may need.
         </li>
-        <li>Run the calculator again, this time with the <i>Maximize Output Items</i> optimization target.</li>
+        <li>
+            <p>
+                First set a minimum amount for each output item. This should be less than the total you expect to be
+                produced. Even a minimum output of 1 should work.
+            </p>
+        </li>
+        <li>
+            <p>
+                Then, run the calculator with the desired optimization target, eg. <i>Minimize Power Consumption</i>,
+                enabled, and <i>Maximize Output Items</i> disabled.
+            </p>
+            <p>
+                This will create a plan that is not necessarily optimized for maximum output, but it allows you so see
+                the input items and recipes used when using the desired optimization target.
+            </p>
+        </li>
+        <li>
+            <p>
+                Select only the recipes used in the generated plan. There is a convenient <i>Current plan recipes only</i>
+                button at the top of the <i>Recipes</i> section to do this.
+            </p>
+        </li>
+        <li>
+            <p>
+                Run the calculator again, this time with the <i>Maximize Output Items</i> optimization target enabled
+                and prioritized. This will create as many of the output items as possible, but only using the recipes
+                determined by the previous optimization target.
+            </p>
+        </li>
     </ol>
-
-    <p>
-        This will result in a production plan that maximizes output items based on the other optimization target rules.
-    </p>
 </body>
 </html>
