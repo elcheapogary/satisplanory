@@ -14,6 +14,7 @@ import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.test.TestGameData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ public class ProductionPlannerTest
 
     private static void assertOutputItems(ProductionPlan plan, TestGameData gameData, String itemName, long amount)
     {
-        assertEquals(0, plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).compareTo(BigFraction.valueOf(amount)));
+        assertEquals(0, plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).compareTo(BigFraction.valueOf(amount)), () -> "Incorrect number of output items: " + itemName + ": expected: " + amount + ", actual: " + plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).toBigDecimal(4, RoundingMode.HALF_UP));
     }
 
     @Test
@@ -44,7 +45,6 @@ public class ProductionPlannerTest
 
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
-        builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEM_BALANCE);
         builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
         builder.addInputItem(gd.requireItemByName("Iron Ingot"), 50);
@@ -70,8 +70,7 @@ public class ProductionPlannerTest
 
         ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
 
-        pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEM_BALANCE)
-                .addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
+        pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
         Item plastic = gd.requireItemByName("Plastic");
         Item fuel = gd.requireItemByName("Fuel");
