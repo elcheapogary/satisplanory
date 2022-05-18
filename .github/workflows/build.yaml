@@ -2,8 +2,8 @@ name: build
 
 on:
   push:
-    branches:
-      - github-actions
+    tags:
+      - v*
 
 jobs:
   build-linux:
