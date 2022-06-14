@@ -64,7 +64,14 @@ public class DocsJsonLoader
 
             JSONObject firstClass = classesArray.getJSONObject(0);
 
-            return firstClass.toMap().keySet();
+            Set<String> fieldNames = new TreeSet<>(firstClass.toMap().keySet());
+
+            /*
+             * Update 6 - some subclasses of FGItemDescriptor do not have mResourceSinkPoints??
+             */
+            fieldNames.remove("mResourceSinkPoints");
+
+            return fieldNames;
         }
 
         throw new IOException("Unable to find native class: " + ITEM_DESCRIPTOR_NATIVE_CLASS);
@@ -104,7 +111,8 @@ public class DocsJsonLoader
                         case "RF_SOLID" -> itemBuilder.setMatterState(MatterState.SOLID);
                         case "RF_LIQUID" -> itemBuilder.setMatterState(MatterState.LIQUID);
                         case "RF_GAS" -> itemBuilder.setMatterState(MatterState.GAS);
-                        default -> throw new DataException("Unknown mForm value for item: " + nativeClassName + "[" + i + "]: " + jsonItem.getString("mForm"));
+                        default ->
+                                throw new DataException("Unknown mForm value for item: " + nativeClassName + "[" + i + "]: " + jsonItem.getString("mForm"));
                     }
 
                     itemBuilder.setSinkValue(jsonItem.optInt("mResourceSinkPoints", 0));
@@ -303,6 +311,13 @@ public class DocsJsonLoader
         }
 
         JSONObject firstClass = classesArray.getJSONObject(0);
+
+        /*
+         * Update 6 - building descriptors use mForm RF_INVALID - this gets rid of them.
+         */
+        if ("RF_INVALID".equals(firstClass.optString("mForm"))){
+            return false;
+        }
 
         for (String fieldName : itemDescriptorFields){
             if (!firstClass.has(fieldName)){

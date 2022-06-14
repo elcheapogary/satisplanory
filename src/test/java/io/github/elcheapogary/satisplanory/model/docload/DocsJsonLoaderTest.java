@@ -44,4 +44,12 @@ public class DocsJsonLoaderTest
         Assumptions.assumeFalse(gd == null);
         checkGameData(gd);
     }
+
+    @Test
+    public void testUpdate6Data()
+    {
+        TestGameData gd = TestGameData.getUpdate6GameData();
+        Assumptions.assumeFalse(gd == null);
+        checkGameData(gd);
+    }
 }
