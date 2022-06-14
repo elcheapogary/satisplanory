@@ -24,15 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProductionPlannerTest
 {
+    private static void assertOutputItems(ProductionPlan plan, TestGameData gameData, String itemName, long amount)
+    {
+        assertEquals(0, plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).compareTo(BigFraction.valueOf(amount)), () -> "Incorrect number of output items: " + itemName + ": expected: " + amount + ", actual: " + plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).toBigDecimal(4, RoundingMode.HALF_UP));
+    }
+
     public static ProductionPlan createPlan(ProductionPlanner productionPlanner)
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         return productionPlanner.createPlan();
-    }
-
-    private static void assertOutputItems(ProductionPlan plan, TestGameData gameData, String itemName, long amount)
-    {
-        assertEquals(0, plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).compareTo(BigFraction.valueOf(amount)), () -> "Incorrect number of output items: " + itemName + ": expected: " + amount + ", actual: " + plan.getOutputItemsPerMinute(gameData.requireItemByName(itemName)).toBigDecimal(4, RoundingMode.HALF_UP));
     }
 
     @Test
@@ -93,6 +93,31 @@ public class ProductionPlannerTest
 
         assertTrue(nPlastic.compareTo(BigFraction.valueOf(20)) > 0);
         assertEquals(plastic.toDisplayAmount(nPlastic).subtract(20), fuel.toDisplayAmount(nFuel));
+    }
+
+    @Test
+    public void testCanProduceMoreThanInput()
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    {
+        TestGameData gd = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gd == null);
+
+        ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
+
+        pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
+
+        pb.addRecipe(gd.requireRecipeByName("Iron Ingot"));
+
+        pb.addInputItem(gd.requireItemByName("Iron Ore"), 300);
+
+        pb.addInputItem(gd.requireItemByName("Iron Ingot"), 60);
+
+        pb.maximizeOutputItem(gd.requireItemByName("Iron Ingot"), 1);
+
+        ProductionPlan plan = pb.build().createPlan();
+
+        assertEquals(360L, plan.getOutputItemsPerMinute(gd.requireItemByName("Iron Ingot")).longValue());
     }
 
     @Test

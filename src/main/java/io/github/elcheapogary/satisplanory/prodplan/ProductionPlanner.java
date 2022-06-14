@@ -161,28 +161,29 @@ public class ProductionPlanner
                 FractionExpression consumed = Objects.requireNonNullElse(itemsConsumedExpressionMap.get(item), FractionExpression.zero());
                 FractionExpression produced = Objects.requireNonNullElse(itemsProducedExpressionMap.get(item), FractionExpression.zero());
 
-                FractionExpression inputVariable = FractionExpression.zero();
+                FractionExpression input = FractionExpression.zero();
 
                 {
                     BigDecimal inputAmountPerMinute = inputItems.get(item);
                     if (inputAmountPerMinute != null){
-                        inputVariable = model.addFractionVariable();
-                        itemInputExpressionMap.put(item, inputVariable);
-                        model.addConstraint(inputVariable.nonNegative());
-                        model.addConstraint(inputVariable.lte(inputAmountPerMinute));
-                        model.addConstraint(inputVariable.eq(consumed.subtract(produced)));
+                        input = model.addFractionVariable();
+                        itemInputExpressionMap.put(item, input);
+                        model.addConstraint(input.nonNegative());
+                        model.addConstraint(input.lte(inputAmountPerMinute));
                     }
                 }
 
-                FractionExpression outputExpression = produced.subtract(consumed.subtract(inputVariable));
-                itemOutputVariableMap.put(item, outputExpression);
+                FractionExpression output = model.addFractionVariable();
+                itemOutputVariableMap.put(item, output);
+
+                model.addConstraint(output.subtract(input).eq(produced.subtract(consumed)));
 
                 {
                     OutputRequirement outputRequirement = outputRequirements.get(item);
                     if (outputRequirement != null && outputRequirement.getItemsPerMinute() != null){
-                        model.addConstraint(outputExpression.gte(outputRequirement.getItemsPerMinute()));
+                        model.addConstraint(output.gte(outputRequirement.getItemsPerMinute()));
                     }else{
-                        model.addConstraint(outputExpression.nonNegative());
+                        model.addConstraint(output.nonNegative());
                     }
                 }
             }
