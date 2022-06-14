@@ -1,6 +1,7 @@
 
 .root {
     -fx-font-family: 'Roboto';
+    -fx-font-size: 13px;
 }
 
 .stpnr-graph-node-recipe {
