@@ -36,7 +36,9 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -165,17 +167,36 @@ public class ProdPlanBrowser
         PlanOpener planOpener = (plan, modelConfigurator) -> {
             Tab tab = tabMap.get(plan);
             if (tab == null){
-                ProdPlanModel model = ProdPlanModel.fromPersistent(gameData, plan);
-                model.nameProperty().addListener((observable, oldValue, newValue) -> {
-                    appContext.getPersistentData().getProductionPlans().sort(Comparator.comparing(PersistentProductionPlan::getName));
-                    list.refresh();
-                });
-                if (modelConfigurator != null){
-                    modelConfigurator.accept(model);
+                try {
+                    tab = new TaskProgressDialog(appContext)
+                            .setTitle("Loading production plan")
+                            .setContentText("Loading production plan")
+                            .setCancellable(false)
+                            .runTask(taskContext -> {
+                                ProdPlanModel model = ProdPlanModel.fromPersistent(gameData, plan);
+                                FutureTask<Tab> future = new FutureTask<>(() -> {
+                                    model.nameProperty().addListener((observable, oldValue, newValue) -> {
+                                        appContext.getPersistentData().getProductionPlans().sort(Comparator.comparing(PersistentProductionPlan::getName));
+                                        list.refresh();
+                                    });
+                                    if (modelConfigurator != null){
+                                        modelConfigurator.accept(model);
+                                    }
+                                    return ProdPlanTab.create(appContext, model);
+                                });
+                                Platform.runLater(future);
+                                return future.get();
+                            }).get();
+                    tab.onClosedProperty().set(e -> tabMap.remove(plan));
+                    tabMap.put(plan, tab);
+                }catch (Exception e){
+                    new ExceptionDialog(appContext)
+                            .setTitle("Error loading production plan")
+                            .setContextMessage("An error occurred while loading the production plan")
+                            .setException(e)
+                            .showAndWait();
+                    return;
                 }
-                tab = ProdPlanTab.create(appContext, model);
-                tab.onClosedProperty().set(e -> tabMap.remove(plan));
-                tabMap.put(plan, tab);
             }
             if (!tabPane.getTabs().contains(tab)){
                 tabPane.getTabs().add(tab);
