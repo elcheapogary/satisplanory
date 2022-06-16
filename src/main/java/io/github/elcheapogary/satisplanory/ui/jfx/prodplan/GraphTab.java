@@ -262,7 +262,7 @@ class GraphTab
         titledPane.setContent(lines);
 
         List<Recipe.RecipeItem> sortedRecipeItems = new ArrayList<>(recipeItems);
-        sortedRecipeItems.sort(Comparator.<Recipe.RecipeItem, String>comparing(recipeItem -> recipeItem.getItem().getName()));
+        sortedRecipeItems.sort(Comparator.comparing(recipeItem -> recipeItem.getItem().getName()));
 
         for (Recipe.RecipeItem ri : sortedRecipeItems){
             lines.getChildren().add(new Label(ri.getItem().getName() + ": " + BigDecimalUtils.normalize(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerMinuteFraction().multiply(amount)).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
@@ -468,6 +468,32 @@ class GraphTab
         return pane;
     }
 
+    /**
+     * Adds node to layout graph. We need this method to suppress unchecked warnings. External code is unchecked, not
+     * ours.
+     *
+     * @param layoutGraph The graph to add the node to.
+     * @param node        The node to add to the graph.
+     */
+    @SuppressWarnings("unchecked")
+    private static void addNodeToLayoutGraph(DirectedGraph layoutGraph, org.eclipse.draw2d.graph.Node node)
+    {
+        layoutGraph.nodes.add(node);
+    }
+
+    /**
+     * Adds edge to layout graph. We need this method to suppress unchecked warnings. External code is unchecked, not
+     * ours.
+     *
+     * @param layoutGraph The graph to add the edge to.
+     * @param edge        The edge to add to the graph.
+     */
+    @SuppressWarnings("unchecked")
+    private static void addEdgeToLayoutGraph(DirectedGraph layoutGraph, org.eclipse.draw2d.graph.Edge edge)
+    {
+        layoutGraph.edges.add(edge);
+    }
+
     private static <N, E> void doGraphLayout(double width, double height, Map<Node<N, E>, Region> componentMap)
     {
         Map<Node<N, E>, org.eclipse.draw2d.graph.Node> layoutNodeMap = new TreeMap<>(Comparator.comparing(Node::getName));
@@ -485,13 +511,13 @@ class GraphTab
             layoutNode.width = (int) r.getWidth();
             layoutNode.height = (int) r.getHeight();
             layoutNodeMap.put(n, layoutNode);
-            layoutGraph.nodes.add(layoutNode);
+            addNodeToLayoutGraph(layoutGraph, layoutNode);
         }
 
         for (Node<N, E> n : componentMap.keySet()){
             for (Node<N, E> c : n.getOutgoingEdges().keySet()){
                 org.eclipse.draw2d.graph.Edge layoutEdge = new org.eclipse.draw2d.graph.Edge(layoutNodeMap.get(n), layoutNodeMap.get(c));
-                layoutGraph.edges.add(layoutEdge);
+                addEdgeToLayoutGraph(layoutGraph, layoutEdge);
             }
         }
 
