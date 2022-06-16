@@ -25,7 +25,7 @@ public class ZoomableScrollPane
     {
     }
 
-    public static ScrollPane create(Node target)
+    public static ScrollPane create(Node target, double minScale, double maxScale)
     {
         ScrollPane sp = new ScrollPane();
         sp.setFitToWidth(true);
@@ -38,12 +38,12 @@ public class ZoomableScrollPane
 
         sp.setContent(outer);
 
-        outer.setOnScroll(scrollEvent -> zoom(sp, zoomNode, target, scrollEvent));
+        outer.setOnScroll(scrollEvent -> zoom(sp, zoomNode, target, scrollEvent, minScale, maxScale));
 
         return sp;
     }
 
-    private static void zoom(ScrollPane sp, Node zoomNode, Node target, ScrollEvent scrollEvent)
+    private static void zoom(ScrollPane sp, Node zoomNode, Node target, ScrollEvent scrollEvent, double minScale, double maxScale)
     {
         scrollEvent.consume();
         double zoomFactor = Math.exp(scrollEvent.getDeltaY() * 0.005);
@@ -56,6 +56,15 @@ public class ZoomableScrollPane
         double valY = sp.getVvalue() * (innerBounds.getHeight() - viewportBounds.getHeight());
 
         double scale = target.getScaleX() * zoomFactor;
+
+        scale = Double.min(maxScale, Double.max(minScale, scale));
+
+        if (scale == target.getScaleX()){
+            return;
+        }
+
+        zoomFactor = scale / target.getScaleX();
+
         target.setScaleX(scale);
         target.setScaleY(scale);
         sp.layout(); // refresh ScrollPane scroll positions & target bounds
