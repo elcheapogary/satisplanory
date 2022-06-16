@@ -356,7 +356,7 @@ public class CodexPane
             c.setHgrow(Priority.ALWAYS);
             gp.getColumnConstraints().add(c);
             gp.getColumnConstraints().add(new ColumnConstraints());
-            gp.getColumnConstraints().add(new ColumnConstraints(70));
+            gp.getColumnConstraints().add(new ColumnConstraints(80));
         }
 
         {
