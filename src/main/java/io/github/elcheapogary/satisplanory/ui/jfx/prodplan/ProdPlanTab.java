@@ -32,7 +32,7 @@ class ProdPlanTab
         TabPane tabPane = new TabPane();
         tab.setContent(tabPane);
 
-        tabPane.getTabs().add(InputTab.create(appContext, model));
+        tabPane.getTabs().add(ConfigTab.create(appContext, model));
 
         final Tab errorTab = ErrorTab.create(model);
         final Tab overviewTab = OverviewTab.create(model);

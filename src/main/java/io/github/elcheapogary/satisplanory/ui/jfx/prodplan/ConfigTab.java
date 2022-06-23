@@ -32,7 +32,6 @@ import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -59,15 +58,15 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.web.WebView;
 
-class InputTab
+class ConfigTab
 {
-    private InputTab()
+    private ConfigTab()
     {
     }
 
     public static Tab create(AppContext appContext, ProdPlanModel model)
     {
-        Tab tab = new Tab("Input");
+        Tab tab = new Tab("Configuration");
         tab.setClosable(false);
         tab.setContent(createBody(appContext, model));
         return tab;
@@ -202,7 +201,7 @@ class InputTab
         titledPane.setContent(webView);
 
         try {
-            webView.getEngine().loadContent(ResourceUtils.getResourceAsString(InputTab.class, "help.html"), "text/html");
+            webView.getEngine().loadContent(ResourceUtils.getResourceAsString(ConfigTab.class, "help.html"), "text/html");
         }catch (IOException e){
             e.printStackTrace(System.err);
         }
