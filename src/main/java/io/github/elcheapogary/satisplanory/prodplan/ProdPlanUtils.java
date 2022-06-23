@@ -116,6 +116,9 @@ public class ProdPlanUtils
                             .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
                 }
 
+                gameData.getItemByName("Water")
+                        .ifPresent(item -> pb.addInputItem(item, Long.MAX_VALUE));
+
                 try {
                     planWithAllItems = pb.build().createPlan();
                 }catch (ProductionPlanNotFeatisbleException ignore){
@@ -146,6 +149,9 @@ public class ProdPlanUtils
                     gameData.getItemByName(entry.getKey())
                             .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
                 }
+
+                gameData.getItemByName("Water")
+                        .ifPresent(item -> pb.addInputItem(item, Long.MAX_VALUE));
 
                 pb.addRecipes(gameData.getRecipes());
 

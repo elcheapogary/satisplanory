@@ -26,6 +26,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MultiPlanTest
 {
+
+    private static void assertCanBeBuiltWithAllRawResourcesAndRecipes(TestGameData gameData, String itemName)
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    {
+        ProductionPlanner planner = new ProductionPlanner.Builder()
+                .addOutputItem(gameData.requireItemByName(itemName), BigDecimal.ONE, BigDecimal.ZERO)
+                .build();
+
+        MultiPlan multiPlan = ProdPlanUtils.getMultiPlan(gameData, planner);
+
+        assertFalse(multiPlan.isUnmodifiedPlanFeasible());
+        assertFalse(multiPlan.canCreatePlanByAddingResources());
+        assertFalse(multiPlan.canCreatePlanByAddingRecipes());
+
+        assertTrue(multiPlan.canCreatePlanByAddingResourcesAndRecipes());
+    }
+
     @Test
     public void testMissingRecipe()
             throws ProductionPlanInternalException, InterruptedException, ProductionPlanNotFeatisbleException
@@ -51,6 +68,20 @@ public class MultiPlanTest
         assertTrue(missingRecipes.contains(gameData.requireRecipeByName("Iron Plate")));
 
         assertFalse(multiPlan.canCreatePlanByAddingResources());
+    }
+
+    @Test
+    public void testMissingRecipeAndResources()
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    {
+        TestGameData gameData = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gameData == null);
+
+        assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Alclad Aluminum Sheet");
+        assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Iron Ingot");
+        assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Crystal Oscillator");
+        assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Sulfuric Acid");
     }
 
     @Test
