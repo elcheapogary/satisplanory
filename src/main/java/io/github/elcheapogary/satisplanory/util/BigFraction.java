@@ -20,9 +20,89 @@ public class BigFraction
         extends Number
         implements Comparable<BigFraction>
 {
-    private final BigInteger numerator;
-    private final BigInteger denominator;
-    private final boolean simplified;
+    public static final BigFraction NEGATIVE_ONE = new BigFraction(BigInteger.ONE.negate(), BigInteger.ONE, true)
+    {
+        @Override
+        public BigFraction abs()
+        {
+            return BigFraction.ONE;
+        }
+
+        @Override
+        public int compareTo(BigFraction o)
+        {
+            if (o == this){
+                return 0;
+            }
+            return super.compareTo(o);
+        }
+
+        @Override
+        public double doubleValue()
+        {
+            return -1.0;
+        }
+
+        @Override
+        public float floatValue()
+        {
+            return -1F;
+        }
+
+        @Override
+        public int intValue()
+        {
+            return -1;
+        }
+
+        @Override
+        public boolean isInteger()
+        {
+            return true;
+        }
+
+        @Override
+        public long longValue()
+        {
+            return -1L;
+        }
+
+        @Override
+        public BigFraction multiply(BigFraction multiplicand)
+        {
+            return multiplicand.negate();
+        }
+
+        @Override
+        public BigFraction negate()
+        {
+            return BigFraction.ONE;
+        }
+
+        @Override
+        public int signum()
+        {
+            return -1;
+        }
+
+        @Override
+        public BigFraction simplify()
+        {
+            return this;
+        }
+
+        @Override
+        public BigInteger toBigInteger()
+        {
+            return BigInteger.ONE.negate();
+        }
+
+        @Override
+        public BigInteger toBigIntegerExact()
+        {
+            return BigInteger.ONE.negate();
+        }
+    };
 
     public static final BigFraction ONE = new BigFraction(BigInteger.ONE, BigInteger.ONE, true)
     {
@@ -30,6 +110,12 @@ public class BigFraction
         public BigFraction abs()
         {
             return this;
+        }
+
+        @Override
+        public byte byteValue()
+        {
+            return 1;
         }
 
         @Override
@@ -59,6 +145,36 @@ public class BigFraction
         }
 
         @Override
+        public double doubleValue()
+        {
+            return 1.0;
+        }
+
+        @Override
+        public float floatValue()
+        {
+            return 1F;
+        }
+
+        @Override
+        public int intValue()
+        {
+            return 1;
+        }
+
+        @Override
+        public boolean isInteger()
+        {
+            return true;
+        }
+
+        @Override
+        public long longValue()
+        {
+            return 1L;
+        }
+
+        @Override
         public BigFraction multiply(BigFraction multiplicand)
         {
             return Objects.requireNonNull(multiplicand);
@@ -74,6 +190,18 @@ public class BigFraction
         public BigFraction multiply(BigInteger multiplicand)
         {
             return BigFraction.valueOf(multiplicand);
+        }
+
+        @Override
+        public BigFraction negate()
+        {
+            return NEGATIVE_ONE;
+        }
+
+        @Override
+        public short shortValue()
+        {
+            return 1;
         }
 
         @Override
@@ -98,6 +226,18 @@ public class BigFraction
         public BigDecimal toBigDecimal(int scale, RoundingMode roundingMode)
         {
             return BigDecimal.ONE.setScale(scale, RoundingMode.UNNECESSARY);
+        }
+
+        @Override
+        public BigInteger toBigInteger()
+        {
+            return BigInteger.ONE;
+        }
+
+        @Override
+        public BigInteger toBigIntegerExact()
+        {
+            return BigInteger.ONE;
         }
 
         @Override
@@ -134,9 +274,15 @@ public class BigFraction
         }
 
         @Override
+        public byte byteValue()
+        {
+            return (byte)0;
+        }
+
+        @Override
         public int compareTo(BigFraction o)
         {
-            return o.signum() * -1;
+            return -o.signum();
         }
 
         @Override
@@ -165,6 +311,68 @@ public class BigFraction
         }
 
         @Override
+        public double doubleValue()
+        {
+            return 0.0;
+        }
+
+        @Override
+        public float floatValue()
+        {
+            return 0F;
+        }
+
+        @Override
+        public int intValue()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isInteger()
+        {
+            return true;
+        }
+
+        @Override
+        public long longValue()
+        {
+            return 0L;
+        }
+
+        @Override
+        public BigFraction max(BigFraction other)
+        {
+            if (other.signum() > 0){
+                return other;
+            }else{
+                return this;
+            }
+        }
+
+        @Override
+        public BigFraction min(BigFraction other)
+        {
+            if (other.signum() < 0){
+                return other;
+            }else{
+                return this;
+            }
+        }
+
+        @Override
+        public BigFraction movePointLeft(int places)
+        {
+            return this;
+        }
+
+        @Override
+        public BigFraction movePointRight(int places)
+        {
+            return this;
+        }
+
+        @Override
         public BigFraction multiply(BigFraction multiplicand)
         {
             Objects.requireNonNull(multiplicand);
@@ -188,6 +396,12 @@ public class BigFraction
         public BigFraction negate()
         {
             return this;
+        }
+
+        @Override
+        public short shortValue()
+        {
+            return 0;
         }
 
         @Override
@@ -221,11 +435,27 @@ public class BigFraction
         }
 
         @Override
+        public BigInteger toBigInteger()
+        {
+            return BigInteger.ZERO;
+        }
+
+        @Override
+        public BigInteger toBigIntegerExact()
+        {
+            return BigInteger.ZERO;
+        }
+
+        @Override
         public String toString()
         {
             return "0";
         }
     };
+
+    private final BigInteger numerator;
+    private final BigInteger denominator;
+    private final boolean simplified;
 
     private BigFraction(BigInteger numerator, BigInteger denominator, boolean simplified)
     {
@@ -247,6 +477,8 @@ public class BigFraction
             return ZERO;
         }else if (numerator.equals(denominator)){
             return ONE;
+        }else if (numerator.equals(denominator.negate())){
+            return NEGATIVE_ONE;
         }
 
         return new BigFraction(numerator, denominator, false);
@@ -325,11 +557,27 @@ public class BigFraction
     }
 
     @Override
+    public double doubleValue()
+    {
+        /*
+         * Simplify first for better accuracy
+         */
+        BigFraction simplified = simplify();
+        return simplified.numerator.doubleValue() / simplified.denominator.doubleValue();
+    }
+
+    @Override
     public boolean equals(Object o)
     {
         if (this == o) return true;
         if (!(o instanceof BigFraction that)) return false;
         return compareTo(that) == 0;
+    }
+
+    @Override
+    public float floatValue()
+    {
+        return (float)doubleValue();
     }
 
     @Override
@@ -345,28 +593,6 @@ public class BigFraction
         return (int)doubleValue();
     }
 
-    @Override
-    public long longValue()
-    {
-        return (long)doubleValue();
-    }
-
-    @Override
-    public float floatValue()
-    {
-        return (float) doubleValue();
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        /*
-         * Simplify first for better accuracy
-         */
-        BigFraction simplified = simplify();
-        return simplified.numerator.doubleValue() / simplified.denominator.doubleValue();
-    }
-
     public boolean isInteger()
     {
         BigFraction simplified = simplify();
@@ -375,6 +601,12 @@ public class BigFraction
          * Yes, I mean to test first identity then equality
          */
         return simplified.denominator == BigInteger.ONE || simplified.denominator.equals(BigInteger.ONE);
+    }
+
+    @Override
+    public long longValue()
+    {
+        return (long)doubleValue();
     }
 
     public BigFraction max(BigFraction other)
