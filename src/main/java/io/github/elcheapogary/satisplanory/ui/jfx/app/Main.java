@@ -29,6 +29,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 
 public class Main
@@ -140,11 +141,6 @@ public class Main
                         return null;
                     })
                     .get();
-            Notifications.create()
-                    .position(Pos.TOP_CENTER)
-                    .title("Remember to check for updates")
-                    .text("See Help -> About for links")
-                    .show();
         }catch (Exception e){
             new ExceptionDialog(appContext)
                     .setTitle("Error loading Satisfactory data")
@@ -152,6 +148,32 @@ public class Main
                     .setException(e)
                     .showAndWait();
         }
+
+        new Thread(() -> {
+            try {
+                String thisVersion = Satisplanory.getVersion();
+                if (!thisVersion.endsWith("-SNAPSHOT")){
+                    String latestVersion = Satisplanory.getLatestReleasedVersion();
+
+                    if (!latestVersion.equals(thisVersion)){
+                        Platform.runLater(() -> Notifications.create()
+                                .position(Pos.TOP_CENTER)
+                                .title("A newer version of Satisplanory, version " + latestVersion + ", is available")
+                                .text("See Help -> About for links to download")
+                                .hideAfter(Duration.seconds(10))
+                                .show());
+                    }
+                }
+            }catch (IOException | RuntimeException e){
+                Platform.runLater(() -> Notifications.create()
+                        .position(Pos.TOP_CENTER)
+                        .title("Remember to check for updates")
+                        .text("See Help -> About for links")
+                        .show());
+            }catch (InterruptedException e){
+                Thread.currentThread().interrupt();
+            }
+        }).start();
     }
 
     @Override
