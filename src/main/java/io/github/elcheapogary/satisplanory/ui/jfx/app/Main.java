@@ -97,8 +97,25 @@ public class Main
                 });
 
         stage.setScene(scene);
+        stage.setMaximized(true);
         stage.show();
-        Platform.runLater(() -> stage.setMaximized(true));
+        Platform.runLater(() -> {
+
+            stage.setMaximized(true);
+
+            Platform.runLater(() -> {
+                double w = stage.getWidth();
+                double h = stage.getHeight();
+
+                stage.setMaximized(false);
+
+                Platform.runLater(() -> {
+                    stage.setWidth(w);
+                    stage.setHeight(h);
+                    stage.setMaximized(true);
+                });
+            });
+        });
         try {
             new TaskProgressDialog(appContext)
                     .setTitle("Loading Satisfactory data")
