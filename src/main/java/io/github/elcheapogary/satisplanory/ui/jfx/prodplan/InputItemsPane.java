@@ -13,9 +13,10 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
-import io.github.elcheapogary.satisplanory.ui.jfx.component.BigDecimalTextField;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.MathExpressionTextField;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -61,12 +62,10 @@ class InputItemsPane
 
         TextField tf = new TextField();
         tf.setMaxWidth(80);
-        BigDecimalTextField.setUp(tf, inputItem.getAmount(), inputItem::setAmount);
-        inputItem.amountProperty().addListener((observable, oldValue, newValue) -> tf.setText(Objects.requireNonNullElse(newValue, BigDecimal.ZERO).toString()));
+        MathExpressionTextField.setUp(tf, inputItem.getAmount(), e -> e.getValue().signum() >= 0, inputItem::setAmount);
+        inputItem.amountProperty().addListener((observable, oldValue, newValue) -> tf.setText(Objects.requireNonNullElse(newValue, "0").toString()));
         HBox.setHgrow(tf, Priority.NEVER);
         hBox.getChildren().add(tf);
-
-        tf.setText(BigDecimalUtils.normalize(inputItem.getAmount()).toString());
 
         Button removeButton = new Button("Remove");
         HBox.setHgrow(removeButton, Priority.NEVER);
@@ -80,7 +79,7 @@ class InputItemsPane
         inputItem.itemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null && newValue != oldValue && newValue.getName().equals("Water")){
                 tf.textProperty().set("999999999999");
-                inputItem.setAmount(BigDecimal.valueOf(999999999999L));
+                inputItem.setAmount(MathExpression.valueOf(999999999999L));
             }
         });
 
@@ -119,7 +118,7 @@ class InputItemsPane
         Button addRowButton = new Button("Add Item");
         buttons.getChildren().add(addRowButton);
         addRowButton.onActionProperty().setValue(event -> {
-            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(allItems.get(0), BigDecimal.ZERO);
+            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(allItems.get(0), MathExpression.valueOf(0));
             inputItems.add(inputItem);
         });
 
@@ -129,13 +128,13 @@ class InputItemsPane
             for (Map.Entry<String, Long> entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
                 gameData.getItemByName(entry.getKey())
                         .ifPresent(item -> {
-                            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())));
+                            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, MathExpression.valueOf(BigDecimalUtils.normalize(item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())))));
                             inputItems.add(inputItem);
                         });
             }
             gameData.getItemByName("Water")
                     .ifPresent(item -> {
-                        ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, BigDecimal.valueOf(999999999999L));
+                        ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, MathExpression.valueOf(999999999999L));
                         inputItems.add(inputItem);
                     });
         });
@@ -155,7 +154,7 @@ class InputItemsPane
             addRow(table, inputItem, inputItems, allItems);
         }
 
-        inputItems.addListener((ListChangeListener<ProdPlanModel.InputItem>) c -> {
+        inputItems.addListener((ListChangeListener<ProdPlanModel.InputItem>)c -> {
             while (c.next()){
                 if (c.wasAdded()){
                     for (ProdPlanModel.InputItem inputItem : c.getAddedSubList()){

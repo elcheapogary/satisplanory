@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 public class ProductionPlanner
 {
     private final Map<Item, OutputRequirement> outputRequirements;
-    private final Map<Item, BigDecimal> inputItems;
+    private final Map<Item, BigFraction> inputItems;
     private final Set<Recipe> recipes;
     private final boolean strictMaximizeRatios;
     private final List<OptimizationTarget> optimizationTargets;
@@ -164,7 +164,7 @@ public class ProductionPlanner
                 FractionExpression input = FractionExpression.zero();
 
                 {
-                    BigDecimal inputAmountPerMinute = inputItems.get(item);
+                    BigFraction inputAmountPerMinute = inputItems.get(item);
                     if (inputAmountPerMinute != null){
                         input = model.addFractionVariable();
                         itemInputExpressionMap.put(item, input);
@@ -180,8 +180,8 @@ public class ProductionPlanner
 
                 {
                     OutputRequirement outputRequirement = outputRequirements.get(item);
-                    if (outputRequirement != null && outputRequirement.getItemsPerMinute() != null){
-                        model.addConstraint(output.gte(outputRequirement.getItemsPerMinute()));
+                    if (outputRequirement != null && outputRequirement.itemsPerMinute() != null){
+                        model.addConstraint(output.gte(outputRequirement.itemsPerMinute()));
                     }else{
                         model.addConstraint(output.nonNegative());
                     }
@@ -195,15 +195,15 @@ public class ProductionPlanner
         Map<Item, FractionExpression> itemSurplusExpressionMap = Item.createMap();
 
         {
-            Map<Item, BigDecimal> outputItemWeights = Item.createMap();
+            Map<Item, BigFraction> outputItemWeights = Item.createMap();
             for (Item item : items){
-                BigDecimal min = BigDecimal.ZERO;
-                BigDecimal weight = null;
+                BigFraction min = BigFraction.zero();
+                BigFraction weight = null;
 
                 OutputRequirement outputRequirement = outputRequirements.get(item);
                 if (outputRequirement != null){
-                    min = Objects.requireNonNullElse(outputRequirement.getItemsPerMinute(), min);
-                    weight = outputRequirement.getMaximizeWeight();
+                    min = Objects.requireNonNullElse(outputRequirement.itemsPerMinute(), min);
+                    weight = outputRequirement.maximizeWeight();
                     if (weight != null && weight.signum() > 0){
                         outputItemWeights.put(item, weight);
                     }
@@ -235,7 +235,7 @@ public class ProductionPlanner
 
                     for (var entry : outputItemWeights.entrySet()){
                         Item item = entry.getKey();
-                        BigDecimal weight = entry.getValue();
+                        BigFraction weight = entry.getValue();
 
                         model.addConstraint(itemSurplusExpressionMap.get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
                     }
@@ -309,19 +309,19 @@ public class ProductionPlanner
         );
     }
 
-    public Map<Item, BigDecimal> getInputItems()
+    public Map<Item, BigFraction> getInputItems()
     {
         return inputItems;
     }
 
-    public BigDecimal getOutputItemMaximizeWeight(Item item)
+    public BigFraction getOutputItemMaximizeWeight(Item item)
     {
-        return outputRequirements.get(item).getMaximizeWeight();
+        return outputRequirements.get(item).maximizeWeight();
     }
 
-    public BigDecimal getOutputItemMinimumPerMinute(Item item)
+    public BigFraction getOutputItemMinimumPerMinute(Item item)
     {
-        return outputRequirements.get(item).getItemsPerMinute();
+        return outputRequirements.get(item).itemsPerMinute();
     }
 
     public Collection<? extends Item> getOutputItems()
@@ -342,7 +342,7 @@ public class ProductionPlanner
     public static class Builder
     {
         private final Map<Item, OutputRequirement> outputRequirements = Item.createMap();
-        private final Map<Item, BigDecimal> inputItems = Item.createMap();
+        private final Map<Item, BigFraction> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
         private final List<OptimizationTarget> optimizationTargets = new LinkedList<>();
         private boolean strictMaximizeRatios = false;
@@ -367,7 +367,12 @@ public class ProductionPlanner
 
         public Builder addInputItem(Item item, BigDecimal itemsPerMinute)
         {
-            inputItems.compute(item, (notused, amount) -> Objects.requireNonNullElse(amount, BigDecimal.ZERO).add(itemsPerMinute));
+            return addInputItem(item, BigFraction.valueOf(itemsPerMinute));
+        }
+
+        public Builder addInputItem(Item item, BigFraction itemsPerMinute)
+        {
+            inputItems.compute(item, (notused, amount) -> Objects.requireNonNullElse(amount, BigFraction.zero()).add(itemsPerMinute));
             return this;
         }
 
@@ -385,9 +390,28 @@ public class ProductionPlanner
 
         public Builder addOutputItem(Item item, BigDecimal itemsPerMinute, BigDecimal weight)
         {
+            return addOutputItem(
+                    item,
+                    Optional.ofNullable(itemsPerMinute)
+                            .map(BigFraction::valueOf)
+                            .orElse(BigFraction.zero()),
+                    Optional.ofNullable(weight)
+                            .map(BigFraction::valueOf)
+                            .orElse(BigFraction.zero())
+            );
+        }
+
+        public Builder addOutputItem(Item item, BigFraction itemsPerMinute, BigFraction weight)
+        {
             outputRequirements.compute(item, (item1, existing) -> new OutputRequirement(
-                    Optional.ofNullable(existing).map(OutputRequirement::getItemsPerMinute).orElse(BigDecimal.ZERO).add(Objects.requireNonNullElse(itemsPerMinute, BigDecimal.ZERO)),
-                    Optional.ofNullable(existing).map(OutputRequirement::getMaximizeWeight).orElse(BigDecimal.ZERO).max(Objects.requireNonNullElse(weight, BigDecimal.ZERO))
+                    Optional.ofNullable(existing)
+                            .map(OutputRequirement::itemsPerMinute)
+                            .orElse(BigFraction.zero())
+                            .add(Objects.requireNonNullElse(itemsPerMinute, BigFraction.zero())),
+                    Optional.ofNullable(existing)
+                            .map(OutputRequirement::maximizeWeight)
+                            .orElse(BigFraction.zero())
+                            .max(Objects.requireNonNullElse(weight, BigFraction.zero()))
             ));
             return this;
         }
@@ -428,7 +452,7 @@ public class ProductionPlanner
 
         public Builder maximizeOutputItem(Item item, long weight)
         {
-            return maximizeOutputItem(item, BigDecimal.valueOf(weight));
+            return maximizeOutputItem(item, BigFraction.valueOf(weight));
         }
 
         public Builder maximizeOutputItem(Item item, BigDecimal weight)
@@ -436,14 +460,24 @@ public class ProductionPlanner
             return addOutputItem(item, BigDecimal.ZERO, weight);
         }
 
+        public Builder maximizeOutputItem(Item item, BigFraction weight)
+        {
+            return addOutputItem(item, BigFraction.zero(), weight);
+        }
+
         public Builder requireOutputItemsPerMinute(Item item, BigDecimal itemsPerMinute)
         {
             return addOutputItem(item, itemsPerMinute, BigDecimal.ZERO);
         }
 
+        public Builder requireOutputItemsPerMinute(Item item, BigFraction itemsPerMinute)
+        {
+            return addOutputItem(item, itemsPerMinute, BigFraction.zero());
+        }
+
         public Builder requireOutputItemsPerMinute(Item item, long itemsPerMinute)
         {
-            return requireOutputItemsPerMinute(item, BigDecimal.valueOf(itemsPerMinute));
+            return requireOutputItemsPerMinute(item, BigFraction.valueOf(itemsPerMinute));
         }
 
         public Builder setStrictMaximizeRatios(boolean strictMaximizeRatios)
@@ -453,25 +487,7 @@ public class ProductionPlanner
         }
     }
 
-    private static class OutputRequirement
+    private record OutputRequirement(BigFraction itemsPerMinute, BigFraction maximizeWeight)
     {
-        private final BigDecimal itemsPerMinute;
-        private final BigDecimal maximizeWeight;
-
-        public OutputRequirement(BigDecimal itemsPerMinute, BigDecimal maximizeWeight)
-        {
-            this.itemsPerMinute = itemsPerMinute;
-            this.maximizeWeight = maximizeWeight;
-        }
-
-        public BigDecimal getItemsPerMinute()
-        {
-            return itemsPerMinute;
-        }
-
-        public BigDecimal getMaximizeWeight()
-        {
-            return maximizeWeight;
-        }
     }
 }

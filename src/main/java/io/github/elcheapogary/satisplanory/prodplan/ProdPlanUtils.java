@@ -14,7 +14,7 @@ import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -37,59 +37,6 @@ public class ProdPlanUtils
             }
         }
         return items;
-    }
-
-    static Collection<? extends Recipe> getRecipesWeCanBuild(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems)
-    {
-        recipes = Recipe.createSet(recipes);
-        Set<Recipe> producable = Recipe.createSet();
-
-        Set<Item> availableItems = Item.createSet();
-        availableItems.addAll(inputItems);
-
-        while (true){
-            boolean addedRecipe = false;
-
-            for (Iterator<? extends Recipe> it = recipes.iterator(); it.hasNext(); ){
-                Recipe recipe = it.next();
-
-                boolean allIngredientsAvailable = true;
-                for (Recipe.RecipeItem ri : recipe.getIngredients()){
-                    if (!availableItems.contains(ri.getItem())){
-                        allIngredientsAvailable = false;
-                        break;
-                    }
-                }
-
-                if (allIngredientsAvailable){
-                    addedRecipe = true;
-                    it.remove();
-                    producable.add(recipe);
-                    for (Recipe.RecipeItem ri : recipe.getProducts()){
-                        availableItems.add(ri.getItem());
-                    }
-                }
-            }
-
-            if (!addedRecipe){
-                break;
-            }
-        }
-
-        return producable;
-    }
-
-    private static void removeMaximizeWeights(ProductionPlanner planner, ProductionPlanner.Builder newPlanner)
-    {
-        newPlanner.getOptimizationTargets().remove(OptimizationTarget.MAX_OUTPUT_ITEMS);
-
-        newPlanner.clearOutputItems();
-        for (Item item : planner.getOutputItems()){
-            BigDecimal min = planner.getOutputItemMinimumPerMinute(item);
-            if (min != null && min.signum() > 0){
-                newPlanner.requireOutputItemsPerMinute(item, min);
-            }
-        }
     }
 
     public static MultiPlan getMultiPlan(GameData gameData, ProductionPlanner planner)
@@ -160,5 +107,58 @@ public class ProdPlanUtils
         }
 
         return new MultiPlan(planner, unmodifiedPlan, planWithAllItems, planWithAllRecipes, planWithAllItemsAndRecipes);
+    }
+
+    static Collection<? extends Recipe> getRecipesWeCanBuild(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems)
+    {
+        recipes = Recipe.createSet(recipes);
+        Set<Recipe> producable = Recipe.createSet();
+
+        Set<Item> availableItems = Item.createSet();
+        availableItems.addAll(inputItems);
+
+        while (true){
+            boolean addedRecipe = false;
+
+            for (Iterator<? extends Recipe> it = recipes.iterator(); it.hasNext(); ){
+                Recipe recipe = it.next();
+
+                boolean allIngredientsAvailable = true;
+                for (Recipe.RecipeItem ri : recipe.getIngredients()){
+                    if (!availableItems.contains(ri.getItem())){
+                        allIngredientsAvailable = false;
+                        break;
+                    }
+                }
+
+                if (allIngredientsAvailable){
+                    addedRecipe = true;
+                    it.remove();
+                    producable.add(recipe);
+                    for (Recipe.RecipeItem ri : recipe.getProducts()){
+                        availableItems.add(ri.getItem());
+                    }
+                }
+            }
+
+            if (!addedRecipe){
+                break;
+            }
+        }
+
+        return producable;
+    }
+
+    private static void removeMaximizeWeights(ProductionPlanner planner, ProductionPlanner.Builder newPlanner)
+    {
+        newPlanner.getOptimizationTargets().remove(OptimizationTarget.MAX_OUTPUT_ITEMS);
+
+        newPlanner.clearOutputItems();
+        for (Item item : planner.getOutputItems()){
+            BigFraction min = planner.getOutputItemMinimumPerMinute(item);
+            if (min != null && min.signum() > 0){
+                newPlanner.requireOutputItemsPerMinute(item, min);
+            }
+        }
     }
 }

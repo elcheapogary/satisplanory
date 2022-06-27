@@ -21,9 +21,9 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -118,25 +118,25 @@ class ConfigTab
             }
 
             for (ProdPlanModel.InputItem inputItem : model.getInputItems()){
-                if (inputItem.getAmount().signum() > 0){
-                    b.addInputItem(inputItem.getItem(), inputItem.getItem().fromDisplayAmount(inputItem.getAmount()));
+                if (inputItem.getAmount().getValue().signum() > 0){
+                    b.addInputItem(inputItem.getItem(), inputItem.getItem().fromDisplayAmount(inputItem.getAmount().getValue()));
                 }
             }
 
             boolean hasOutputRequirement = false;
 
             for (ProdPlanModel.OutputItem outputItem : model.getOutputItems()){
-                BigDecimal min = outputItem.getMin();
+                MathExpression min = outputItem.getMin();
 
-                if (min.signum() > 0){
+                if (min.getValue().signum() > 0){
                     hasOutputRequirement = true;
-                    b.requireOutputItemsPerMinute(outputItem.getItem(), outputItem.getItem().fromDisplayAmount(min));
+                    b.requireOutputItemsPerMinute(outputItem.getItem(), outputItem.getItem().fromDisplayAmount(min.getValue()));
                 }
 
-                BigDecimal weight = outputItem.getWeight();
+                MathExpression weight = outputItem.getWeight();
 
-                if (weight.signum() > 0){
-                    b.maximizeOutputItem(outputItem.getItem(), weight);
+                if (weight.getValue().signum() > 0){
+                    b.maximizeOutputItem(outputItem.getItem(), weight.getValue());
                 }
             }
 
@@ -170,9 +170,11 @@ class ConfigTab
                 new ExceptionDialog(appContext)
                         .setTitle("Error calculating production plan")
                         .setContextMessage("An unexpected error occurred while calculating the production plan")
-                        .setDetailsMessage("This should not happen. It's probably a bug. We would like to hear about this.\n"
-                                + "Please consider sending the developers (of Satisplanory, not Satisfactory) the EXACT \n"
-                                + "input settings that caused this error.")
+                        .setDetailsMessage("""
+                                This should not happen. It's probably a bug. We would like to hear about this.
+                                Please consider sending the developers (of Satisplanory, not Satisfactory) the EXACT\s
+                                input settings that caused this error."""
+                        )
                         .showAndWait();
                 return;
             }
@@ -268,7 +270,7 @@ class ConfigTab
                 if (enabledRecipes.contains(recipe)){
                     cb.setSelected(true);
                 }
-                enabledRecipes.addListener((SetChangeListener<Recipe>) change -> {
+                enabledRecipes.addListener((SetChangeListener<Recipe>)change -> {
                     if (change.wasRemoved() && change.getElementRemoved() == recipe){
                         cb.setSelected(false);
                     }else if (change.wasAdded() && change.getElementAdded() == recipe){

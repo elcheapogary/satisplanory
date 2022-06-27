@@ -11,7 +11,6 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -68,6 +68,8 @@ public class PersistentProductionPlan
             this.input.loadJson_1_0(json.getJSONObject("input"));
         }else if (version.equals("2.0")){
             this.input.loadJson_2_0(json.getJSONObject("input"));
+        }else if (version.equals("3.0")){
+            this.input.loadJson_3_0(json.getJSONObject("input"));
         }else{
             throw new UnsupportedVersionException();
         }
@@ -83,7 +85,7 @@ public class PersistentProductionPlan
     {
         JSONObject json = new JSONObject();
 
-        json.put("v", "2.0");
+        json.put("v", "3.0");
         json.put("input", input.toJson());
         json.put("name", name);
 
@@ -98,34 +100,39 @@ public class PersistentProductionPlan
     {
         private final RecipeSet recipes = new RecipeSet();
         private final Settings settings = new Settings();
-        private final Map<String, BigDecimal> inputItems = new TreeMap<>();
-        private final Map<String, BigDecimal> outputItemsPerMinute = new TreeMap<>();
-        private final Map<String, BigDecimal> maximizedOutputItems = new TreeMap<>();
+        private final Map<String, String> inputItems = new TreeMap<>();
+        private final Map<String, String> outputItemsPerMinute = new TreeMap<>();
+        private final Map<String, String> maximizedOutputItems = new TreeMap<>();
 
         public Input()
         {
         }
 
-        private static Map<String, BigDecimal> toMap(JSONObject json)
+        private static <V> Map<String, V> toMap(JSONObject json, BiFunction<? super JSONObject, String, V> extractor)
         {
-            Map<String, BigDecimal> map = new TreeMap<>();
+            Map<String, V> map = new TreeMap<>();
             for (String key : json.keySet()){
-                map.put(key, json.getBigDecimal(key));
+                map.put(key, extractor.apply(json, key));
             }
             return map;
         }
 
-        public Map<String, BigDecimal> getInputItems()
+        private static Map<String, String> toMapFromDecimal(JSONObject json)
+        {
+            return toMap(json, (jsonObject, s) -> jsonObject.getBigDecimal(s).toString());
+        }
+
+        public Map<String, String> getInputItems()
         {
             return inputItems;
         }
 
-        public Map<String, BigDecimal> getMaximizedOutputItems()
+        public Map<String, String> getMaximizedOutputItems()
         {
             return maximizedOutputItems;
         }
 
-        public Map<String, BigDecimal> getOutputItemsPerMinute()
+        public Map<String, String> getOutputItemsPerMinute()
         {
             return outputItemsPerMinute;
         }
@@ -146,15 +153,15 @@ public class PersistentProductionPlan
             this.recipes.loadJson(json.getJSONObject("recipes"));
 
             if (json.has("inputItems")){
-                this.inputItems.putAll(toMap(json.getJSONObject("inputItems")));
+                this.inputItems.putAll(toMapFromDecimal(json.getJSONObject("inputItems")));
             }
 
             if (json.has("outputItemsPerMinute")){
-                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("outputItemsPerMinute")));
+                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJSONObject("outputItemsPerMinute")));
             }
 
             if (json.has("maximizedOutputItems")){
-                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
+                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJSONObject("maximizedOutputItems")));
             }
         }
 
@@ -164,15 +171,33 @@ public class PersistentProductionPlan
             this.recipes.loadJson(json.getJSONObject("recipes"));
 
             if (json.has("inputItems")){
-                this.inputItems.putAll(toMap(json.getJSONObject("inputItems")));
+                this.inputItems.putAll(toMapFromDecimal(json.getJSONObject("inputItems")));
             }
 
             if (json.has("outputItemsPerMinute")){
-                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("outputItemsPerMinute")));
+                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJSONObject("outputItemsPerMinute")));
             }
 
             if (json.has("maximizedOutputItems")){
-                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems")));
+                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJSONObject("maximizedOutputItems")));
+            }
+        }
+
+        public void loadJson_3_0(JSONObject json)
+        {
+            this.settings.loadJson_2_0(json.getJSONObject("settings"));
+            this.recipes.loadJson(json.getJSONObject("recipes"));
+
+            if (json.has("inputItems")){
+                this.inputItems.putAll(toMap(json.getJSONObject("inputItems"), JSONObject::getString));
+            }
+
+            if (json.has("outputItemsPerMinute")){
+                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("outputItemsPerMinute"), JSONObject::getString));
+            }
+
+            if (json.has("maximizedOutputItems")){
+                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems"), JSONObject::getString));
             }
         }
 

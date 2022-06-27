@@ -14,7 +14,9 @@ import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.model.test.TestGameData;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Assumptions;
@@ -103,11 +105,11 @@ public class MultiPlanTest
         assertFalse(multiPlan.isUnmodifiedPlanFeasible());
         assertTrue(multiPlan.canCreatePlanByAddingResources());
 
-        Map<Item, BigDecimal> missingResources = multiPlan.getMissingResources();
+        Map<Item, BigFraction> missingResources = multiPlan.getMissingResources();
 
         assertEquals(1, missingResources.size());
         assertTrue(missingResources.containsKey(gameData.requireItemByName("Iron Ore")));
-        assertEquals("1.5", BigDecimalUtils.normalize(missingResources.get(gameData.requireItemByName("Iron Ore"))).toString());
+        assertEquals("1.5", BigDecimalUtils.normalize(missingResources.get(gameData.requireItemByName("Iron Ore")).toBigDecimal(4, RoundingMode.HALF_UP)).toString());
 
         assertFalse(multiPlan.canCreatePlanByAddingRecipes());
     }

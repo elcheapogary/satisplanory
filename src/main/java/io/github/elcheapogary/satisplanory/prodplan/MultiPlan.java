@@ -12,8 +12,7 @@ package io.github.elcheapogary.satisplanory.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -63,16 +62,16 @@ public class MultiPlan
         return Collections.unmodifiableSet(retv);
     }
 
-    public Map<Item, BigDecimal> getMissingResources()
+    public Map<Item, BigFraction> getMissingResources()
     {
         ProductionPlan plan = Objects.requireNonNullElse(planWithAllItems, planWithAllItemsAndRecipes);
 
-        Map<Item, BigDecimal> retv = Item.createMap();
+        Map<Item, BigFraction> retv = Item.createMap();
 
         for (Item item : plan.getInputItems()){
-            BigDecimal requiredAmount = plan.getInputItemsPerMinute(item).toBigDecimal(4, RoundingMode.HALF_UP);
+            BigFraction requiredAmount = plan.getInputItemsPerMinute(item);
 
-            requiredAmount = requiredAmount.subtract(Objects.requireNonNullElse(productionPlanner.getInputItems().get(item), BigDecimal.ZERO));
+            requiredAmount = requiredAmount.subtract(Objects.requireNonNullElse(productionPlanner.getInputItems().get(item), BigFraction.zero()));
 
             retv.put(item, requiredAmount);
         }

@@ -17,10 +17,11 @@ import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import javafx.beans.Observable;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -109,7 +110,7 @@ class ProdPlanModel
         for (String s : persistent.getInput().getRecipes().getRecipeNames()){
             gameData.getRecipeByName(s).ifPresent(recipe -> model.getEnabledRecipes().add(recipe));
         }
-        model.getEnabledRecipes().addListener((SetChangeListener<Recipe>) change -> {
+        model.getEnabledRecipes().addListener((SetChangeListener<Recipe>)change -> {
             if (change.wasAdded()){
                 persistent.getInput().getRecipes().getRecipeNames().add(change.getElementAdded().getName());
             }else if (change.wasRemoved()){
@@ -118,36 +119,53 @@ class ProdPlanModel
         });
 
         for (var entry : persistent.getInput().getInputItems().entrySet()){
-            gameData.getItemByName(entry.getKey()).ifPresent(item -> model.getInputItems().add(new InputItem(item, entry.getValue())));
+            try {
+                gameData.getItemByName(entry.getKey()).ifPresent(item -> model.getInputItems().add(new InputItem(item, MathExpression.parse(entry.getValue()))));
+            }catch (NumberFormatException ignore){
+            }
         }
-        model.getInputItems().addListener((ListChangeListener<InputItem>) c -> {
+        model.getInputItems().addListener((ListChangeListener<InputItem>)c -> {
             persistent.getInput().getInputItems().clear();
             for (InputItem inputItem : model.getInputItems()){
                 if (inputItem.getItem() != null){
-                    persistent.getInput().getInputItems().put(inputItem.getItem().getName(), inputItem.getAmount());
+                    persistent.getInput().getInputItems().put(inputItem.getItem().getName(), inputItem.getAmount().getExpression());
                 }
             }
         });
 
         for (Item item : gameData.getItems()){
-            BigDecimal min = persistent.getInput().getOutputItemsPerMinute().get(item.getName());
-            BigDecimal weight = persistent.getInput().getMaximizedOutputItems().get(item.getName());
+            MathExpression min = null;
+            MathExpression weight = null;
 
-            if ((min != null && min.signum() > 0) || (weight != null && weight.signum() > 0)){
-                model.getOutputItems().add(new OutputItem(item, Objects.requireNonNullElse(min, BigDecimal.ZERO), Objects.requireNonNullElse(weight, BigDecimal.ZERO)));
+            try {
+                min = Optional.ofNullable(persistent.getInput().getOutputItemsPerMinute().get(item.getName()))
+                        .map(MathExpression::parse)
+                        .orElse(null);
+            }catch (NumberFormatException ignore){
+            }
+
+            try {
+                weight = Optional.ofNullable(persistent.getInput().getMaximizedOutputItems().get(item.getName()))
+                        .map(MathExpression::parse)
+                        .orElse(null);
+            }catch (NumberFormatException ignore){
+            }
+
+            if ((min != null && min.getValue().signum() > 0) || (weight != null && weight.getValue().signum() > 0)){
+                model.getOutputItems().add(new OutputItem(item, Objects.requireNonNullElse(min, MathExpression.valueOf(0)), Objects.requireNonNullElse(weight, MathExpression.valueOf(0))));
             }
         }
-        model.getOutputItems().addListener((ListChangeListener<OutputItem>) c -> {
+        model.getOutputItems().addListener((ListChangeListener<OutputItem>)c -> {
             persistent.getInput().getOutputItemsPerMinute().clear();
             persistent.getInput().getMaximizedOutputItems().clear();
 
             for (OutputItem outputItem : model.getOutputItems()){
                 if (outputItem.getItem() != null){
-                    if (outputItem.getMin() != null && outputItem.getMin().signum() > 0){
-                        persistent.getInput().getOutputItemsPerMinute().put(outputItem.getItem().getName(), outputItem.getMin());
+                    if (outputItem.getMin() != null && outputItem.getMin().getValue().signum() > 0){
+                        persistent.getInput().getOutputItemsPerMinute().put(outputItem.getItem().getName(), outputItem.getMin().getExpression());
                     }
-                    if (outputItem.getWeight() != null && outputItem.getWeight().signum() > 0){
-                        persistent.getInput().getMaximizedOutputItems().put(outputItem.getItem().getName(), outputItem.getWeight());
+                    if (outputItem.getWeight() != null && outputItem.getWeight().getValue().signum() > 0){
+                        persistent.getInput().getMaximizedOutputItems().put(outputItem.getItem().getName(), outputItem.getWeight().getExpression());
                     }
                 }
             }
@@ -165,7 +183,7 @@ class ProdPlanModel
                 model.getSettings().getOptimizationTargets().add(otm);
             }
         }
-        model.getSettings().getOptimizationTargets().addListener((ListChangeListener<OptimizationTargetModel>) c -> {
+        model.getSettings().getOptimizationTargets().addListener((ListChangeListener<OptimizationTargetModel>)c -> {
             persistent.getInput().getSettings().getOptimizationTargets().clear();
             for (OptimizationTargetModel m : model.getSettings().getOptimizationTargets()){
                 persistent.getInput().getSettings().getOptimizationTargets().add(m.getSaveCode());
@@ -225,11 +243,6 @@ class ProdPlanModel
         return settings;
     }
 
-    public void initDefaults(GameData gameData)
-    {
-        getEnabledRecipes().addAll(gameData.getRecipes());
-    }
-
     public ObjectProperty<MultiPlan> multiPlanProperty()
     {
         return multiPlan;
@@ -248,25 +261,25 @@ class ProdPlanModel
     public static class InputItem
     {
         private final ObjectProperty<Item> item = new SimpleObjectProperty<>();
-        private final ObjectProperty<BigDecimal> amount = new SimpleObjectProperty<>();
+        private final ObjectProperty<MathExpression> amount = new SimpleObjectProperty<>();
 
-        public InputItem(Item item, BigDecimal amount)
+        public InputItem(Item item, MathExpression amount)
         {
             this.item.set(item);
             this.amount.set(amount);
         }
 
-        public ObjectProperty<BigDecimal> amountProperty()
+        public ObjectProperty<MathExpression> amountProperty()
         {
             return amount;
         }
 
-        public BigDecimal getAmount()
+        public MathExpression getAmount()
         {
             return amount.get();
         }
 
-        public void setAmount(BigDecimal amount)
+        public void setAmount(MathExpression amount)
         {
             this.amount.set(amount);
         }
@@ -290,10 +303,10 @@ class ProdPlanModel
     public static class OutputItem
     {
         private final ObjectProperty<Item> item = new SimpleObjectProperty<>();
-        private final ObjectProperty<BigDecimal> min = new SimpleObjectProperty<>();
-        private final ObjectProperty<BigDecimal> weight = new SimpleObjectProperty<>();
+        private final ObjectProperty<MathExpression> min = new SimpleObjectProperty<>();
+        private final ObjectProperty<MathExpression> weight = new SimpleObjectProperty<>();
 
-        public OutputItem(Item item, BigDecimal min, BigDecimal weight)
+        public OutputItem(Item item, MathExpression min, MathExpression weight)
         {
             this.item.set(item);
             this.min.set(min);
@@ -310,22 +323,22 @@ class ProdPlanModel
             this.item.set(item);
         }
 
-        public BigDecimal getMin()
+        public MathExpression getMin()
         {
             return min.get();
         }
 
-        public void setMin(BigDecimal min)
+        public void setMin(MathExpression min)
         {
             this.min.set(min);
         }
 
-        public BigDecimal getWeight()
+        public MathExpression getWeight()
         {
             return weight.get();
         }
 
-        public void setWeight(BigDecimal weight)
+        public void setWeight(MathExpression weight)
         {
             this.weight.set(weight);
         }
@@ -335,12 +348,12 @@ class ProdPlanModel
             return item;
         }
 
-        public ObjectProperty<BigDecimal> minProperty()
+        public ObjectProperty<MathExpression> minProperty()
         {
             return min;
         }
 
-        public ObjectProperty<BigDecimal> weightProperty()
+        public ObjectProperty<MathExpression> weightProperty()
         {
             return weight;
         }

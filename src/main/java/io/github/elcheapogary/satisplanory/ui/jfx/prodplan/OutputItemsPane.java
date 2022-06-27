@@ -11,9 +11,9 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.ui.jfx.component.BigDecimalTextField;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.MathExpressionTextField;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import java.util.List;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -61,8 +61,8 @@ class OutputItemsPane
         {
             TextField minTextField = new TextField();
             minTextField.setMaxWidth(80);
-            BigDecimalTextField.setUp(minTextField, outputItem.getMin(), bigDecimal -> {
-                outputItem.setMin(bigDecimal);
+            MathExpressionTextField.setUp(minTextField, outputItem.getMin(), e -> e.getValue().signum() >= 0, e -> {
+                outputItem.setMin(e);
                 onChange.run();
             });
             hbox.getChildren().add(minTextField);
@@ -76,8 +76,8 @@ class OutputItemsPane
         {
             TextField weightTextField = new TextField();
             weightTextField.setMaxWidth(80);
-            BigDecimalTextField.setUp(weightTextField, outputItem.getWeight(), bigDecimal -> {
-                outputItem.setWeight(bigDecimal);
+            MathExpressionTextField.setUp(weightTextField, outputItem.getWeight(), e -> e.getValue().signum() >= 0, e -> {
+                outputItem.setWeight(e);
                 onChange.run();
             });
             hbox.getChildren().add(weightTextField);
@@ -129,7 +129,7 @@ class OutputItemsPane
         buttons.getChildren().add(addRowButton);
 
         addRowButton.onActionProperty().set(event -> {
-            ProdPlanModel.OutputItem outputItem = new ProdPlanModel.OutputItem(allItems.get(0), BigDecimal.ONE, BigDecimal.ZERO);
+            ProdPlanModel.OutputItem outputItem = new ProdPlanModel.OutputItem(allItems.get(0), MathExpression.valueOf(1), MathExpression.valueOf(0));
             outputItems.add(outputItem);
             addRow(outputItem, table, outputItems, allItems, onChange);
         });

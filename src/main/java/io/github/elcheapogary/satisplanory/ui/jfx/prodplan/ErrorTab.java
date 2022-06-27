@@ -13,6 +13,8 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
+import io.github.elcheapogary.satisplanory.util.BigFraction;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -20,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -60,15 +61,6 @@ class ErrorTab
         return tab;
     }
 
-    private static void setContent(Tab tab, ProdPlanModel model)
-    {
-        if (model.getMultiPlan() == null){
-            tab.setContent(new Pane());
-        }else{
-            tab.setContent(createContent(model));
-        }
-    }
-
     public static Region createContent(ProdPlanModel model)
     {
         BorderPane bp = new BorderPane();
@@ -95,7 +87,7 @@ class ErrorTab
             button.onActionProperty().set(event -> {
                 for (var entry : model.getMultiPlan().getMissingResources().entrySet()){
                     if (entry.getValue().signum() > 0){
-                        model.getInputItems().add(new ProdPlanModel.InputItem(entry.getKey(), entry.getValue()));
+                        model.getInputItems().add(new ProdPlanModel.InputItem(entry.getKey(), MathExpression.valueOf(entry.getValue().toBigDecimal(4, RoundingMode.HALF_UP))));
                     }
                 }
                 model.setPlan(model.getMultiPlan().getPlanWithAllItems());
@@ -130,7 +122,7 @@ class ErrorTab
             button.onActionProperty().set(event -> {
                 for (var entry : model.getMultiPlan().getMissingResources().entrySet()){
                     if (entry.getValue().signum() > 0){
-                        model.getInputItems().add(new ProdPlanModel.InputItem(entry.getKey(), entry.getValue()));
+                        model.getInputItems().add(new ProdPlanModel.InputItem(entry.getKey(), MathExpression.valueOf(entry.getValue().toBigDecimal(4, RoundingMode.HALF_UP))));
                     }
                 }
                 model.getEnabledRecipes().addAll(model.getMultiPlan().getMissingRecipes());
@@ -154,55 +146,46 @@ class ErrorTab
         return listView;
     }
 
-    private static Label createWordWrapLabel(String text)
-    {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        return label;
-    }
-
     private static Node createMissingResourcesTable(MultiPlan multiPlan)
     {
-        TableView<Map.Entry<Item, BigDecimal>> tableView = new TableView<>();
+        TableView<Map.Entry<Item, BigFraction>> tableView = new TableView<>();
 
         {
-            TableColumn<Map.Entry<Item, BigDecimal>, String> col = new TableColumn<>("Item");
+            TableColumn<Map.Entry<Item, BigFraction>, String> col = new TableColumn<>("Item");
             tableView.getColumns().add(col);
             col.cellValueFactoryProperty().set(param -> new SimpleStringProperty(param.getValue().getKey().getName()));
         }
 
         {
-            TableColumn<Map.Entry<Item, BigDecimal>, BigDecimal> col = new TableColumn<>("Configured items/min");
+            TableColumn<Map.Entry<Item, BigFraction>, BigDecimal> col = new TableColumn<>("Configured items/min");
             tableView.getColumns().add(col);
             col.setStyle("-fx-alignment: CENTER_RIGHT;");
             col.cellValueFactoryProperty().set(param -> {
                 Item item = param.getValue().getKey();
-                BigDecimal configuredInputAmount = multiPlan.getProductionPlanner().getInputItems().get(item);
-                configuredInputAmount = Objects.requireNonNullElse(configuredInputAmount, BigDecimal.ZERO);
-                configuredInputAmount = configuredInputAmount.setScale(4, RoundingMode.HALF_UP);
-                return new SimpleObjectProperty<>(configuredInputAmount);
+                BigFraction configuredInputAmount = multiPlan.getProductionPlanner().getInputItems().get(item);
+                configuredInputAmount = Objects.requireNonNullElse(configuredInputAmount, BigFraction.zero());
+                return new SimpleObjectProperty<>(configuredInputAmount.toBigDecimal(4, RoundingMode.HALF_UP));
             });
         }
 
         {
-            TableColumn<Map.Entry<Item, BigDecimal>, BigDecimal> col = new TableColumn<>("Additional items/min");
+            TableColumn<Map.Entry<Item, BigFraction>, BigDecimal> col = new TableColumn<>("Additional items/min");
             tableView.getColumns().add(col);
             col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().getValue().setScale(4, RoundingMode.HALF_UP)));
+            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().getValue().toBigDecimal(4, RoundingMode.HALF_UP)));
         }
 
         {
-            TableColumn<Map.Entry<Item, BigDecimal>, BigDecimal> col = new TableColumn<>("Total items/min");
+            TableColumn<Map.Entry<Item, BigFraction>, BigDecimal> col = new TableColumn<>("Total items/min");
             tableView.getColumns().add(col);
             col.setStyle("-fx-alignment: CENTER_RIGHT;");
             col.cellValueFactoryProperty().set(param -> {
-                BigDecimal v = param.getValue().getValue();
+                BigFraction v = param.getValue().getValue();
                 Item item = param.getValue().getKey();
-                BigDecimal configuredInputAmount = multiPlan.getProductionPlanner().getInputItems().get(item);
-                configuredInputAmount = Objects.requireNonNullElse(configuredInputAmount, BigDecimal.ZERO);
+                BigFraction configuredInputAmount = multiPlan.getProductionPlanner().getInputItems().get(item);
+                configuredInputAmount = Objects.requireNonNullElse(configuredInputAmount, BigFraction.zero());
                 v = v.add(configuredInputAmount);
-                v = v.setScale(4, RoundingMode.HALF_UP);
-                return new SimpleObjectProperty<>(v);
+                return new SimpleObjectProperty<>(v.toBigDecimal(4, RoundingMode.HALF_UP));
             });
         }
 
@@ -211,6 +194,22 @@ class ErrorTab
         tableView.setPrefHeight(150);
 
         return tableView;
+    }
+
+    private static Label createWordWrapLabel(String text)
+    {
+        Label label = new Label(text);
+        label.setWrapText(true);
+        return label;
+    }
+
+    private static void setContent(Tab tab, ProdPlanModel model)
+    {
+        if (model.getMultiPlan() == null){
+            tab.setContent(new Pane());
+        }else{
+            tab.setContent(createContent(model));
+        }
     }
 
 

@@ -10,22 +10,23 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.component;
 
-import java.math.BigDecimal;
+import io.github.elcheapogary.satisplanory.util.MathExpression;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.scene.control.TextField;
 
-public class BigDecimalTextField
+public class MathExpressionTextField
 {
-    private BigDecimalTextField()
+    private MathExpressionTextField()
     {
     }
 
-    public static void setUp(TextField textField, BigDecimal initialValue, Consumer<? super BigDecimal> onChange)
+    public static void setUp(TextField textField, MathExpression initialValue, Predicate<? super MathExpression> validator, Consumer<? super MathExpression> onChange)
     {
-        textField.setText(initialValue.toString());
+        textField.setText(initialValue.getExpression());
         textField.setAlignment(Pos.BASELINE_RIGHT);
         textField.focusedProperty().addListener(new ChangeListener<>()
         {
@@ -37,12 +38,21 @@ public class BigDecimalTextField
                 if (newValue){
                     focusText = textField.getText();
                 }else{
-                    String text = textField.getText().trim();
-                    if (!text.matches("^\\d+(\\.\\d+)?$")){
+                    MathExpression expression;
+
+                    try {
+                        expression = MathExpression.parse(textField.getText().trim());
+                    }catch (NumberFormatException e){
                         textField.setText(focusText);
-                    }else{
-                        onChange.accept(new BigDecimal(text));
+                        return;
                     }
+
+                    if (!validator.test(expression)){
+                        textField.setText(focusText);
+                        return;
+                    }
+
+                    onChange.accept(expression);
                 }
             }
         });
