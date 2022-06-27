@@ -54,15 +54,6 @@ class TableTab
         return tab;
     }
 
-    private static void setContent(Tab tab, ProductionPlan plan)
-    {
-        if (plan == null){
-            tab.setContent(new Pane());
-        }else{
-            tab.setContent(createProductionPlanTableView(plan));
-        }
-    }
-
     private static TableView<Row> createProductionPlanTableView(ProductionPlan plan)
     {
         TableView<Row> tableView = new TableView<>();
@@ -100,7 +91,7 @@ class TableTab
             tableView.getColumns().add(itemColumn);
             itemColumn.setStyle("-fx-alignment: CENTER_RIGHT;");
             itemColumn.cellValueFactoryProperty().set(param -> {
-                BigFraction value = item.toDisplayAmount(Objects.requireNonNullElse(param.getValue().itemAmounts.get(item), BigFraction.ZERO));
+                BigFraction value = item.toDisplayAmount(Objects.requireNonNullElse(param.getValue().itemAmounts.get(item), BigFraction.zero()));
                 if (value.signum() == 0){
                     return null;
                 }
@@ -111,7 +102,7 @@ class TableTab
         {
             Map<Item, BigFraction> inputItems = Item.createMap();
             for (Item item : plan.getInputItems()){
-                inputItems.put(item, Objects.requireNonNullElse(plan.getInputItemsPerMinute(item), BigFraction.ZERO));
+                inputItems.put(item, Objects.requireNonNullElse(plan.getInputItemsPerMinute(item), BigFraction.zero()));
             }
 
             tableView.getItems().add(new Row("Input Items", null, null, inputItems));
@@ -131,7 +122,7 @@ class TableTab
             }
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
                 itemAmounts.compute(recipeItem.getItem(), (item, amount) ->
-                        Objects.requireNonNullElse(amount, BigFraction.ZERO)
+                        Objects.requireNonNullElse(amount, BigFraction.zero())
                                 .add(BigFraction.valueOf(recipeItem.getAmount().getAmountPerMinute()).multiply(n))
                 );
             }
@@ -141,7 +132,7 @@ class TableTab
         {
             Map<Item, BigFraction> inputItems = Item.createMap();
             for (Item item : plan.getOutputItems()){
-                inputItems.put(item, Objects.requireNonNullElse(plan.getOutputItemsPerMinute(item), BigFraction.ZERO));
+                inputItems.put(item, Objects.requireNonNullElse(plan.getOutputItemsPerMinute(item), BigFraction.zero()));
             }
 
             tableView.getItems().add(new Row("Output Items", null, null, inputItems));
@@ -160,6 +151,15 @@ class TableTab
         });
 
         return tableView;
+    }
+
+    private static void setContent(Tab tab, ProductionPlan plan)
+    {
+        if (plan == null){
+            tab.setContent(new Pane());
+        }else{
+            tab.setContent(createProductionPlanTableView(plan));
+        }
     }
 
     private static class Row

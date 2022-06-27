@@ -46,12 +46,12 @@ public class ProductionPlan
 
     public BigFraction getInputItemsPerMinute(Item item)
     {
-        return Objects.requireNonNullElse(inputItemAmounts.get(item), BigFraction.ZERO);
+        return Objects.requireNonNullElse(inputItemAmounts.get(item), BigFraction.zero());
     }
 
     public BigFraction getNumberOfMachinesWithRecipe(Recipe recipe)
     {
-        return Objects.requireNonNullElse(recipeAmounts.get(recipe), BigFraction.ZERO);
+        return Objects.requireNonNullElse(recipeAmounts.get(recipe), BigFraction.zero());
     }
 
     public Collection<? extends Item> getOutputItems()
@@ -61,7 +61,7 @@ public class ProductionPlan
 
     public BigFraction getOutputItemsPerMinute(Item item)
     {
-        return Objects.requireNonNullElse(outputItemAmounts.get(item), BigFraction.ZERO).simplify();
+        return Objects.requireNonNullElse(outputItemAmounts.get(item), BigFraction.zero());
     }
 
     public Collection<? extends Recipe> getRecipes()

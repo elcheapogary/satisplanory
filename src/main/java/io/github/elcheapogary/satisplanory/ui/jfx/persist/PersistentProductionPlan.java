@@ -341,7 +341,7 @@ public class PersistentProductionPlan
             JSONObject json = new JSONObject();
 
             for (var entry : map.entrySet()){
-                json.put(entry.getKey(), entry.getValue().simplify().toString());
+                json.put(entry.getKey(), entry.getValue().toString());
             }
 
             return json;

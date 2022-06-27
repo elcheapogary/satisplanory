@@ -21,7 +21,7 @@ class Variable
 
     Variable(int index)
     {
-        super(BigFraction.ZERO);
+        super(BigFraction.zero());
         this.index = index;
     }
 
@@ -30,7 +30,7 @@ class Variable
     {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Variable variable = (Variable) o;
+        Variable variable = (Variable)o;
         return index == variable.index;
     }
 
@@ -42,7 +42,7 @@ class Variable
     @Override
     Map<? extends Variable, ? extends BigFraction> getVariableValues()
     {
-        return Collections.singletonMap(this, BigFraction.ONE);
+        return Collections.singletonMap(this, BigFraction.one());
     }
 
     @Override

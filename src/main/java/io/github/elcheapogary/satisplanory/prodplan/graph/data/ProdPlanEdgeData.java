@@ -24,7 +24,7 @@ public class ProdPlanEdgeData
     public void addItem(Item item, BigFraction amount)
     {
         itemAmountsMap.compute(item, (item1, existingAmount) ->
-                Objects.requireNonNullElse(existingAmount, BigFraction.ZERO).add(amount)
+                Objects.requireNonNullElse(existingAmount, BigFraction.zero()).add(amount)
         );
     }
 

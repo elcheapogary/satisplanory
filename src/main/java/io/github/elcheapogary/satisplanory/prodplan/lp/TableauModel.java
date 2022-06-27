@@ -76,14 +76,14 @@ class TableauModel
 
                         setCoefficients(constraint, row, variableData, true);
 
-                        row.setCoefficient(a, BigFraction.ONE);
+                        row.setCoefficient(a, BigFraction.one());
                     }else{
                         Row row = new Row(a, min);
                         rows.add(row);
 
                         setCoefficients(constraint, row, variableData, false);
 
-                        row.setCoefficient(a, BigFraction.ONE);
+                        row.setCoefficient(a, BigFraction.one());
                     }
                 }else{
                     if (min != null && !isSingleVariableNonNegativeMinConstraint(constraint)){
@@ -96,7 +96,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigFraction.ONE);
+                            row.setCoefficient(slack, BigFraction.one());
                         }else if (zeroCmp == 0){
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -105,7 +105,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigFraction.ONE);
+                            row.setCoefficient(slack, BigFraction.one());
                         }else{
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -116,8 +116,8 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, false);
 
-                            row.setCoefficient(slack, BigFraction.ONE.negate());
-                            row.setCoefficient(artificial, BigFraction.ONE);
+                            row.setCoefficient(slack, BigFraction.one().negate());
+                            row.setCoefficient(artificial, BigFraction.one());
                         }
                     }
 
@@ -133,8 +133,8 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, true);
 
-                            row.setCoefficient(slack, BigFraction.ONE.negate());
-                            row.setCoefficient(artificial, BigFraction.ONE);
+                            row.setCoefficient(slack, BigFraction.one().negate());
+                            row.setCoefficient(artificial, BigFraction.one());
                         }else{
                             TableauVariable slack = variableSet.addSlackVariable();
 
@@ -143,7 +143,7 @@ class TableauModel
 
                             setCoefficients(constraint, row, variableData, false);
 
-                            row.setCoefficient(slack, BigFraction.ONE);
+                            row.setCoefficient(slack, BigFraction.one());
                         }
                     }
                 }
@@ -222,7 +222,7 @@ class TableauModel
         BigFraction[][] array = new BigFraction[rows.size()][tableauVariables.size() + 1];
 
         for (BigFraction[] a : array){
-            Arrays.fill(a, BigFraction.ZERO);
+            Arrays.fill(a, BigFraction.zero());
         }
 
         {
@@ -237,12 +237,12 @@ class TableauModel
             int rowIndex = 0;
             for (TableauModel.Row row : rows){
                 row.index = rowIndex;
-                array[rowIndex][tableauVariables.size()] = row.rhs.simplify();
+                array[rowIndex][tableauVariables.size()] = row.rhs;
                 for (Map.Entry<TableauVariable, BigFraction> entry : row.values.entrySet()){
                     TableauVariable c = entry.getKey();
                     BigFraction v = entry.getValue();
 
-                    array[rowIndex][c.columnIndex] = v.simplify();
+                    array[rowIndex][c.columnIndex] = v;
                 }
 
                 rowIndex++;

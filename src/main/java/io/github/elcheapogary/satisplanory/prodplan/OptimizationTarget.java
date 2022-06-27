@@ -23,7 +23,7 @@ public enum OptimizationTarget
         @Override
         FractionExpression getObjectiveFunction(FractionExpression maximizedOutputItems, FractionExpression balance, Map<Item, ? extends FractionExpression> itemInputMap, Map<Item, ? extends FractionExpression> itemOutputMap, Map<Item, ? extends FractionExpression> itemSurplusMap, Map<Recipe, ? extends FractionExpression> recipeMap)
         {
-            return balance.add(BigFraction.ONE.movePointLeft(18), maximizedOutputItems);
+            return balance.add(BigFraction.one().movePointLeft(18), maximizedOutputItems);
         }
     },
     MIN_POWER{
@@ -89,7 +89,7 @@ public enum OptimizationTarget
                 Long l = limits.get(item.getName());
 
                 if (l != null){
-                    retv = retv.subtract(BigFraction.ONE.divide(l), expression);
+                    retv = retv.subtract(BigFraction.one().divide(l), expression);
                 }
             }
 

@@ -57,13 +57,13 @@ class TwoPhaseSimplexSolver
             tableauModel.getAllVariables().removeAll(tableauModel.getArtificialVariables());
             tableauModel.getAllVariables().addAll(0, tableauModel.getArtificialVariables());
 
-            TableauModel.Row firstStageObjective = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "A"), BigFraction.ZERO);
-            firstStageObjective.setCoefficient(firstStageObjective.basicVariable, BigFraction.ONE);
+            TableauModel.Row firstStageObjective = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "A"), BigFraction.zero());
+            firstStageObjective.setCoefficient(firstStageObjective.basicVariable, BigFraction.one());
             tableauModel.getAllVariables().add(0, firstStageObjective.basicVariable);
             tableauModel.getRows().add(0, firstStageObjective);
 
             for (TableauModel.TableauVariable a : tableauModel.getArtificialVariables()){
-                firstStageObjective.setCoefficient(a, BigFraction.ONE);
+                firstStageObjective.setCoefficient(a, BigFraction.one());
             }
         }
 
@@ -94,8 +94,8 @@ class TwoPhaseSimplexSolver
     {
         TableauModel tableauModel = TableauModel.fromModel(model, extraConstraints);
 
-        TableauModel.Row objectiveFunctionRow = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "P"), BigFraction.ZERO);
-        objectiveFunctionRow.setCoefficient(objectiveFunctionRow.basicVariable, BigFraction.ONE);
+        TableauModel.Row objectiveFunctionRow = new TableauModel.Row(new TableauModel.TableauVariable(TableauModel.VariableType.OBJECTIVE, "P"), BigFraction.zero());
+        objectiveFunctionRow.setCoefficient(objectiveFunctionRow.basicVariable, BigFraction.one());
         tableauModel.getAllVariables().add(0, objectiveFunctionRow.basicVariable);
         tableauModel.getRows().add(0, objectiveFunctionRow);
 
@@ -125,7 +125,7 @@ class TwoPhaseSimplexSolver
                 TableauModel.TableauVariable c = tableau.basicVariables[row];
                 if (c.columnIndex <= tableauModel.getArtificialVariables().size()){
                     for (int column = 0; column < tableau.array[0].length; column++){
-                        tableau.array[0][column] = tableau.array[0][column].subtract(tableau.array[row][column]).simplify();
+                        tableau.array[0][column] = tableau.array[0][column].subtract(tableau.array[row][column]);
                     }
                 }
             }
@@ -155,7 +155,7 @@ class TwoPhaseSimplexSolver
         }
 
         BigFraction[] tableauVariableValues = new BigFraction[tableau.tableauVariables.length];
-        Arrays.fill(tableauVariableValues, BigFraction.ZERO);
+        Arrays.fill(tableauVariableValues, BigFraction.zero());
 
         for (int row = 0; row < tableau.array.length; row++){
             TableauModel.TableauVariable c = tableau.basicVariables[row];
@@ -174,7 +174,7 @@ class TwoPhaseSimplexSolver
                 modelVariableValues[i] = modelVariableValues[i].subtract(tableauVariableValues[vd.secondaryTableauVariable.columnIndex]);
             }
 
-            modelVariableValues[i] = modelVariableValues[i].simplify();
+            modelVariableValues[i] = modelVariableValues[i];
         }
 
         return new OptimizationResult(tableauVariableValues[objectiveFunctionRow.basicVariable.columnIndex], modelVariableValues);
@@ -195,7 +195,7 @@ class TwoPhaseSimplexSolver
             {
                 int pivotColumn = -1;
                 {
-                    BigFraction minColVal = BigFraction.ZERO;
+                    BigFraction minColVal = BigFraction.zero();
                     for (int col = tableau.colOffset; col < tableau.rhsColumn; col++){
                         if (tableau.array[tableau.rowOffset][col].compareTo(minColVal) < 0){
                             pivotColumn = col;
@@ -365,6 +365,18 @@ class TwoPhaseSimplexSolver
         }
     }
 
+    private static class Pivot
+    {
+        public final int row;
+        public final int column;
+
+        public Pivot(int row, int column)
+        {
+            this.row = row;
+            this.column = column;
+        }
+    }
+
     private static class Tableau
     {
         private final BigFraction[][] array;
@@ -415,7 +427,7 @@ class TwoPhaseSimplexSolver
                 for (int col = colOffset; col < array[row].length; col++){
                     BigFraction d = array[pivotRow][col];
                     if (d.signum() != 0){
-                        array[row][col] = array[row][col].subtract(d.divide(mult)).simplify();
+                        array[row][col] = array[row][col].subtract(d.divide(mult));
                     }
                 }
             }
@@ -441,18 +453,6 @@ class TwoPhaseSimplexSolver
                 }
                 logger.println();
             }
-        }
-    }
-
-    private static class Pivot
-    {
-        public final int row;
-        public final int column;
-
-        public Pivot(int row, int column)
-        {
-            this.row = row;
-            this.column = column;
         }
     }
 }

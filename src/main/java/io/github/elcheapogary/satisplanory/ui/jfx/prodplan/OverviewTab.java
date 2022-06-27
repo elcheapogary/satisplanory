@@ -65,13 +65,105 @@ class OverviewTab
         return tab;
     }
 
-    private static void setContent(Tab tab, ProductionPlan plan)
+    private static TitledPane createMachinesPane(ProductionPlan plan)
     {
-        if (plan == null){
-            tab.setContent(new Pane());
-        }else{
-            tab.setContent(createOverview(plan));
+        VBox vbox = new VBox(10);
+
+        VBox clockSpeedArea = new VBox(5);
+        VBox.setVgrow(clockSpeedArea, Priority.NEVER);
+        vbox.getChildren().add(clockSpeedArea);
+
+        Slider slider = new Slider();
+        clockSpeedArea.getChildren().add(slider);
+
+        slider.setMin(0);
+        slider.setMax(250);
+        slider.setShowTickLabels(true);
+        slider.setValue(100);
+        slider.setShowTickMarks(true);
+        slider.setMajorTickUnit(10);
+        slider.setMinorTickCount(9);
+        slider.setSnapToTicks(true);
+
+        {
+
+            Label clockSpeedLabel = new Label();
+            clockSpeedArea.getChildren().add(clockSpeedLabel);
+
+            clockSpeedLabel.setMaxWidth(Double.MAX_VALUE);
+            clockSpeedLabel.setAlignment(Pos.CENTER);
+            clockSpeedLabel.textProperty().bind(Bindings.createStringBinding(() -> "Clock speed: " + (int)slider.valueProperty().get() + "%", slider.valueProperty()));
         }
+
+        Map<String, MachinesRow> machineRowMap = new TreeMap<>();
+
+        for (Recipe r : plan.getRecipes()){
+            MachinesRow row = machineRowMap.computeIfAbsent(r.getProducedInBuilding().getName(), s -> new MachinesRow());
+            row.machineName = r.getProducedInBuilding().getName();
+
+            LongBinding l = Bindings.createLongBinding(() -> plan.getNumberOfMachinesWithRecipe(r)
+                    .divide(BigFraction.valueOf(BigDecimal.valueOf(slider.valueProperty().get())).max(BigFraction.one()).divide(100))
+                    .toBigDecimal(0, RoundingMode.UP)
+                    .toBigInteger().longValue(), slider.valueProperty());
+
+            if (row.numberOfMachines == null){
+                row.numberOfMachines = l;
+            }else{
+                ObservableLongValue o = row.numberOfMachines;
+                row.numberOfMachines = Bindings.createLongBinding(() -> l.get() + o.get(), l, o);
+            }
+        }
+
+        ObservableList<MachinesRow> rows = FXCollections.observableList(new ArrayList<>(machineRowMap.values()));
+
+        MachinesRow total = new MachinesRow();
+        total.machineName = "Totals";
+        {
+            LongBinding b = Bindings.createLongBinding(() -> 0L);
+            for (MachinesRow r : rows){
+                final LongBinding tmp = b;
+                b = Bindings.createLongBinding(() -> tmp.get() + r.numberOfMachines.get(), tmp, r.numberOfMachines);
+            }
+            total.numberOfMachines = b;
+        }
+        rows.add(total);
+
+        TableView<MachinesRow> tableView = new TableView<>(rows);
+        VBox.setVgrow(tableView, Priority.ALWAYS);
+        vbox.getChildren().add(tableView);
+
+        tableView.setPrefWidth(0);
+        tableView.setPrefHeight(0);
+
+        {
+            TableColumn<MachinesRow, String> col = new TableColumn<>("Machine");
+            tableView.getColumns().add(col);
+            col.setStyle("-fx-alignment: CENTER_LEFT;");
+            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().machineName));
+        }
+
+        {
+            TableColumn<MachinesRow, Long> col = new TableColumn<>("Number");
+            tableView.getColumns().add(col);
+            col.setStyle("-fx-alignment: CENTER_RIGHT;");
+            col.cellValueFactoryProperty().set(param -> Bindings.createObjectBinding(() -> param.getValue().numberOfMachines.get(), param.getValue().numberOfMachines));
+        }
+
+        tableView.setSortPolicy(param -> {
+            Comparator<MachinesRow> comparator = Comparators.sortLast(resourceLine -> resourceLine.machineName.equals("Totals"));
+
+            if (param.getComparator() != null){
+                comparator = comparator.thenComparing(param.getComparator());
+            }
+
+            FXCollections.sort(param.getItems(), comparator);
+            return true;
+        });
+
+        TitledPane tp = new TitledPane();
+        tp.setText("Machines");
+        tp.setContent(vbox);
+        return tp;
     }
 
     private static Node createOverview(ProductionPlan plan)
@@ -138,9 +230,9 @@ class OverviewTab
 
         sortedItems.sort(Comparator.comparing(Item::getName));
 
-        BigFraction totalAmount = BigFraction.ZERO;
-        BigFraction totalMaxExtractRate = BigFraction.ZERO;
-        BigFraction totalPercentOfMaxExtractRate = BigFraction.ZERO;
+        BigFraction totalAmount = BigFraction.zero();
+        BigFraction totalMaxExtractRate = BigFraction.zero();
+        BigFraction totalPercentOfMaxExtractRate = BigFraction.zero();
 
         for (Item item : sortedItems){
             Long max = SatisfactoryData.getResourceExtractionLimits().get(item.getName());
@@ -189,105 +281,19 @@ class OverviewTab
         return tp;
     }
 
-    private static TitledPane createMachinesPane(ProductionPlan plan)
+    private static void setContent(Tab tab, ProductionPlan plan)
     {
-        VBox vbox = new VBox(10);
-
-        VBox clockSpeedArea = new VBox(5);
-        VBox.setVgrow(clockSpeedArea, Priority.NEVER);
-        vbox.getChildren().add(clockSpeedArea);
-
-        Slider slider = new Slider();
-        clockSpeedArea.getChildren().add(slider);
-
-        slider.setMin(0);
-        slider.setMax(250);
-        slider.setShowTickLabels(true);
-        slider.setValue(100);
-        slider.setShowTickMarks(true);
-        slider.setMajorTickUnit(10);
-        slider.setMinorTickCount(9);
-        slider.setSnapToTicks(true);
-
-        {
-
-            Label clockSpeedLabel = new Label();
-            clockSpeedArea.getChildren().add(clockSpeedLabel);
-
-            clockSpeedLabel.setMaxWidth(Double.MAX_VALUE);
-            clockSpeedLabel.setAlignment(Pos.CENTER);
-            clockSpeedLabel.textProperty().bind(Bindings.createStringBinding(() -> "Clock speed: " + (int) slider.valueProperty().get() + "%", slider.valueProperty()));
+        if (plan == null){
+            tab.setContent(new Pane());
+        }else{
+            tab.setContent(createOverview(plan));
         }
+    }
 
-        Map<String, MachinesRow> machineRowMap = new TreeMap<>();
-
-        for (Recipe r : plan.getRecipes()){
-            MachinesRow row = machineRowMap.computeIfAbsent(r.getProducedInBuilding().getName(), s -> new MachinesRow());
-            row.machineName = r.getProducedInBuilding().getName();
-
-            LongBinding l = Bindings.createLongBinding(() -> plan.getNumberOfMachinesWithRecipe(r)
-                    .divide(BigFraction.valueOf(BigDecimal.valueOf(slider.valueProperty().get())).max(BigFraction.ONE).divide(100))
-                    .toBigDecimal(0, RoundingMode.UP)
-                    .toBigInteger().longValue(), slider.valueProperty());
-
-            if (row.numberOfMachines == null){
-                row.numberOfMachines = l;
-            }else{
-                ObservableLongValue o = row.numberOfMachines;
-                row.numberOfMachines = Bindings.createLongBinding(() -> l.get() + o.get(), l, o);
-            }
-        }
-
-        ObservableList<MachinesRow> rows = FXCollections.observableList(new ArrayList<>(machineRowMap.values()));
-
-        MachinesRow total = new MachinesRow();
-        total.machineName = "Totals";
-        {
-            LongBinding b = Bindings.createLongBinding(() -> 0L);
-            for (MachinesRow r : rows){
-                final LongBinding tmp = b;
-                b = Bindings.createLongBinding(() -> tmp.get() + r.numberOfMachines.get(), tmp, r.numberOfMachines);
-            }
-            total.numberOfMachines = b;
-        }
-        rows.add(total);
-
-        TableView<MachinesRow> tableView = new TableView<>(rows);
-        VBox.setVgrow(tableView, Priority.ALWAYS);
-        vbox.getChildren().add(tableView);
-
-        tableView.setPrefWidth(0);
-        tableView.setPrefHeight(0);
-
-        {
-            TableColumn<MachinesRow, String> col = new TableColumn<>("Machine");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_LEFT;");
-            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().machineName));
-        }
-
-        {
-            TableColumn<MachinesRow, Long> col = new TableColumn<>("Number");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> Bindings.createObjectBinding(() -> param.getValue().numberOfMachines.get(), param.getValue().numberOfMachines));
-        }
-
-        tableView.setSortPolicy(param -> {
-            Comparator<MachinesRow> comparator = Comparators.sortLast(resourceLine -> resourceLine.machineName.equals("Totals"));
-
-            if (param.getComparator() != null){
-                comparator = comparator.thenComparing(param.getComparator());
-            }
-
-            FXCollections.sort(param.getItems(), comparator);
-            return true;
-        });
-
-        TitledPane tp = new TitledPane();
-        tp.setText("Machines");
-        tp.setContent(vbox);
-        return tp;
+    private static class MachinesRow
+    {
+        private String machineName;
+        private ObservableLongValue numberOfMachines;
     }
 
     private static class ResourceLine
@@ -296,11 +302,5 @@ class OverviewTab
         private BigDecimal amount;
         private BigDecimal maxExtractRate;
         private BigDecimal percentageOfMaxExtractRate;
-    }
-
-    private static class MachinesRow
-    {
-        private String machineName;
-        private ObservableLongValue numberOfMachines;
     }
 }

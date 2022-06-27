@@ -85,7 +85,7 @@ public abstract class Expression
 
         for (var entry : expression.getVariableValues().entrySet()){
             m.compute(entry.getKey(), (variable2, existingMultiplier) ->
-                    Objects.requireNonNullElse(existingMultiplier, BigFraction.ZERO)
+                    Objects.requireNonNullElse(existingMultiplier, BigFraction.zero())
                             .add(multiplier.multiply(entry.getValue()))
             );
         }

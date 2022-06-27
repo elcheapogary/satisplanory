@@ -37,7 +37,7 @@ class BigMSimplexSolver
         int row = variantBasicRows[v.columnIndex];
 
         if (row < 0){
-            return BigFraction.ZERO;
+            return BigFraction.zero();
         }
 
         return array[row][cols - 1].divide(array[row][v.columnIndex]);
@@ -54,9 +54,9 @@ class BigMSimplexSolver
         final int rows = array.length;
         final int cols = array[0].length;
         final BigFraction[] costs = new BigFraction[cols - 1];
-        Arrays.fill(costs, BigFraction.ZERO);
+        Arrays.fill(costs, BigFraction.zero());
 
-        BigFraction maxCoefficient = BigFraction.ZERO;
+        BigFraction maxCoefficient = BigFraction.zero();
 
         for (Constraint c : model.getConstraints()){
             for (Variable v : c.getVariables()){
@@ -111,7 +111,7 @@ class BigMSimplexSolver
                 logger.print("\"\",\"Cj\"");
                 for (int i = 0; i < cols - 1; i++){
                     logger.print(",");
-                    logger.print(BigDecimalUtils.normalize(costs[i].simplify().toBigDecimal(5, RoundingMode.HALF_UP)));
+                    logger.print(BigDecimalUtils.normalize(costs[i].toBigDecimal(5, RoundingMode.HALF_UP)));
                 }
                 logger.println();
 
@@ -124,14 +124,14 @@ class BigMSimplexSolver
                 logger.println(",\"RHS\"");
 
                 for (int row = 0; row < rows; row++){
-                    logger.print(BigDecimalUtils.normalize(costs[basicVariables[row].columnIndex].simplify().toBigDecimal(5, RoundingMode.HALF_UP)));
+                    logger.print(BigDecimalUtils.normalize(costs[basicVariables[row].columnIndex].toBigDecimal(5, RoundingMode.HALF_UP)));
                     logger.print(",\"");
                     logger.print(basicVariables[row].getName());
                     logger.print("\"");
 
                     for (int col = 0; col < cols; col++){
                         logger.print(",");
-                        logger.print(BigDecimalUtils.normalize(array[row][col].simplify().toBigDecimal(5, RoundingMode.HALF_UP)));
+                        logger.print(BigDecimalUtils.normalize(array[row][col].toBigDecimal(5, RoundingMode.HALF_UP)));
                     }
                     logger.println();
                 }
@@ -142,9 +142,9 @@ class BigMSimplexSolver
                 if (logger != null){
                     logger.print("\"\",\"Zj-Cj\"");
                 }
-                BigFraction min = BigFraction.ZERO;
+                BigFraction min = BigFraction.zero();
                 for (int column = 0; column < cols - 1; column++){
-                    BigFraction zj = BigFraction.ZERO;
+                    BigFraction zj = BigFraction.zero();
                     for (int row = 0; row < rows; row++){
                         zj = zj.add(costs[basicVariables[row].columnIndex].multiply(array[row][column]));
                     }
@@ -153,7 +153,7 @@ class BigMSimplexSolver
 
                     if (logger != null){
                         logger.print(",");
-                        logger.print(BigDecimalUtils.normalize(zjMinusCj.simplify().toBigDecimal(5, RoundingMode.HALF_UP)));
+                        logger.print(BigDecimalUtils.normalize(zjMinusCj.toBigDecimal(5, RoundingMode.HALF_UP)));
                     }
 
                     if (zjMinusCj.compareTo(min) < 0){
@@ -201,9 +201,9 @@ class BigMSimplexSolver
 
             BigFraction pivotValue = array[pivotRow][pivotColumn];
 
-            if (pivotValue.compareTo(BigFraction.ONE) != 0){
+            if (pivotValue.compareTo(BigFraction.one()) != 0){
                 for (int column = 0; column < array[pivotRow].length; column++){
-                    array[pivotRow][column] = array[pivotRow][column].divide(pivotValue).simplify();
+                    array[pivotRow][column] = array[pivotRow][column].divide(pivotValue);
                 }
             }
 
@@ -215,7 +215,7 @@ class BigMSimplexSolver
                 BigFraction v = array[row][pivotColumn];
                 if (v.signum() != 0){
                     for (int column = 0; column < cols; column++){
-                        array[row][column] = array[row][column].subtract(v.multiply(array[pivotRow][column])).simplify();
+                        array[row][column] = array[row][column].subtract(v.multiply(array[pivotRow][column]));
                     }
                 }
             }
@@ -245,7 +245,7 @@ class BigMSimplexSolver
             variableValues[variable.index] = v;
         }
 
-        BigFraction objectiveFunctionValue = BigFraction.ZERO;
+        BigFraction objectiveFunctionValue = BigFraction.zero();
 
         for (TableauModel.TableauVariable c : tableauModel.getAllVariables()){
             objectiveFunctionValue = objectiveFunctionValue.add(costs[c.columnIndex].multiply(getVariableValue(c, variableBasicRows, array, cols)));

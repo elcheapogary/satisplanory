@@ -29,6 +29,18 @@ class MILPSolver
     {
     }
 
+    private static OptimizationResult doSimplex(Model model, Expression objectiveFunction, Collection<? extends Constraint> extraConstraints, boolean maximize)
+            throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
+    {
+        if (maximize){
+            return new TwoPhaseSimplexSolver.Builder().build()
+                    .maximize(model, objectiveFunction, extraConstraints);
+        }else{
+            return new TwoPhaseSimplexSolver.Builder().build()
+                    .minimize(model, objectiveFunction, extraConstraints);
+        }
+    }
+
     private static Map<Expression, BigFraction> getInvalidIntegerExpressions(OptimizationResult result, Collection<? extends Expression> integerExpressions)
     {
         Map<Expression, BigFraction> invalidIntegerExpressions = new HashMap<>((integerExpressions.size() * 3) / 2);
@@ -54,18 +66,6 @@ class MILPSolver
             throws UnboundedSolutionException, InfeasibleSolutionException, InterruptedException
     {
         return optimize(model, objectiveFunction, integerExpressions, false);
-    }
-
-    private static OptimizationResult doSimplex(Model model, Expression objectiveFunction, Collection<? extends Constraint> extraConstraints, boolean maximize)
-            throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
-    {
-        if (maximize){
-            return new TwoPhaseSimplexSolver.Builder().build()
-                    .maximize(model, objectiveFunction, extraConstraints);
-        }else{
-            return new TwoPhaseSimplexSolver.Builder().build()
-                    .minimize(model, objectiveFunction, extraConstraints);
-        }
     }
 
     private static OptimizationResult optimize(Model model, Expression objectiveFunction, Collection<? extends Expression> integerExpressions, boolean maximize)
@@ -147,12 +147,12 @@ class MILPSolver
             BigDecimal integerValue = value.toBigDecimal(0, RoundingMode.DOWN);
 
             BigFraction fraction = value.subtract(BigFraction.valueOf(integerValue));
-            BigFraction cost = BigFraction.ZERO;
+            BigFraction cost = BigFraction.zero();
 
             for (var entry2 : expression.getVariableValues().entrySet()){
                 Variable variable = entry2.getKey();
                 BigFraction amount = entry2.getValue();
-                cost = cost.add(fraction.multiply(amount.multiply(Objects.requireNonNullElse(objectiveFunction.getVariableValues().get(variable), BigFraction.ZERO))));
+                cost = cost.add(fraction.multiply(amount.multiply(Objects.requireNonNullElse(objectiveFunction.getVariableValues().get(variable), BigFraction.zero()))));
             }
 
             expressionData.add(new ExpressionData(expression, integerValue, cost));

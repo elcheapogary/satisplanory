@@ -221,7 +221,7 @@ public class ProductionPlanner
                 itemSurplusExpressionMap.put(item, itemSurplus);
 
                 if (weight == null || weight.signum() == 0){
-                    surplusExpression = surplusExpression.add(item.toDisplayAmount(BigFraction.ONE), itemSurplus);
+                    surplusExpression = surplusExpression.add(item.toDisplayAmount(BigFraction.one()), itemSurplus);
                 }else{
                     maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(item.toDisplayAmount(weight), itemSurplus);
                 }
@@ -258,7 +258,7 @@ public class ProductionPlanner
                         }
                     }
 
-                    balanceExpression = balanceExpression.divide(BigFraction.ONE.movePointRight(6));
+                    balanceExpression = balanceExpression.divide(BigFraction.one().movePointRight(6));
 
                     FractionExpression finalVariable = model.addFractionVariable();
 
@@ -267,7 +267,7 @@ public class ProductionPlanner
                         model.addConstraint(v.gte(finalVariable));
                     }
 
-                    balanceExpression = balanceExpression.divide(BigFraction.ONE.movePointRight(6));
+                    balanceExpression = balanceExpression.divide(BigFraction.one().movePointRight(6));
 
                     balanceExpression = balanceExpression.add(finalVariable);
                 }
@@ -277,7 +277,7 @@ public class ProductionPlanner
         FractionExpression objectiveFunction = FractionExpression.zero();
 
         {
-            BigFraction multiplier = BigFraction.ONE;
+            BigFraction multiplier = BigFraction.one();
 
             for (OptimizationTarget t : optimizationTargets){
                 objectiveFunction = objectiveFunction.add(multiplier, t.getObjectiveFunction(
