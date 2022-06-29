@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.lp.Expression;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
@@ -183,6 +184,24 @@ public enum OptimizationTarget
             }
 
             return Collections.singletonList(objectiveFunction);
+        }
+    },
+    MAX_SINK_POINTS {
+        @Override
+        List<? extends Expression> getObjectiveFunctions(OptimizationModel model)
+        {
+            Expression objective = Expression.zero();
+
+            for (var entry : model.getItemSurplusMap().entrySet()){
+                Item item = entry.getKey();
+                Expression expression = entry.getValue();
+
+                if (item.getMatterState() == MatterState.SOLID && item.getSinkValue() > 0){
+                    objective = objective.add(expression.multiply(item.getSinkValue()));
+                }
+            }
+
+            return Collections.singletonList(objective);
         }
     };
 

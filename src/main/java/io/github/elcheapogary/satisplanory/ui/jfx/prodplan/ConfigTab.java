@@ -13,7 +13,9 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
+import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
+import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanNotFeatisbleException;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlanner;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
@@ -21,7 +23,6 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.MathExpression;
 import io.github.elcheapogary.satisplanory.util.ResourceUtils;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -114,6 +115,9 @@ class ConfigTab
             b.addRecipes(model.getEnabledRecipes());
 
             for (OptimizationTargetModel otm : model.getSettings().getOptimizationTargets()){
+                if (otm.getOptimizationTarget() == OptimizationTarget.MAX_SINK_POINTS){
+                    b.setFilterRecipesByOutputItems(false);
+                }
                 b.addOptimizationTarget(otm.getOptimizationTarget());
             }
 
@@ -123,30 +127,12 @@ class ConfigTab
                 }
             }
 
-            boolean hasOutputRequirement = false;
-
             for (ProdPlanModel.OutputItem outputItem : model.getOutputItems()){
-                MathExpression min = outputItem.getMin();
-
-                if (min.getValue().signum() > 0){
-                    hasOutputRequirement = true;
-                    b.requireOutputItemsPerMinute(outputItem.getItem(), outputItem.getItem().fromDisplayAmount(min.getValue()));
-                }
-
-                MathExpression weight = outputItem.getWeight();
-
-                if (weight.getValue().signum() > 0){
-                    b.maximizeOutputItem(outputItem.getItem(), weight.getValue());
-                }
-            }
-
-            if (!hasOutputRequirement){
-                new ExceptionDialog(appContext)
-                        .setContextMessage("No minimum output provided. Please set at least one Min value > 0.")
-                        .setTitle("Error: No output requirements provided")
-                        .setDetailsMessage("There needs to be at least one item listed under Output Requirements that has a\nMin value greater than zero.")
-                        .showAndWait();
-                return;
+                b.addOutputItem(
+                        outputItem.getItem(),
+                        outputItem.getItem().fromDisplayAmount(outputItem.getMin().getValue()),
+                        outputItem.getWeight().getValue()
+                );
             }
 
             MultiPlan plan;
@@ -180,7 +166,17 @@ class ConfigTab
             }
 
             if (plan.isUnmodifiedPlanFeasible()){
-                model.setPlan(plan.getUnmodifiedPlan());
+                ProductionPlan p = plan.getUnmodifiedPlan();
+                if (p.getOutputItems().isEmpty()){
+                    new ExceptionDialog(appContext)
+                            .setContextMessage("This configuration generated an empty plan - it does nothing. Try adding minimum output.")
+                            .setTitle("Empty plan")
+                            .setDetailsMessage("Having at least one output item with a minimum number of items per minute will help.")
+                            .showAndWait();
+                }else{
+                    model.setPlan(p);
+                    model.setMultiPlan(null);
+                }
             }else{
                 model.setPlan(null);
                 model.setMultiPlan(plan);

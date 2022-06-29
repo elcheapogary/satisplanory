@@ -37,6 +37,7 @@ public class ProductionPlanner
     private final Set<Recipe> recipes;
     private final boolean strictMaximizeRatios;
     private final List<OptimizationTarget> optimizationTargets;
+    private final boolean filterRecipesByOutputItems;
 
     protected ProductionPlanner(Builder builder)
     {
@@ -45,14 +46,12 @@ public class ProductionPlanner
         this.recipes = Collections.unmodifiableSet(Recipe.createSet(builder.recipes));
         this.strictMaximizeRatios = builder.strictMaximizeRatios;
         this.optimizationTargets = List.copyOf(builder.optimizationTargets);
+        this.filterRecipesByOutputItems = builder.filterRecipesByOutputItems;
     }
 
     private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
     {
-        recipes = ProdPlanUtils.getRecipesWeCanBuild(
-                getRecipesThatBuildShitWeNeed(recipes, outputItems),
-                inputItems
-        );
+        recipes = ProdPlanUtils.getRecipesWeCanBuild(recipes, inputItems);
 
         filteredRecipes.addAll(recipes);
 
@@ -116,7 +115,15 @@ public class ProductionPlanner
         Set<Recipe> recipes = Recipe.createSet();
         Set<Item> items = Item.createSet();
 
-        filterRecipesAndItems(this.recipes, inputItems.keySet(), outputRequirements.keySet(), recipes, items);
+        {
+            Collection<? extends Recipe> unfilteredRecipes = this.recipes;
+
+            if (filterRecipesByOutputItems){
+                unfilteredRecipes = getRecipesThatBuildShitWeNeed(unfilteredRecipes, outputRequirements.keySet());
+            }
+
+            filterRecipesAndItems(unfilteredRecipes, inputItems.keySet(), outputRequirements.keySet(), recipes, items);
+        }
 
         items.addAll(outputRequirements.keySet());
 
@@ -275,6 +282,7 @@ public class ProductionPlanner
         private final Set<Recipe> recipes = Recipe.createSet();
         private final List<OptimizationTarget> optimizationTargets = new LinkedList<>();
         private boolean strictMaximizeRatios = false;
+        private boolean filterRecipesByOutputItems = true;
 
         public Builder()
         {
@@ -287,6 +295,7 @@ public class ProductionPlanner
             this.recipes.addAll(planner.recipes);
             this.strictMaximizeRatios = planner.strictMaximizeRatios;
             this.optimizationTargets.addAll(planner.optimizationTargets);
+            this.filterRecipesByOutputItems = planner.filterRecipesByOutputItems;
         }
 
         public Builder addInputItem(Item item, long itemsPerMinute)
@@ -407,6 +416,12 @@ public class ProductionPlanner
         public Builder requireOutputItemsPerMinute(Item item, long itemsPerMinute)
         {
             return requireOutputItemsPerMinute(item, BigFraction.valueOf(itemsPerMinute));
+        }
+
+        public Builder setFilterRecipesByOutputItems(boolean filterRecipesByOutputItems)
+        {
+            this.filterRecipesByOutputItems = filterRecipesByOutputItems;
+            return this;
         }
 
         public Builder setStrictMaximizeRatios(boolean strictMaximizeRatios)

@@ -67,8 +67,13 @@ enum OptimizationTargetModel
             OptimizationTarget.MIN_BUILDINGS,
             "Minimize Number of Buildings",
             "Try use as few buildings as possible."
+    ),
+    MAXIMIZE_SINK_POINTS(
+            "maximizeSinkPoints",
+            OptimizationTarget.MAX_SINK_POINTS,
+            "Maximize AWESOME sink points",
+            "Try generate items that can be sinked for as many AWESOME sink points as possible."
     );
-
 
     private final String saveCode;
     private final OptimizationTarget optimizationTarget;
