@@ -10,41 +10,29 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-
 public class Constraint
 {
-    private final Map<? extends Variable, ? extends BigFraction> variableValues;
-    private final BigFraction min;
-    private final BigFraction max;
+    private final Expression expression;
+    private final Comparison comparison;
 
-    Constraint(Map<? extends Variable, ? extends BigFraction> variableValues, BigFraction min, BigFraction max)
+    Constraint(Expression expression, Comparison comparison)
     {
-        this.variableValues = Collections.unmodifiableMap(variableValues);
-        this.min = min;
-        this.max = max;
+        this.expression = expression;
+        this.comparison = comparison;
     }
 
-    BigFraction getMax()
+    Comparison getComparison()
     {
-        return max;
+        return comparison;
     }
 
-    BigFraction getMin()
+    Expression getExpression()
     {
-        return min;
+        return expression;
     }
 
-    BigFraction getVariableMultiplier(Variable variable)
+    enum Comparison
     {
-        return variableValues.get(variable);
-    }
-
-    Collection<? extends Variable> getVariables()
-    {
-        return variableValues.keySet();
+        LTE, GTE, EQ;
     }
 }

@@ -16,19 +16,4 @@ public class InfeasibleSolutionException
     public InfeasibleSolutionException()
     {
     }
-
-    public InfeasibleSolutionException(String message)
-    {
-        super(message);
-    }
-
-    public InfeasibleSolutionException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public InfeasibleSolutionException(Throwable cause)
-    {
-        super(cause);
-    }
 }

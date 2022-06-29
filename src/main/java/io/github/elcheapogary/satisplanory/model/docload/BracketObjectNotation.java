@@ -14,7 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import io.github.elcheapogary.satisplanory.util.function.ThrowingFunction;
+import io.github.elcheapogary.satisplanory.util.function.throwing.ThrowingFunction;
 
 /**
  * In Satisfactory {@code Docs.json} are these values in this object notation, like: {@code (key=value,key=value)} and

@@ -10,14 +10,25 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-import java.io.PrintWriter;
-
-public class BigMSimplexSolverTest
-        extends AbstractSimplexSolverTest
+class DecisionVariable
+        extends Variable
 {
-    @Override
-    protected SimplexSolver createSimplexSolver(PrintWriter logger)
+    private final String name;
+
+    public DecisionVariable(int id, String name)
     {
-        return new BigMSimplexSolver(logger);
+        super(id);
+        this.name = name;
+    }
+
+    @Override
+    public String getDebugName()
+    {
+        return "x" + getId();
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }

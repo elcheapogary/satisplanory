@@ -10,66 +10,152 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
+import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Consumer;
 
 public class Model
 {
-    private final List<Variable> variables = new ArrayList<>();
-    private final Collection<Constraint> constraints = new ArrayList<>();
-    private final List<Expression> integerExpressions = new ArrayList<>();
+    private final List<DecisionVariable> decisionVariables = new ArrayList<>();
+    private final Collection<DecisionVariable> integerVariables = new LinkedList<>();
+    private final Collection<Constraint> constraints = new LinkedList<>();
 
-    public Model addConstraint(Constraint constraint)
+    public BinaryExpression addBinaryVariable(String name)
     {
-        this.constraints.add(Objects.requireNonNull(constraint));
-        return this;
+        DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
+        decisionVariables.add(decisionVariable);
+        integerVariables.add(decisionVariable);
+        BinaryExpression retv = new BinaryExpression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
+        constraints.add(retv.lte(1));
+        return retv;
     }
 
-    public FractionExpression addFractionVariable()
+    public void addConstraint(Constraint constraint)
     {
-        Variable v = new Variable(variables.size());
-        variables.add(v);
-        return v;
+        constraints.add(constraint);
     }
 
-    public IntegerExpression addIntegerVariable()
+    public IntegerExpression addIntegerVariable(String name)
     {
-        return integer(addFractionVariable());
+        DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
+        decisionVariables.add(decisionVariable);
+        integerVariables.add(decisionVariable);
+        return new IntegerExpression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
     }
 
-    Collection<Constraint> getConstraints()
+    public Expression addVariable(String name)
     {
-        return Collections.unmodifiableCollection(constraints);
-    }
-
-    int getNumberOfConstraints()
-    {
-        return constraints.size();
-    }
-
-    Collection<? extends Variable> getVariables()
-    {
-        return Collections.unmodifiableList(variables);
-    }
-
-    public IntegerExpression integer(Expression expression)
-    {
-        integerExpressions.add(expression);
-        return new IntegerExpression(expression.getConstantValue(), expression.getVariableValues());
+        DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
+        decisionVariables.add(decisionVariable);
+        return new Expression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
     }
 
     public OptimizationResult maximize(Expression objectiveFunction)
             throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
     {
-        return MILPSolver.maximize(this, objectiveFunction, integerExpressions);
+        return maximize(Collections.singletonList(objectiveFunction));
     }
 
-    public OptimizationResult minimize(Expression objectiveFunction)
+    public OptimizationResult maximize(Expression objectiveFunction, Consumer<String> logger)
             throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
     {
-        return MILPSolver.minimize(this, objectiveFunction, integerExpressions);
+        return maximize(Collections.singletonList(objectiveFunction), logger);
+    }
+
+    public OptimizationResult maximize(List<Expression> objectiveFunctions)
+            throws UnboundedSolutionException, InterruptedException, InfeasibleSolutionException
+    {
+        return maximize(objectiveFunctions, null);
+    }
+
+    public OptimizationResult maximize(List<Expression> objectiveFunctions, Consumer<String> logger)
+            throws UnboundedSolutionException, InterruptedException, InfeasibleSolutionException
+    {
+        if (logger != null){
+            logger = new Logger(logger);
+
+            for (DecisionVariable v : decisionVariables){
+                logger.accept("x" + v.id + "=" + v.getName());
+            }
+            int cn = 1;
+            for (Constraint c : constraints){
+                logger.accept("c" + cn + ":c=" + c.getComparison() + ":" + c.getExpression().getConstantValue());
+                for (var entry : c.getExpression().getCoefficients().entrySet()){
+                    logger.accept("c" + cn + ":x" + entry.getKey().id + "=" + entry.getValue());
+                }
+                cn++;
+            }
+            int fn = 1;
+            for (Expression e : objectiveFunctions){
+                logger.accept("f" + fn + ":c=" + e.getConstantValue());
+                for (var entry : e.getCoefficients().entrySet()){
+                    logger.accept("f" + fn + ":x" + entry.getKey().id + "=" + entry.getValue());
+                }
+                fn++;
+            }
+        }
+
+        Tableau tableau = new Tableau(logger, decisionVariables);
+
+        for (Constraint c : constraints){
+            tableau.addConstraint(c);
+        }
+
+        tableau.findInitialFeasibleSolution();
+
+        List<BigFraction> objectiveFunctionValues = new ArrayList<>(objectiveFunctions.size());
+
+        for (Expression e : objectiveFunctions){
+            objectiveFunctionValues.add(tableau.maximizeAndConstrain(e, integerVariables));
+        }
+
+        if (!objectiveFunctions.isEmpty()){
+            Expression lastObjectiveFunction = objectiveFunctions.get(objectiveFunctions.size() - 1);
+
+            Set<DecisionVariable> variablesToMinimize = new TreeSet<>(Variable.COMPARATOR);
+            variablesToMinimize.addAll(decisionVariables);
+            variablesToMinimize.removeAll(lastObjectiveFunction.getCoefficients().keySet());
+
+            Map<DecisionVariable, BigFraction> coefficients = new TreeMap<>(Variable.COMPARATOR);
+
+            for (DecisionVariable v : variablesToMinimize){
+                coefficients.put(v, BigFraction.negativeOne());
+            }
+
+            tableau = tableau.maximize(new Expression(coefficients, BigFraction.zero()), integerVariables);
+        }
+
+        Map<DecisionVariable, BigFraction> decisionVariableValues = new TreeMap<>(Variable.COMPARATOR);
+
+        for (DecisionVariable dv : decisionVariables){
+            decisionVariableValues.put(dv, tableau.getValue(dv));
+        }
+
+        return new OptimizationResult(objectiveFunctionValues, decisionVariableValues);
+    }
+
+    private static class Logger
+            implements Consumer<String>
+    {
+        private final Consumer<String> logger;
+
+        public Logger(Consumer<String> logger)
+        {
+            this.logger = logger;
+        }
+
+        @Override
+        public synchronized void accept(String s)
+        {
+            logger.accept(Thread.currentThread().getName() + " " + s);
+        }
     }
 }

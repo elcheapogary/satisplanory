@@ -12,151 +12,145 @@ package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Comparator;
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
-public abstract class Expression
+public class Expression
 {
+    private final Map<DecisionVariable, BigFraction> coefficients;
     private final BigFraction constantValue;
 
-    Expression(BigFraction constantValue)
+    Expression(Map<DecisionVariable, BigFraction> coefficients, BigFraction constantValue)
     {
+        this.coefficients = coefficients;
         this.constantValue = constantValue;
     }
 
-    public static FractionExpression constant(BigFraction value)
+    public static BinaryExpression zero()
     {
-        return new ConcreteFractionExpression(value, Collections.emptyMap());
+        return BinaryExpression.ZERO;
     }
 
-    public static FractionExpression constant(BigDecimal value)
+    public Expression add(Expression addend)
     {
-        return constant(BigFraction.valueOf(value));
-    }
+        Set<DecisionVariable> variables = new TreeSet<>(Variable.COMPARATOR);
 
-    public static FractionExpression constant(long value)
-    {
-        return constant(BigFraction.valueOf(value));
-    }
+        variables.addAll(coefficients.keySet());
+        variables.addAll(addend.coefficients.keySet());
 
-    public static FractionExpression constant(double value)
-    {
-        return constant(BigDecimal.valueOf(value));
-    }
+        Map<DecisionVariable, BigFraction> newCoefficients = new TreeMap<>(Variable.COMPARATOR);
 
-    public static FractionExpression zero()
-    {
-        return FractionExpression.ZERO;
-    }
+        for (DecisionVariable v : variables){
+            BigFraction coefficient = Objects.requireNonNullElse(coefficients.get(v), BigFraction.zero())
+                    .add(Objects.requireNonNullElse(addend.coefficients.get(v), BigFraction.zero()));
 
-    public FractionExpression add(BigFraction constantValue)
-    {
-        return new ConcreteFractionExpression(this.constantValue.add(constantValue), getVariableValues());
-    }
-
-    public FractionExpression add(BigDecimal constantValue)
-    {
-        return add(BigFraction.valueOf(constantValue));
-    }
-
-    public FractionExpression add(long constantValue)
-    {
-        return add(BigFraction.valueOf(constantValue));
-    }
-
-    public FractionExpression add(double constantValue)
-    {
-        return add(BigDecimal.valueOf(constantValue));
-    }
-
-    public FractionExpression add(Expression expression)
-    {
-        return add(1, expression);
-    }
-
-    public FractionExpression add(BigFraction multiplier, Expression expression)
-    {
-        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
-
-        m.putAll(getVariableValues());
-
-        for (var entry : expression.getVariableValues().entrySet()){
-            m.compute(entry.getKey(), (variable2, existingMultiplier) ->
-                    Objects.requireNonNullElse(existingMultiplier, BigFraction.zero())
-                            .add(multiplier.multiply(entry.getValue()))
-            );
+            if (coefficient.signum() != 0){
+                newCoefficients.put(v, coefficient);
+            }
         }
 
-        return new ConcreteFractionExpression(constantValue.add(multiplier.multiply(expression.constantValue)), m);
+        return new Expression(newCoefficients, constantValue.add(addend.constantValue));
     }
 
-    public FractionExpression add(BigDecimal multiplier, Expression expression)
+    public Expression add(BigFraction addend)
     {
-        return add(BigFraction.valueOf(multiplier), expression);
+        return new Expression(coefficients, constantValue.add(addend));
     }
 
-    public FractionExpression add(long multiplier, Expression expression)
+    public Expression add(BigDecimal addend)
     {
-        return add(BigFraction.valueOf(multiplier), expression);
+        return add(BigFraction.valueOf(addend));
     }
 
-    public FractionExpression add(double multiplier, Expression expression)
+    public Expression add(BigInteger addend)
     {
-        return add(BigDecimal.valueOf(multiplier), expression);
+        return add(BigFraction.valueOf(addend));
     }
 
-    public FractionExpression divide(long value)
+    public Expression add(long addend)
     {
-        return divide(BigFraction.valueOf(value));
+        return add(BigFraction.valueOf(addend));
     }
 
-    public FractionExpression divide(double value)
+    public Expression add(double addend)
     {
-        return divide(BigDecimal.valueOf(value));
+        return add(BigDecimal.valueOf(addend));
     }
 
-    public FractionExpression divide(BigFraction value)
+    public Expression divide(BigFraction divisor)
     {
-        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
-
-        for (var entry : getVariableValues().entrySet()){
-            m.put(entry.getKey(), entry.getValue().divide(value));
+        if (divisor.signum() == 0){
+            throw new ArithmeticException();
+        }else if (divisor.compareTo(BigFraction.one()) == 0){
+            return new Expression(coefficients, constantValue);
         }
 
-        return new ConcreteFractionExpression(constantValue.divide(value), m);
+        Map<DecisionVariable, BigFraction> newCoefficients = new TreeMap<>(Variable.COMPARATOR);
+
+        for (var entry : coefficients.entrySet()){
+            newCoefficients.put(entry.getKey(), entry.getValue().divide(divisor));
+        }
+
+        return new Expression(newCoefficients, constantValue.divide(divisor));
     }
 
-    public FractionExpression divide(BigDecimal value)
+    public Expression divide(BigDecimal divisor)
     {
-        return divide(BigFraction.valueOf(value));
+        return divide(BigFraction.valueOf(divisor));
     }
 
-    public Constraint eq(BigFraction amount)
+    public Expression divide(BigInteger divisor)
     {
-        return new Constraint(getVariableValues(), amount.subtract(constantValue), amount.subtract(constantValue));
+        return divide(BigFraction.valueOf(divisor));
     }
 
-    public Constraint eq(BigDecimal amount)
+    public Expression divide(long divisor)
     {
-        return eq(BigFraction.valueOf(amount));
+        return divide(BigFraction.valueOf(divisor));
     }
 
-    public Constraint eq(long amount)
+    public Expression divide(double divisor)
     {
-        return eq(BigFraction.valueOf(amount));
+        return divide(BigDecimal.valueOf(divisor));
     }
 
-    public Constraint eq(double amount)
+    public Constraint eq(Expression other)
     {
-        return eq(BigDecimal.valueOf(amount));
+        return new Constraint(subtract(other), Constraint.Comparison.EQ);
     }
 
-    public Constraint eq(Expression expression)
+    public Constraint eq(BigFraction value)
     {
-        return this.subtract(expression).eq(0);
+        return new Constraint(subtract(value), Constraint.Comparison.EQ);
+    }
+
+    public Constraint eq(BigDecimal value)
+    {
+        return new Constraint(subtract(value), Constraint.Comparison.EQ);
+    }
+
+    public Constraint eq(BigInteger value)
+    {
+        return new Constraint(subtract(value), Constraint.Comparison.EQ);
+    }
+
+    public Constraint eq(long value)
+    {
+        return new Constraint(subtract(value), Constraint.Comparison.EQ);
+    }
+
+    public Constraint eq(double value)
+    {
+        return new Constraint(subtract(value), Constraint.Comparison.EQ);
+    }
+
+    Map<DecisionVariable, BigFraction> getCoefficients()
+    {
+        return coefficients;
     }
 
     BigFraction getConstantValue()
@@ -164,184 +158,195 @@ public abstract class Expression
         return constantValue;
     }
 
-    abstract Map<? extends Variable, ? extends BigFraction> getVariableValues();
-
-    public Constraint gte(Expression expression)
+    public Constraint gte(Expression other)
     {
-        return this.subtract(expression).gte(0);
+        return new Constraint(subtract(other), Constraint.Comparison.GTE);
     }
 
-    public Constraint gte(BigFraction amount)
+    public Constraint gte(BigFraction value)
     {
-        return new Constraint(getVariableValues(), amount.subtract(constantValue), null);
+        return new Constraint(subtract(value), Constraint.Comparison.GTE);
     }
 
-    public Constraint gte(BigDecimal amount)
+    public Constraint gte(BigDecimal value)
     {
-        return gte(BigFraction.valueOf(amount));
+        return new Constraint(subtract(value), Constraint.Comparison.GTE);
     }
 
-    public Constraint gte(long amount)
+    public Constraint gte(BigInteger value)
     {
-        return gte(BigFraction.valueOf(amount));
+        return new Constraint(subtract(value), Constraint.Comparison.GTE);
     }
 
-    public Constraint gte(double amount)
+    public Constraint gte(long value)
     {
-        return gte(BigDecimal.valueOf(amount));
+        return new Constraint(subtract(value), Constraint.Comparison.GTE);
     }
 
-    public Constraint lte(BigFraction amount)
+    public Constraint gte(double value)
     {
-        return new Constraint(getVariableValues(), null, amount.subtract(constantValue));
+        return new Constraint(subtract(value), Constraint.Comparison.GTE);
     }
 
-    public Constraint lte(BigDecimal amount)
+    public Constraint lte(Expression other)
     {
-        return lte(BigFraction.valueOf(amount));
+        return new Constraint(subtract(other), Constraint.Comparison.LTE);
     }
 
-    public Constraint lte(long amount)
+    public Constraint lte(BigFraction value)
     {
-        return lte(BigDecimal.valueOf(amount));
+        return new Constraint(subtract(value), Constraint.Comparison.LTE);
     }
 
-    public Constraint lte(double amount)
+    public Constraint lte(BigDecimal value)
     {
-        return lte(BigDecimal.valueOf(amount));
+        return new Constraint(subtract(value), Constraint.Comparison.LTE);
     }
 
-    public Constraint lte(Expression expression)
+    public Constraint lte(BigInteger value)
     {
-        return this.subtract(expression).lte(0);
+        return new Constraint(subtract(value), Constraint.Comparison.LTE);
     }
 
-    public FractionExpression multiply(long value)
+    public Constraint lte(long value)
     {
-        return multiply(BigFraction.valueOf(value));
+        return new Constraint(subtract(value), Constraint.Comparison.LTE);
     }
 
-    public FractionExpression multiply(double value)
+    public Constraint lte(double value)
     {
-        return multiply(BigDecimal.valueOf(value));
+        return new Constraint(subtract(value), Constraint.Comparison.LTE);
     }
 
-    public FractionExpression multiply(BigFraction value)
+    public Expression multiply(BigFraction multiplicand)
     {
-        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
-
-        for (var entry : getVariableValues().entrySet()){
-            m.put(entry.getKey(), entry.getValue().multiply(value));
+        if (multiplicand.signum() == 0){
+            return zero();
+        }else if (multiplicand.compareTo(BigFraction.one()) == 0){
+            return new Expression(coefficients, constantValue);
         }
 
-        return new ConcreteFractionExpression(constantValue.multiply(value), m);
-    }
+        Map<DecisionVariable, BigFraction> newCoefficients = new TreeMap<>(Variable.COMPARATOR);
 
-    public FractionExpression multiply(BigDecimal value)
-    {
-        return multiply(BigFraction.valueOf(value));
-    }
-
-    public FractionExpression negate()
-    {
-        Map<Variable, BigFraction> m = new TreeMap<>(Comparator.comparing(Variable::getIndex));
-
-        for (var entry : getVariableValues().entrySet()){
-            m.put(entry.getKey(), entry.getValue().negate());
+        for (var entry : coefficients.entrySet()){
+            newCoefficients.put(entry.getKey(), entry.getValue().multiply(multiplicand));
         }
 
-        return new ConcreteFractionExpression(constantValue.negate(), m);
+        return new Expression(newCoefficients, constantValue.multiply(multiplicand));
     }
 
-    public Constraint nonNegative()
+    public Expression multiply(BigDecimal multiplicand)
     {
-        return gte(0);
+        return multiply(BigFraction.valueOf(multiplicand));
     }
 
-    public FractionExpression subtract(Expression expression)
+    public Expression multiply(BigInteger multiplicand)
     {
-        return subtract(1, expression);
+        return multiply(BigFraction.valueOf(multiplicand));
     }
 
-    public FractionExpression subtract(BigFraction multiplier, Expression expression)
+    public Expression multiply(long multiplicand)
     {
-        return add(multiplier.negate(), expression);
+        return multiply(BigFraction.valueOf(multiplicand));
     }
 
-    public FractionExpression subtract(BigDecimal multiplier, Expression expression)
+    public Expression multiply(double multiplicand)
     {
-        return add(multiplier.negate(), expression);
+        return multiply(BigDecimal.valueOf(multiplicand));
     }
 
-    public FractionExpression subtract(long multiplier, Expression expression)
+    public Expression negate()
     {
-        return subtract(BigDecimal.valueOf(multiplier), expression);
+        Map<DecisionVariable, BigFraction> newCoefficients = new TreeMap<>(Variable.COMPARATOR);
+
+        for (var entry : coefficients.entrySet()){
+            newCoefficients.put(entry.getKey(), entry.getValue().negate());
+        }
+
+        return new Expression(newCoefficients, constantValue.negate());
     }
 
-    public FractionExpression subtract(double multiplier, Expression expression)
+    public Expression subtract(Expression subtrahend)
     {
-        return subtract(BigDecimal.valueOf(multiplier), expression);
+        return add(subtrahend.negate());
     }
 
-    public FractionExpression subtract(BigFraction constantValue)
+    public Expression subtract(BigFraction subtrahend)
     {
-        return add(constantValue.negate());
+        return new Expression(coefficients, constantValue.subtract(subtrahend));
     }
 
-    public FractionExpression subtract(BigDecimal constantValue)
+    public Expression subtract(BigDecimal subtrahend)
     {
-        return add(constantValue.negate());
+        return subtract(BigFraction.valueOf(subtrahend));
     }
 
-    public FractionExpression subtract(long constantValue)
+    public Expression subtract(BigInteger subtrahend)
     {
-        return subtract(BigDecimal.valueOf(constantValue));
+        return subtract(BigFraction.valueOf(subtrahend));
     }
 
-    public FractionExpression subtract(double constantValue)
+    public Expression subtract(long subtrahend)
     {
-        return subtract(BigDecimal.valueOf(constantValue));
+        return subtract(BigFraction.valueOf(subtrahend));
+    }
+
+    public Expression subtract(double subtrahend)
+    {
+        return subtract(BigDecimal.valueOf(subtrahend));
     }
 
     @Override
     public String toString()
     {
-        return "Expression{" +
-                "constantValue=" + constantValue + ',' +
-                "variableValues=" + getVariableValues() +
-                '}';
-    }
+        StringBuilder sb = new StringBuilder();
 
-    private static class ConcreteFractionExpression
-            extends FractionExpression
-    {
-        private final Map<? extends Variable, ? extends BigFraction> variableValues;
+        boolean first = true;
 
-        public ConcreteFractionExpression(BigFraction constantValue, Map<? extends Variable, ? extends BigFraction> variableValues)
-        {
-            super(constantValue);
-            this.variableValues = variableValues;
+        for (var entry : coefficients.entrySet()){
+            Variable v = entry.getKey();
+            BigFraction c = entry.getValue();
+
+            if (c.signum() == 0){
+                continue;
+            }
+
+            if (first){
+                first = false;
+                if (c.equals(BigFraction.negativeOne())){
+                    sb.append("-");
+                }else if (!c.equals(BigFraction.one())){
+                    sb.append(c);
+                }
+            }else{
+                if (c.signum() < 0){
+                    sb.append(" - ");
+                    if (!c.equals(BigFraction.negativeOne())){
+                        sb.append(c.abs());
+                    }
+                }else{
+                    sb.append(" + ");
+                    if (!c.equals(BigFraction.one())){
+                        sb.append(c);
+                    }
+                }
+            }
+
+            sb.append(v.getDebugName());
         }
 
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ConcreteFractionExpression that = (ConcreteFractionExpression) o;
-            return variableValues.equals(that.variableValues);
+        if (constantValue.signum() != 0){
+            if (first){
+                sb.append(constantValue);
+            }else if (constantValue.signum() < 0){
+                sb.append(" - ");
+                sb.append(constantValue.abs());
+            }else{
+                sb.append(" + ");
+                sb.append(constantValue);
+            }
         }
 
-        @Override
-        Map<? extends Variable, ? extends BigFraction> getVariableValues()
-        {
-            return variableValues;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(variableValues);
-        }
+        return sb.toString();
     }
 }

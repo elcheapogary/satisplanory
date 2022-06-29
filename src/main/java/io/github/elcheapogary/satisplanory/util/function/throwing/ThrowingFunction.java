@@ -8,15 +8,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.util.function.throwing;
 
-public class UnboundedSolutionException
-        extends Exception
+public interface ThrowingFunction<T, R, X extends Throwable>
 {
-    private final Variable variable;
-
-    UnboundedSolutionException(Variable variable)
+    static <T, X extends Exception> ThrowingFunction<T, T, X> identity()
     {
-        this.variable = variable;
+        return o -> o;
     }
+
+    R apply(T t)
+            throws X;
 }

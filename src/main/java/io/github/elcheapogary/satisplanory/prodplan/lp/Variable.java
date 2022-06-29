@@ -10,52 +10,22 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.util.Collections;
-import java.util.Map;
+import java.util.Comparator;
 
-class Variable
-        extends FractionExpression
+abstract class Variable
 {
-    final int index;
+    static final Comparator<Variable> COMPARATOR = Comparator.comparingInt(o -> o.id);
+    final int id;
 
-    Variable(int index)
+    public Variable(int id)
     {
-        super(BigFraction.zero());
-        this.index = index;
+        this.id = id;
     }
 
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Variable variable = (Variable)o;
-        return index == variable.index;
-    }
+    public abstract String getDebugName();
 
-    int getIndex()
+    public int getId()
     {
-        return index;
-    }
-
-    @Override
-    Map<? extends Variable, ? extends BigFraction> getVariableValues()
-    {
-        return Collections.singletonMap(this, BigFraction.one());
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return index;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Variable{" +
-                "index=" + index +
-                '}';
+        return id;
     }
 }

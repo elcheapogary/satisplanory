@@ -11,29 +11,65 @@
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
 
 public class IntegerExpression
         extends Expression
 {
-    private final Map<? extends Variable, ? extends BigFraction> variableValues;
-
-    IntegerExpression(BigFraction constantValue, Map<? extends Variable, ? extends BigFraction> variableValues)
+    IntegerExpression(Map<DecisionVariable, BigFraction> coefficients, BigFraction constantValue)
     {
-        super(constantValue);
-        this.variableValues = variableValues;
+        super(coefficients, constantValue);
     }
 
-    public BigInteger getValue(OptimizationResult result)
+    private IntegerExpression(Expression e)
     {
-        return result.getValue(this).toBigIntegerExact();
+        this(e.getCoefficients(), e.getConstantValue());
     }
 
     @Override
-    Map<? extends Variable, ? extends BigFraction> getVariableValues()
+    public IntegerExpression add(long addend)
     {
-        return variableValues;
+        return new IntegerExpression(super.add(addend));
+    }
+
+    @Override
+    public IntegerExpression add(BigInteger addend)
+    {
+        return new IntegerExpression(super.add(addend));
+    }
+
+    public IntegerExpression add(IntegerExpression addend)
+    {
+        return new IntegerExpression(super.add(addend));
+    }
+
+    @Override
+    public IntegerExpression multiply(long multiplicand)
+    {
+        return new IntegerExpression(super.multiply(multiplicand));
+    }
+
+    @Override
+    public IntegerExpression multiply(BigInteger multiplicand)
+    {
+        return new IntegerExpression(super.multiply(multiplicand));
+    }
+
+    @Override
+    public IntegerExpression subtract(long subtrahend)
+    {
+        return new IntegerExpression(super.subtract(subtrahend));
+    }
+
+    @Override
+    public IntegerExpression subtract(BigInteger subtrahend)
+    {
+        return new IntegerExpression(super.subtract(subtrahend));
+    }
+
+    public IntegerExpression subtract(IntegerExpression subtrahend)
+    {
+        return new IntegerExpression(super.subtract(subtrahend));
     }
 }

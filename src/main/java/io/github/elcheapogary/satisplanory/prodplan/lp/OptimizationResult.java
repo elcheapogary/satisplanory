@@ -11,39 +11,42 @@
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class OptimizationResult
 {
-    private final BigFraction objectiveFunctionValue;
-    private final BigFraction[] variableValues;
+    private final List<BigFraction> objectiveValues;
+    private final Map<DecisionVariable, BigFraction> variableValues;
 
-    OptimizationResult(BigFraction objectiveFunctionValue, BigFraction[] variableValues)
+    OptimizationResult(List<BigFraction> objectiveValues, Map<DecisionVariable, BigFraction> variableValues)
     {
-        this.objectiveFunctionValue = objectiveFunctionValue;
+        this.objectiveValues = Collections.unmodifiableList(objectiveValues);
         this.variableValues = variableValues;
     }
 
-    public BigFraction getObjectiveFunctionValue()
+    public boolean getBooleanValue(BinaryExpression expression)
     {
-        return objectiveFunctionValue;
+        return getIntegerValue(expression).signum() > 0;
     }
 
-    BigFraction getValue(Expression expression)
+    public BigFraction getFractionValue(Expression expression)
     {
-        BigFraction result = expression.getConstantValue();
-
-        for (var entry : expression.getVariableValues().entrySet()){
-            Variable v = entry.getKey();
-            BigFraction m = entry.getValue();
-
-            result = result.add(variableValues[v.index].multiply(m));
+        try (var stream = expression.getCoefficients().entrySet().parallelStream()) {
+            return stream.map(entry -> variableValues.get(entry.getKey()).multiply(entry.getValue()))
+                    .reduce(expression.getConstantValue(), BigFraction::add);
         }
-
-        return result;
     }
 
-    OptimizationResult negateObjectiveFunctionValue()
+    public BigInteger getIntegerValue(IntegerExpression expression)
     {
-        return new OptimizationResult(objectiveFunctionValue.negate(), variableValues);
+        return getFractionValue(expression).toBigIntegerExact();
+    }
+
+    public List<BigFraction> getObjectiveValues()
+    {
+        return objectiveValues;
     }
 }

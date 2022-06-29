@@ -8,15 +8,11 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.util.function;
+package io.github.elcheapogary.satisplanory.util.function.throwing;
 
-public interface ThrowingFunction<T, R, X extends Exception>
+@FunctionalInterface
+public interface ThrowingCallable<V, X extends Throwable>
 {
-    static <T, X extends Exception> ThrowingFunction<T, T, X> identity()
-    {
-        return o -> o;
-    }
-
-    R apply(T t)
+    V call()
             throws X;
 }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -132,5 +133,41 @@ public class ProductionPlannerTest
         builder.requireOutputItemsPerMinute(gd.requireItemByName("AI Limiter"), 50);
 
         assertThrows(ProductionPlanNotFeatisbleException.class, () -> builder.build().createPlan());
+    }
+
+    @Test
+    public void testErrorCase001()
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    {
+        TestGameData gd = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gd == null);
+
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+
+        builder.addRecipe(gd.requireRecipeByName("Iron Ingot"));
+        builder.addRecipe(gd.requireRecipeByName("Iron Plate"));
+        builder.addRecipe(gd.requireRecipeByName("Iron Rod"));
+        builder.addRecipe(gd.requireRecipeByName("Screw"));
+        builder.addRecipe(gd.requireRecipeByName("Alternate: Cast Screw"));
+        builder.addRecipe(gd.requireRecipeByName("Reinforced Iron Plate"));
+
+        builder.addInputItem(gd.requireItemByName("Iron Ore"), 111);
+
+        builder.addOutputItem(gd.requireItemByName("Reinforced Iron Plate"), BigDecimal.ONE, BigDecimal.ONE);
+
+        builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
+        builder.addOptimizationTarget(OptimizationTarget.MIN_RESOURCE_SCARCITY);
+        builder.addOptimizationTarget(OptimizationTarget.MIN_BYPRODUCTS);
+        builder.addOptimizationTarget(OptimizationTarget.MIN_POWER);
+        builder.addOptimizationTarget(OptimizationTarget.MIN_INPUT_ITEMS);
+
+        MultiPlan multiPlan = ProdPlanUtils.getMultiPlan(gd, builder.build());
+
+        assertTrue(multiPlan.isUnmodifiedPlanFeasible());
+
+        ProductionPlan plan = multiPlan.getUnmodifiedPlan();
+
+        assertNotNull(plan);
     }
 }

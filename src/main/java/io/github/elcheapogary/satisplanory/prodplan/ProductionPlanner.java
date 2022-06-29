@@ -12,14 +12,13 @@ package io.github.elcheapogary.satisplanory.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
-import io.github.elcheapogary.satisplanory.prodplan.lp.FractionExpression;
+import io.github.elcheapogary.satisplanory.prodplan.lp.Expression;
 import io.github.elcheapogary.satisplanory.prodplan.lp.InfeasibleSolutionException;
 import io.github.elcheapogary.satisplanory.prodplan.lp.Model;
 import io.github.elcheapogary.satisplanory.prodplan.lp.OptimizationResult;
 import io.github.elcheapogary.satisplanory.prodplan.lp.UnboundedSolutionException;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -95,14 +94,14 @@ public class ProductionPlanner
         return retv;
     }
 
-    private static <K> Map<K, BigFraction> getVariableValues(Map<K, FractionExpression> variableMap, Supplier<Map<K, BigFraction>> mapFactory, OptimizationResult result)
+    private static <K> Map<K, BigFraction> getVariableValues(Map<K, Expression> variableMap, Supplier<Map<K, BigFraction>> mapFactory, OptimizationResult result)
     {
         Map<K, BigFraction> outputMap = mapFactory.get();
 
-        for (Map.Entry<K, FractionExpression> entry : variableMap.entrySet()){
+        for (Map.Entry<K, Expression> entry : variableMap.entrySet()){
             K key = entry.getKey();
-            FractionExpression variable = entry.getValue();
-            BigFraction amount = variable.getValue(result);
+            Expression variable = entry.getValue();
+            BigFraction amount = result.getFractionValue(variable);
             if (amount.signum() > 0){
                 outputMap.put(key, amount);
             }
@@ -123,179 +122,109 @@ public class ProductionPlanner
 
         Model model = new Model();
 
-        Map<Item, FractionExpression> itemOutputVariableMap = Item.createMap();
-        Map<Item, FractionExpression> itemInputExpressionMap = Item.createMap();
-        Map<Recipe, FractionExpression> recipeVariableMap = Recipe.createMap();
+        Map<Item, Expression> itemOutputMap = Item.createMap();
+        Map<Item, Expression> itemInputMap = Item.createMap();
+        Map<Recipe, Expression> recipeMap = Recipe.createMap();
 
         {
             /*
              * This expression is non-negative because it is non-negative for recipe variables that are all non-negative
              */
-            Map<Item, FractionExpression> itemsProducedExpressionMap = Item.createMap();
+            Map<Item, Expression> itemsProducedExpressionMap = Item.createMap();
             /*
              * This expression is non-negative because it is non-negative for recipe variables that are all non-negative
              */
-            Map<Item, FractionExpression> itemsConsumedExpressionMap = Item.createMap();
+            Map<Item, Expression> itemsConsumedExpressionMap = Item.createMap();
 
             for (Recipe recipe : recipes){
-                FractionExpression recipeVariable = model.addFractionVariable();
-                model.addConstraint(recipeVariable.nonNegative());
-                recipeVariableMap.put(recipe, recipeVariable);
+                Expression recipeVariable = model.addVariable("Recipe: " + recipe.getName());
+                recipeMap.put(recipe, recipeVariable);
 
                 for (Recipe.RecipeItem ri : recipe.getIngredients()){
                     itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
-                            Objects.requireNonNullElse(expression, FractionExpression.zero())
-                                    .add(ri.getAmount().getAmountPerMinuteFraction(), recipeVariable)
+                            Objects.requireNonNullElse(expression, Expression.zero())
+                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinuteFraction()))
                     );
                 }
 
                 for (Recipe.RecipeItem ri : recipe.getProducts()){
                     itemsProducedExpressionMap.compute(ri.getItem(), (item, expression) ->
-                            Objects.requireNonNullElse(expression, FractionExpression.zero())
-                                    .add(ri.getAmount().getAmountPerMinuteFraction(), recipeVariable)
+                            Objects.requireNonNullElse(expression, Expression.zero())
+                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinuteFraction()))
                     );
                 }
             }
 
             for (Item item : items){
-                FractionExpression consumed = Objects.requireNonNullElse(itemsConsumedExpressionMap.get(item), FractionExpression.zero());
-                FractionExpression produced = Objects.requireNonNullElse(itemsProducedExpressionMap.get(item), FractionExpression.zero());
+                Expression consumed = Objects.requireNonNullElse(itemsConsumedExpressionMap.get(item), Expression.zero());
+                Expression produced = Objects.requireNonNullElse(itemsProducedExpressionMap.get(item), Expression.zero());
 
-                FractionExpression input = FractionExpression.zero();
+                Expression input = Expression.zero();
 
                 {
                     BigFraction inputAmountPerMinute = inputItems.get(item);
                     if (inputAmountPerMinute != null){
-                        input = model.addFractionVariable();
-                        itemInputExpressionMap.put(item, input);
-                        model.addConstraint(input.nonNegative());
+                        input = model.addVariable("Input: " + item.getName());
+                        itemInputMap.put(item, input);
                         model.addConstraint(input.lte(inputAmountPerMinute));
                     }
                 }
 
-                FractionExpression output = model.addFractionVariable();
-                itemOutputVariableMap.put(item, output);
+                Expression output = model.addVariable("Output: " + item.getName());
+                itemOutputMap.put(item, output);
 
                 model.addConstraint(output.subtract(input).eq(produced.subtract(consumed)));
-
-                {
-                    OutputRequirement outputRequirement = outputRequirements.get(item);
-                    if (outputRequirement != null && outputRequirement.itemsPerMinute() != null){
-                        model.addConstraint(output.gte(outputRequirement.itemsPerMinute()));
-                    }else{
-                        model.addConstraint(output.nonNegative());
-                    }
-                }
             }
         }
 
-        FractionExpression maximizedOutputItemsExpression = FractionExpression.zero();
-        FractionExpression surplusExpression = FractionExpression.zero();
-        FractionExpression balanceExpression = FractionExpression.zero();
-        Map<Item, FractionExpression> itemSurplusExpressionMap = Item.createMap();
+        Map<Item, Expression> itemSurplusMap = Item.createMap();
+        Map<Item, BigFraction> itemMaximizeWeightsMap = Item.createMap();
 
-        {
-            Map<Item, BigFraction> outputItemWeights = Item.createMap();
-            for (Item item : items){
-                BigFraction min = BigFraction.zero();
-                BigFraction weight = null;
+        for (Item item : items){
+            BigFraction min = BigFraction.zero();
+            BigFraction weight = null;
 
-                OutputRequirement outputRequirement = outputRequirements.get(item);
-                if (outputRequirement != null){
-                    min = Objects.requireNonNullElse(outputRequirement.itemsPerMinute(), min);
-                    weight = outputRequirement.maximizeWeight();
-                    if (weight != null && weight.signum() > 0){
-                        outputItemWeights.put(item, weight);
-                    }
-                }
-
-                FractionExpression itemSurplus;
-
-                if (min.signum() == 0){
-                    itemSurplus = itemOutputVariableMap.get(item);
-                }else{
-                    itemSurplus = model.addFractionVariable();
-                    model.addConstraint(itemSurplus.eq(itemOutputVariableMap.get(item).subtract(min)));
-                }
-
-                itemSurplusExpressionMap.put(item, itemSurplus);
-
-                if (weight == null || weight.signum() == 0){
-                    surplusExpression = surplusExpression.add(item.toDisplayAmount(BigFraction.one()), itemSurplus);
-                }else{
-                    maximizedOutputItemsExpression = maximizedOutputItemsExpression.add(item.toDisplayAmount(weight), itemSurplus);
+            OutputRequirement outputRequirement = outputRequirements.get(item);
+            if (outputRequirement != null){
+                min = Objects.requireNonNullElse(outputRequirement.itemsPerMinute(), min);
+                weight = outputRequirement.maximizeWeight();
+                if (weight != null && weight.signum() > 0){
+                    itemMaximizeWeightsMap.put(item, weight);
                 }
             }
 
-            if (outputItemWeights.size() > 1){
-                if (strictMaximizeRatios){
-                    FractionExpression balanceVariable = model.addFractionVariable();
-                    model.addConstraint(balanceVariable.nonNegative());
-                    balanceExpression = balanceVariable;
+            Expression itemSurplus;
 
-                    for (var entry : outputItemWeights.entrySet()){
-                        Item item = entry.getKey();
-                        BigFraction weight = entry.getValue();
-
-                        model.addConstraint(itemSurplusExpressionMap.get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
-                    }
-                }else{
-                    List<Item> maxItems = new ArrayList<>(outputItemWeights.keySet());
-                    Map<Item, FractionExpression> perItemBalanceVariableMap = Item.createMap();
-                    for (int i = 0; i < maxItems.size() - 1; i++){
-                        Item a = maxItems.get(i);
-                        for (int j = i + 1; j < maxItems.size(); j++){
-                            Item b = maxItems.get(j);
-
-                            FractionExpression balanceVariable = model.addFractionVariable();
-                            balanceExpression = balanceExpression.add(balanceVariable);
-                            model.addConstraint(balanceVariable.nonNegative());
-                            model.addConstraint(itemSurplusExpressionMap.get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(outputItemWeights.get(a)))));
-                            model.addConstraint(itemSurplusExpressionMap.get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(outputItemWeights.get(b)))));
-
-                            model.addConstraint(perItemBalanceVariableMap.computeIfAbsent(a, item -> model.addFractionVariable()).lte(balanceVariable));
-                            model.addConstraint(perItemBalanceVariableMap.computeIfAbsent(b, item -> model.addFractionVariable()).lte(balanceVariable));
-                        }
-                    }
-
-                    balanceExpression = balanceExpression.divide(BigFraction.one().movePointRight(6));
-
-                    FractionExpression finalVariable = model.addFractionVariable();
-
-                    for (FractionExpression v : perItemBalanceVariableMap.values()){
-                        balanceExpression = balanceExpression.add(v);
-                        model.addConstraint(v.gte(finalVariable));
-                    }
-
-                    balanceExpression = balanceExpression.divide(BigFraction.one().movePointRight(6));
-
-                    balanceExpression = balanceExpression.add(finalVariable);
-                }
+            if (min.signum() == 0){
+                itemSurplus = itemOutputMap.get(item);
+            }else{
+                itemSurplus = model.addVariable("Surplus: " + item.getName());
+                model.addConstraint(itemSurplus.eq(itemOutputMap.get(item).subtract(min)));
             }
+
+            itemSurplusMap.put(item, itemSurplus);
         }
 
-        FractionExpression objectiveFunction = FractionExpression.zero();
-
+        List<Expression> objectiveFunctions = new LinkedList<>();
         {
-            BigFraction multiplier = BigFraction.one();
+            OptimizationModel om = new OptimizationModel.Builder()
+                    .setItemInputMap(itemInputMap)
+                    .setItemMaximizeWeightMap(itemMaximizeWeightsMap)
+                    .setItemOutputMap(itemOutputMap)
+                    .setItemSurplusMap(itemSurplusMap)
+                    .setLpModel(model)
+                    .setRecipeMap(recipeMap)
+                    .build();
 
             for (OptimizationTarget t : optimizationTargets){
-                objectiveFunction = objectiveFunction.add(multiplier, t.getObjectiveFunction(
-                        maximizedOutputItemsExpression,
-                        balanceExpression,
-                        itemInputExpressionMap,
-                        itemOutputVariableMap,
-                        itemSurplusExpressionMap,
-                        recipeVariableMap
-                ));
-                multiplier = multiplier.movePointLeft(t.getOrdersOfMagnitude());
+                objectiveFunctions.addAll(t.getObjectiveFunctions(om));
             }
         }
 
         OptimizationResult result;
 
         try {
-            result = model.maximize(objectiveFunction);
+            result = model.maximize(objectiveFunctions);
         }catch (InfeasibleSolutionException e){
             throw new ProductionPlanNotFeatisbleException(e);
         }catch (UnboundedSolutionException e){
@@ -303,9 +232,9 @@ public class ProductionPlanner
         }
 
         return new ProductionPlan(
-                getVariableValues(recipeVariableMap, Recipe::createMap, result),
-                getVariableValues(itemInputExpressionMap, Item::createMap, result),
-                getVariableValues(itemOutputVariableMap, Item::createMap, result)
+                getVariableValues(recipeMap, Recipe::createMap, result),
+                getVariableValues(itemInputMap, Item::createMap, result),
+                getVariableValues(itemOutputMap, Item::createMap, result)
         );
     }
 
