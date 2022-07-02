@@ -25,16 +25,16 @@ import java.util.function.Consumer;
 public class Model
 {
     private final List<DecisionVariable> decisionVariables = new ArrayList<>();
-    private final Collection<DecisionVariable> integerVariables = new LinkedList<>();
+    private final Collection<IntegerExpression> integerExpressions = new LinkedList<>();
     private final Collection<Constraint> constraints = new LinkedList<>();
 
     public BinaryExpression addBinaryVariable(String name)
     {
         DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
         decisionVariables.add(decisionVariable);
-        integerVariables.add(decisionVariable);
         BinaryExpression retv = new BinaryExpression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
         constraints.add(retv.lte(1));
+        integerExpressions.add(retv);
         return retv;
     }
 
@@ -43,12 +43,16 @@ public class Model
         constraints.add(constraint);
     }
 
+    public IntegerExpression addIntegerConstraint(Expression expression)
+    {
+        IntegerExpression retv = new IntegerExpression(expression.getCoefficients(), expression.getConstantValue());
+        integerExpressions.add(retv);
+        return retv;
+    }
+
     public IntegerExpression addIntegerVariable(String name)
     {
-        DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
-        decisionVariables.add(decisionVariable);
-        integerVariables.add(decisionVariable);
-        return new IntegerExpression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
+        return addIntegerConstraint(addVariable(name));
     }
 
     public Expression addVariable(String name)
@@ -114,7 +118,7 @@ public class Model
         List<BigFraction> objectiveFunctionValues = new ArrayList<>(objectiveFunctions.size());
 
         for (Expression e : objectiveFunctions){
-            objectiveFunctionValues.add(tableau.maximizeAndConstrain(e, integerVariables));
+            objectiveFunctionValues.add(tableau.maximizeAndConstrain(e, integerExpressions));
         }
 
         if (!objectiveFunctions.isEmpty()){
@@ -130,7 +134,7 @@ public class Model
                 coefficients.put(v, BigFraction.negativeOne());
             }
 
-            tableau = tableau.maximize(new Expression(coefficients, BigFraction.zero()), integerVariables);
+            tableau = tableau.maximize(new Expression(coefficients, BigFraction.zero()), integerExpressions);
         }
 
         Map<DecisionVariable, BigFraction> decisionVariableValues = new TreeMap<>(Variable.COMPARATOR);

@@ -82,12 +82,18 @@ class Tableau
         }
     }
 
-    private static Tableau enforceIntegerConstraints(Tableau tableau, int objectiveRowId, Collection<? extends DecisionVariable> integerVariables)
+    private static Tableau enforceIntegerConstraints(Tableau tableau, int objectiveRowId, Collection<? extends Expression> integerExpressions)
             throws UnboundedSolutionException, InfeasibleSolutionException
     {
         final BestSolutionHolder bestSolutionHolder = new BestSolutionHolder();
 
-        new FindInvalidIntegerVariables(tableau, integerVariables, objectiveRowId, bestSolutionHolder).fork().join();
+        List<BranchingConstraint> branchingConstraints = new LinkedList<>();
+
+        for (Expression e : integerExpressions){
+            branchingConstraints.add(new IntegerBranchingConstraint(e));
+        }
+
+        new ApplyBranchingConstraintsAction(tableau, objectiveRowId, branchingConstraints, bestSolutionHolder).fork().join();
 
         tableau = bestSolutionHolder.getBestTableau();
 
@@ -106,6 +112,11 @@ class Tableau
     }
 
     public void addConstraint(Constraint constraint)
+    {
+        addConstraintRow(constraint);
+    }
+
+    private Row addConstraintRow(Constraint constraint)
     {
         Row row = addRow();
 
@@ -160,6 +171,8 @@ class Tableau
         }else{
             throw new IllegalArgumentException("Unsupported comparison type: " + constraint.getComparison());
         }
+
+        return row;
     }
 
     private Row addRow()
@@ -181,58 +194,6 @@ class Tableau
         maxVariableId++;
         variables.put(variable.id, variable);
         return variable;
-    }
-
-    private void boundVariable(TableauVariable variable, final BigFraction value)
-            throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
-    {
-        Row oldBasicRow = variable.basicRow;
-
-        assert oldBasicRow != null;
-
-        TableauVariable artificialVariable = addArtificialVariable();
-
-        boolean isIncreasingValue = false;
-
-        if (value.compareTo(oldBasicRow.constant) > 0){
-            isIncreasingValue = true;
-            oldBasicRow.negate();
-        }
-
-        oldBasicRow.set(artificialVariable, BigFraction.one());
-        setBasicVariable(oldBasicRow, artificialVariable);
-
-        Row constraintRow = addRow();
-        setBasicVariable(constraintRow, variable);
-        constraintRow.constant = value;
-        constraintRow.set(variable, BigFraction.one());
-
-        if (value.signum() != 0){
-            TableauVariable slackVariable = addSlackVariable();
-            if (isIncreasingValue){
-                constraintRow.set(slackVariable, BigFraction.negativeOne());
-            }else{
-                constraintRow.set(slackVariable, BigFraction.one());
-            }
-        }
-
-        if (logger != null){
-            logger.accept("Added artificial variable: " + artificialVariable.getDebugName() + " and new constraint row for variable: " + variable.getDebugName());
-            debugTableau();
-            logger.accept("Subtracting constraint row from artificial variable row: " + artificialVariable.getDebugName());
-        }
-
-        if (isIncreasingValue){
-            oldBasicRow.add(BigFraction.one(), constraintRow);
-        }else{
-            oldBasicRow.subtract(BigFraction.one(), constraintRow);
-        }
-
-        if (logger != null){
-            debugTableau();
-        }
-
-        findInitialFeasibleSolution();
     }
 
     private int debugGetMaxWidth(Collection<? extends Row> rows, Function<? super Row, String> stringExtractor)
@@ -321,13 +282,7 @@ class Tableau
             logger.accept("Subtracting basic variable rows from artificial variable minimization objective row (A)");
         }
 
-        for (TableauVariable v : artificialVariables){
-            if (v.basicRow == null){
-                throw new IllegalStateException("Artificial variable is not basic");
-            }
-
-            objectiveRow.subtract(BigFraction.one(), v.basicRow);
-        }
+        objectiveRow.subtractBasicVariableRows();
 
         maximize(objectiveRow);
 
@@ -461,7 +416,7 @@ class Tableau
         }
     }
 
-    public Tableau maximize(Expression expression, Collection<? extends DecisionVariable> integerVariables)
+    public Tableau maximize(Expression expression, Collection<? extends Expression> integerVariables)
             throws UnboundedSolutionException, InterruptedException, InfeasibleSolutionException
     {
         Row objectiveRow = addRow();
@@ -518,7 +473,7 @@ class Tableau
         return retv;
     }
 
-    public BigFraction maximizeAndConstrain(Expression expression, Collection<? extends DecisionVariable> integerVariables)
+    public BigFraction maximizeAndConstrain(Expression expression, Collection<? extends Expression> integerVariables)
             throws UnboundedSolutionException, InterruptedException, InfeasibleSolutionException
     {
         if (logger != null){
@@ -750,6 +705,53 @@ class Tableau
         }
     }
 
+    private static class ApplyBranchingConstraintsAction
+            extends RecursiveAction
+    {
+        private final Tableau tableau;
+        private final int objectiveRowId;
+        private final Collection<? extends BranchingConstraint> branchingConstraints;
+        private final BestSolutionHolder bestSolutionHolder;
+
+        public ApplyBranchingConstraintsAction(Tableau tableau, int objectiveRowId, Collection<? extends BranchingConstraint> branchingConstraints, BestSolutionHolder bestSolutionHolder)
+        {
+            this.tableau = tableau;
+            this.objectiveRowId = objectiveRowId;
+            this.branchingConstraints = branchingConstraints;
+            this.bestSolutionHolder = bestSolutionHolder;
+        }
+
+        @Override
+        protected void compute()
+        {
+            for (BranchingConstraint branchingConstraint : branchingConstraints){
+                Collection<? extends Constraint> constraints = branchingConstraint.getConstraints(tableau);
+
+                if (!constraints.isEmpty()){
+                    List<RecursiveAction> actions = new ArrayList<>(constraints.size());
+                    boolean first = true;
+                    for (Constraint constraint : constraints){
+                        Tableau tableau;
+                        if (first){
+                            first = false;
+                            tableau = this.tableau;
+                        }else{
+                            tableau = new Tableau(this.tableau);
+                        }
+                        actions.add(new BoundAction(tableau, objectiveRowId, branchingConstraints, bestSolutionHolder, constraint));
+                    }
+                    invokeAll(actions);
+                    return;
+                }
+            }
+
+            Row row = tableau.rows.get(objectiveRowId);
+            BigFraction objectiveFunctionValue = row.constant.divide(row.coefficients.get(row.basicVariable));
+
+            bestSolutionHolder.submitCompleteSolution(objectiveFunctionValue, tableau);
+        }
+    }
+
     private static class BestSolutionHolder
     {
         private BigFraction bestObjectiveValue;
@@ -790,92 +792,91 @@ class Tableau
         }
     }
 
-    private static class BoundVariableAction
+    private static class BoundAction
             extends RecursiveAction
     {
         private final Tableau tableau;
-        private final DecisionVariable variable;
-        private final BigInteger bound;
-        private final BestSolutionHolder bestSolutionHolder;
         private final int objectiveRowId;
-        private final Collection<? extends DecisionVariable> integerVariables;
+        private final Collection<? extends BranchingConstraint> branchingConstraints;
+        private final BestSolutionHolder bestSolutionHolder;
+        private final Constraint constraint;
 
-        public BoundVariableAction(Tableau tableau, DecisionVariable variable, BigInteger bound, BestSolutionHolder bestSolutionHolder, int objectiveRowId, Collection<? extends DecisionVariable> integerVariables)
+        public BoundAction(Tableau tableau, int objectiveRowId, Collection<? extends BranchingConstraint> branchingConstraints, BestSolutionHolder bestSolutionHolder, Constraint constraint)
         {
             this.tableau = tableau;
-            this.variable = variable;
-            this.bound = bound;
-            this.bestSolutionHolder = bestSolutionHolder;
             this.objectiveRowId = objectiveRowId;
-            this.integerVariables = integerVariables;
+            this.branchingConstraints = branchingConstraints;
+            this.bestSolutionHolder = bestSolutionHolder;
+            this.constraint = constraint;
         }
 
         @Override
         protected void compute()
         {
+            Row row = tableau.addConstraintRow(constraint);
+
+            row.subtractBasicVariableRows();
+
+            if (row.constant.signum() < 0){
+                row.negate();
+            }
+
+            TableauVariable artificialVariable = tableau.addArtificialVariable();
+            row.set(artificialVariable, BigFraction.one());
+            tableau.setBasicVariable(row, artificialVariable);
+
             try {
-                tableau.boundVariable(tableau.variables.get(variable.id), BigFraction.valueOf(bound));
+                tableau.findInitialFeasibleSolution();
                 BigFraction objectiveValue = tableau.maximize(tableau.rows.get(objectiveRowId));
                 if (bestSolutionHolder.isIncompleteSolutionWorthContinuing(objectiveValue)){
-                    invokeAll(new FindInvalidIntegerVariables(tableau, integerVariables, objectiveRowId, bestSolutionHolder));
+                    invokeAll(new ApplyBranchingConstraintsAction(tableau, objectiveRowId, branchingConstraints, bestSolutionHolder));
                 }
+            }catch (InfeasibleSolutionException ignore){
             }catch (UnboundedSolutionException e){
                 bestSolutionHolder.setError(e);
-            }catch (InfeasibleSolutionException ignore){
             }catch (InterruptedException e){
                 Thread.currentThread().interrupt();
             }
         }
     }
 
-    public static class FindInvalidIntegerVariables
-            extends RecursiveAction
+    public static abstract class BranchingConstraint
     {
-        private final Tableau tableau;
-        private final Collection<? extends DecisionVariable> integerVariables;
-        private final int objectiveRowId;
-        private final BestSolutionHolder bestSolutionHolder;
+        abstract Collection<? extends Constraint> getConstraints(Tableau tableau);
+    }
 
-        public FindInvalidIntegerVariables(Tableau tableau, Collection<? extends DecisionVariable> integerVariables, int objectiveRowId, BestSolutionHolder bestSolutionHolder)
+    public static class IntegerBranchingConstraint
+            extends BranchingConstraint
+    {
+        private final Expression expression;
+
+        public IntegerBranchingConstraint(Expression expression)
         {
-            this.tableau = tableau;
-            this.integerVariables = integerVariables;
-            this.objectiveRowId = objectiveRowId;
-            this.bestSolutionHolder = bestSolutionHolder;
+            this.expression = expression;
         }
 
         @Override
-        protected void compute()
+        Collection<? extends Constraint> getConstraints(Tableau tableau)
         {
-            for (DecisionVariable dv : integerVariables){
-                BigFraction v = tableau.getValue(dv);
+            BigFraction value = tableau.getValue(expression);
 
-                if (!v.isInteger()){
-                    BigInteger lowerBound = v.toBigInteger();
-
-                    List<BoundVariableAction> l = new LinkedList<>();
-
-                    /*
-                     * TODO: Possibly optimization to make later:
-                     * If the variable's basic row has no positive coefficients for any variable other than the basic
-                     * variable then it is not possible for the variable's value to be decreased.
-                     *
-                     * If there is no negative coefficient, then value cannot be increased.
-                     */
-
-                    l.add(new BoundVariableAction(tableau, dv, lowerBound, bestSolutionHolder, objectiveRowId, integerVariables));
-                    l.add(new BoundVariableAction(new Tableau(tableau), dv, lowerBound.add(BigInteger.ONE), bestSolutionHolder, objectiveRowId, integerVariables));
-
-                    invokeAll(l);
-
-                    return;
-                }
+            if (value.isInteger()){
+                return Collections.emptyList();
             }
 
-            Row row = tableau.rows.get(objectiveRowId);
-            BigFraction objectiveFunctionValue = row.constant.divide(row.coefficients.get(row.basicVariable));
+            BigInteger lower = value.toBigInteger();
 
-            bestSolutionHolder.submitCompleteSolution(objectiveFunctionValue, tableau);
+            List<Constraint> constraints = new ArrayList<>(2);
+
+            if (lower.signum() == 0){
+                constraints.add(expression.eq(0));
+            }else{
+                constraints.add(expression.lte(lower));
+            }
+
+            constraints.add(expression.gte(lower.add(BigInteger.ONE)));
+
+            return constraints;
         }
     }
 
