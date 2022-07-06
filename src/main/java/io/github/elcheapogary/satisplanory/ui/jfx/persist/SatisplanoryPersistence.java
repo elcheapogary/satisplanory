@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 
+import io.github.elcheapogary.satisplanory.Satisplanory;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import java.io.BufferedInputStream;
@@ -35,6 +36,11 @@ public class SatisplanoryPersistence
     }
 
     public static File getJsonFile()
+    {
+        return new File(getSatisplanoryDataDirectory(), "Satisplanory.json");
+    }
+
+    private static File getSatisplanoryDataDirectory()
     {
         String osName = System.getProperty("os.name");
 
@@ -64,9 +70,11 @@ public class SatisplanoryPersistence
             }
         }
 
-        File f = new File(localAppData, "Satisplanory");
-        f = new File(f, "Satisplanory.json");
-        return f;
+        if (Satisplanory.isDevelopmentVersion()){
+            return new File(localAppData, "Satisplanory-dev");
+        }else{
+            return new File(localAppData, "Satisplanory");
+        }
     }
 
     public static PersistentData load()

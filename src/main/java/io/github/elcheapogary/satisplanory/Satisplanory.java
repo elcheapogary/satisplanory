@@ -38,34 +38,6 @@ public class Satisplanory
         return "Satisplanory";
     }
 
-    private static Properties loadVersionProperties()
-            throws IOException
-    {
-        synchronized (Satisplanory.class){
-            if (versionProperties == null){
-                Properties tmp = new Properties();
-                InputStream in = Satisplanory.class.getResourceAsStream("version.properties");
-                if (in == null){
-                    throw new IOException("Missing resource: version.properties");
-                }
-                try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                    tmp.load(r);
-                }
-                versionProperties = tmp;
-            }
-            return versionProperties;
-        }
-    }
-
-    public static String getVersion()
-    {
-        try {
-            return loadVersionProperties().getProperty("version");
-        }catch (IOException e){
-            throw new RuntimeException("Error loading version properties", e);
-        }
-    }
-
     public static String getLatestReleasedVersion()
             throws IOException, InterruptedException
     {
@@ -108,6 +80,39 @@ public class Satisplanory
             return tag;
         }catch (JSONException e){
             throw new IOException("Error parsing JSON data", e);
+        }
+    }
+
+    public static String getVersion()
+    {
+        try {
+            return loadVersionProperties().getProperty("version");
+        }catch (IOException e){
+            throw new RuntimeException("Error loading version properties", e);
+        }
+    }
+
+    public static boolean isDevelopmentVersion()
+    {
+        return getVersion().endsWith("-SNAPSHOT");
+    }
+
+    private static Properties loadVersionProperties()
+            throws IOException
+    {
+        synchronized (Satisplanory.class){
+            if (versionProperties == null){
+                Properties tmp = new Properties();
+                InputStream in = Satisplanory.class.getResourceAsStream("version.properties");
+                if (in == null){
+                    throw new IOException("Missing resource: version.properties");
+                }
+                try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                    tmp.load(r);
+                }
+                versionProperties = tmp;
+            }
+            return versionProperties;
         }
     }
 }
