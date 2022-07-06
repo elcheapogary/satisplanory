@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -25,7 +26,7 @@ import java.util.function.Consumer;
 public class Model
 {
     private final List<DecisionVariable> decisionVariables = new ArrayList<>();
-    private final Collection<IntegerExpression> integerExpressions = new LinkedList<>();
+    private final Collection<BranchingConstraint> branchingConstraints = new LinkedList<>();
     private final Collection<Constraint> constraints = new LinkedList<>();
 
     public BinaryExpression addBinaryVariable(String name)
@@ -34,7 +35,7 @@ public class Model
         decisionVariables.add(decisionVariable);
         BinaryExpression retv = new BinaryExpression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
         constraints.add(retv.lte(1));
-        integerExpressions.add(retv);
+        branchingConstraints.add(new IntegerBranchingConstraint(retv));
         return retv;
     }
 
@@ -43,10 +44,20 @@ public class Model
         constraints.add(constraint);
     }
 
+    public IntegerExpression addFreeIntegerVariable(String name)
+    {
+        return addIntegerConstraint(addFreeVariable(name));
+    }
+
+    public Expression addFreeVariable(String name)
+    {
+        return addVariable("+" + name).subtract(addVariable("-" + name));
+    }
+
     public IntegerExpression addIntegerConstraint(Expression expression)
     {
         IntegerExpression retv = new IntegerExpression(expression.getCoefficients(), expression.getConstantValue());
-        integerExpressions.add(retv);
+        branchingConstraints.add(new IntegerBranchingConstraint(expression));
         return retv;
     }
 
@@ -60,6 +71,30 @@ public class Model
         DecisionVariable decisionVariable = new DecisionVariable(decisionVariables.size(), name);
         decisionVariables.add(decisionVariable);
         return new Expression(Collections.singletonMap(decisionVariable, BigFraction.one()), BigFraction.zero());
+    }
+
+    public void addZeroIfLessThanConstraint(Expression expression, BigFraction minimum)
+    {
+        Objects.requireNonNull(expression);
+        Objects.requireNonNull(minimum);
+
+        if (minimum.signum() <= 0){
+            throw new IllegalArgumentException("minimum <= 0");
+        }
+
+        this.branchingConstraints.add(new ZeroIfLessThanBranchingConstraint(expression, minimum));
+    }
+
+    public void addZeroIfMoreThanConstraint(Expression expression, BigFraction maximum)
+    {
+        Objects.requireNonNull(expression);
+        Objects.requireNonNull(maximum);
+
+        if (maximum.signum() >= 0){
+            throw new IllegalArgumentException("maximum >= 0");
+        }
+
+        this.branchingConstraints.add(new ZeroIfGreaterThanBranchingConstraint(expression, maximum));
     }
 
     public OptimizationResult maximize(Expression objectiveFunction)
@@ -113,12 +148,15 @@ public class Model
             tableau.addConstraint(c);
         }
 
-        tableau.findInitialFeasibleSolution();
+        tableau.solveFeasibility();
 
         List<BigFraction> objectiveFunctionValues = new ArrayList<>(objectiveFunctions.size());
 
         for (Expression e : objectiveFunctions){
-            objectiveFunctionValues.add(tableau.maximizeAndConstrain(e, integerExpressions));
+            Tableau branchConstrainedTableau = BranchingSolver.maximize(tableau, e, branchingConstraints);
+            BigFraction objectiveValue = branchConstrainedTableau.getValue(e);
+            tableau.addConstraint(e.eq(objectiveValue));
+            tableau.solveFeasibility();
         }
 
         if (!objectiveFunctions.isEmpty()){
@@ -134,7 +172,7 @@ public class Model
                 coefficients.put(v, BigFraction.negativeOne());
             }
 
-            tableau = tableau.maximize(new Expression(coefficients, BigFraction.zero()), integerExpressions);
+            tableau = BranchingSolver.maximize(tableau, new Expression(coefficients, BigFraction.zero()), branchingConstraints);
         }
 
         Map<DecisionVariable, BigFraction> decisionVariableValues = new TreeMap<>(Variable.COMPARATOR);

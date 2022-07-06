@@ -10,13 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
-public class UnboundedSolutionException
-        extends Exception
-{
-    private final Variable variable;
+import java.util.Collection;
 
-    UnboundedSolutionException(Variable variable)
-    {
-        this.variable = variable;
-    }
+abstract class BranchingConstraint
+{
+    abstract Collection<? extends Constraint> getConstraints(Tableau tableau);
 }

@@ -81,6 +81,57 @@ public class Expression
         return add(BigDecimal.valueOf(addend));
     }
 
+    void appendToStringBuilder(StringBuilder sb)
+    {
+        boolean first = true;
+
+        for (var entry : coefficients.entrySet()){
+            DecisionVariable v = entry.getKey();
+            BigFraction c = entry.getValue();
+
+            if (c.signum() == 0){
+                continue;
+            }
+
+            if (first){
+                first = false;
+                if (c.equals(BigFraction.negativeOne())){
+                    sb.append("-");
+                }else if (!c.equals(BigFraction.one())){
+                    sb.append(c);
+                }
+            }else{
+                if (c.signum() < 0){
+                    sb.append(" - ");
+                    if (!c.equals(BigFraction.negativeOne())){
+                        sb.append(c.abs());
+                    }
+                }else{
+                    sb.append(" + ");
+                    if (!c.equals(BigFraction.one())){
+                        sb.append(c);
+                    }
+                }
+            }
+
+            sb.append("${");
+            sb.append(v.getName());
+            sb.append("}");
+        }
+
+        if (constantValue.signum() != 0){
+            if (first){
+                sb.append(constantValue);
+            }else if (constantValue.signum() < 0){
+                sb.append(" - ");
+                sb.append(constantValue.abs());
+            }else{
+                sb.append(" + ");
+                sb.append(constantValue);
+            }
+        }
+    }
+
     public Expression divide(BigFraction divisor)
     {
         if (divisor.signum() == 0){
@@ -301,51 +352,7 @@ public class Expression
     {
         StringBuilder sb = new StringBuilder();
 
-        boolean first = true;
-
-        for (var entry : coefficients.entrySet()){
-            Variable v = entry.getKey();
-            BigFraction c = entry.getValue();
-
-            if (c.signum() == 0){
-                continue;
-            }
-
-            if (first){
-                first = false;
-                if (c.equals(BigFraction.negativeOne())){
-                    sb.append("-");
-                }else if (!c.equals(BigFraction.one())){
-                    sb.append(c);
-                }
-            }else{
-                if (c.signum() < 0){
-                    sb.append(" - ");
-                    if (!c.equals(BigFraction.negativeOne())){
-                        sb.append(c.abs());
-                    }
-                }else{
-                    sb.append(" + ");
-                    if (!c.equals(BigFraction.one())){
-                        sb.append(c);
-                    }
-                }
-            }
-
-            sb.append(v.getDebugName());
-        }
-
-        if (constantValue.signum() != 0){
-            if (first){
-                sb.append(constantValue);
-            }else if (constantValue.signum() < 0){
-                sb.append(" - ");
-                sb.append(constantValue.abs());
-            }else{
-                sb.append(" + ");
-                sb.append(constantValue);
-            }
-        }
+        appendToStringBuilder(sb);
 
         return sb.toString();
     }

@@ -10,6 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.lp;
 
+import io.github.elcheapogary.satisplanory.util.BigFraction;
+
 public class Constraint
 {
     private final Expression expression;
@@ -29,6 +31,35 @@ public class Constraint
     Expression getExpression()
     {
         return expression;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        Expression tmpExpression = expression;
+        BigFraction constant = expression.getConstantValue();
+
+        if (constant.signum() != 0){
+            tmpExpression = tmpExpression.subtract(constant);
+            constant = constant.negate();
+        }
+
+        tmpExpression.appendToStringBuilder(sb);
+
+        sb.append(" ");
+
+        sb.append(switch (comparison){
+            case EQ -> "==";
+            case GTE -> ">=";
+            case LTE -> "<=";
+        });
+
+        sb.append(" ");
+        sb.append(constant.toString());
+
+        return sb.toString();
     }
 
     enum Comparison
