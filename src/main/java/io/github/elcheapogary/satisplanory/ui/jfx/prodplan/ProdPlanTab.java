@@ -35,7 +35,7 @@ class ProdPlanTab
         tabPane.getTabs().add(ConfigTab.create(appContext, model));
 
         final Tab errorTab = ErrorTab.create(model);
-        final Tab overviewTab = OverviewTab.create(model);
+        final Tab overviewTab = OverviewTab.create(appContext.getGameData(), model);
         final Tab graphTab = GraphTab.create(model);
         final Tab tableTab = TableTab.create(model);
 

@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
+import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Function;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.LongBinding;
 import javafx.beans.property.SimpleObjectProperty;
@@ -50,19 +52,40 @@ class OverviewTab
     {
     }
 
-    public static Tab create(ProdPlanModel model)
+    public static Tab create(GameData gameData, ProdPlanModel model)
     {
         Tab tab = new Tab();
         tab.setClosable(false);
         tab.setText("Overview");
 
-        setContent(tab, model.getPlan());
+        setContent(tab, gameData, model);
 
-        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, newValue));
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, gameData, model));
 
         tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
 
         return tab;
+    }
+
+    private static <R> TableColumn<R, BigFraction> createBigFractionColumn(String name, Function<? super R, ? extends BigFraction> valueExtractor, Function<? super BigFraction, String> toStringConverter)
+    {
+        TableColumn<R, BigFraction> col = new TableColumn<>(name);
+        col.setStyle("-fx-alignment: CENTER_RIGHT;");
+        col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(valueExtractor.apply(param.getValue())));
+        col.setCellFactory(param -> new TableCell<>()
+        {
+            @Override
+            protected void updateItem(BigFraction item, boolean empty)
+            {
+                if (item == null || empty){
+                    setText("");
+                }else{
+                    setText(toStringConverter.apply(item));
+                }
+            }
+        });
+
+        return col;
     }
 
     private static TitledPane createMachinesPane(ProductionPlan plan)
@@ -166,7 +189,7 @@ class OverviewTab
         return tp;
     }
 
-    private static Node createOverview(ProductionPlan plan)
+    private static Node createOverview(GameData gameData, ProdPlanModel model)
     {
         VBox vBox = new VBox(10);
         vBox.setPadding(new Insets(10));
@@ -175,15 +198,17 @@ class OverviewTab
         VBox.setVgrow(accordion, Priority.ALWAYS);
         vBox.getChildren().add(accordion);
 
-        accordion.getPanes().add(createResourcePane(plan));
+        accordion.getPanes().add(createResourcePane(gameData, model));
         accordion.setExpandedPane(accordion.getPanes().get(0));
-        accordion.getPanes().add(createMachinesPane(plan));
+        accordion.getPanes().add(createMachinesPane(model.getPlan()));
 
         return vBox;
     }
 
-    private static TitledPane createResourcePane(ProductionPlan plan)
+    private static TitledPane createResourcePane(GameData gameData, ProdPlanModel model)
     {
+        ProductionPlan plan = model.getPlan();
+
         TableView<ResourceLine> tableView = new TableView<>();
 
         {
@@ -193,46 +218,43 @@ class OverviewTab
             col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().name));
         }
 
-        {
-            TableColumn<ResourceLine, BigDecimal> col = new TableColumn<>("Max extract rate");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().maxExtractRate));
-        }
+        tableView.getColumns().add(createBigFractionColumn(
+                "Amount available",
+                resourceLine -> resourceLine.amountAvailable,
+                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()
+        ));
 
-        {
-            TableColumn<ResourceLine, BigDecimal> col = new TableColumn<>("Amount used");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().amount));
-        }
+        tableView.getColumns().add(createBigFractionColumn(
+                "Max extract rate",
+                resourceLine -> resourceLine.maxExtractRate,
+                bigFraction -> bigFraction.toBigInteger().toString()
+        ));
 
-        {
-            TableColumn<ResourceLine, BigDecimal> col = new TableColumn<>("% of max");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().percentageOfMaxExtractRate));
-            col.setCellFactory(param -> new TableCell<>()
-            {
-                @Override
-                protected void updateItem(BigDecimal item, boolean empty)
-                {
-                    if (item == null || empty){
-                        setText("");
-                    }else{
-                        setText(item.toString().concat("%"));
-                    }
-                }
-            });
-        }
+        tableView.getColumns().add(createBigFractionColumn(
+                "Amount used",
+                resourceLine -> resourceLine.amountUsed,
+                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()
+        ));
+
+        tableView.getColumns().add(createBigFractionColumn(
+                "% of available",
+                resourceLine -> resourceLine.percentageOfAvailable,
+                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString().concat("%")
+        ));
+
+        tableView.getColumns().add(createBigFractionColumn(
+                "% of max",
+                resourceLine -> resourceLine.percentageOfMaxExtractRate,
+                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString().concat("%")
+        ));
 
         List<Item> sortedItems = new ArrayList<>(plan.getInputItems());
 
         sortedItems.sort(Comparator.comparing(Item::getName));
 
-        BigFraction totalAmount = BigFraction.zero();
+        BigFraction totalAmountUsed = BigFraction.zero();
+        BigFraction totalAmountAvailable = BigFraction.zero();
         BigFraction totalMaxExtractRate = BigFraction.zero();
-        BigFraction totalPercentOfMaxExtractRate = BigFraction.zero();
 
         for (Item item : sortedItems){
             Long max = SatisfactoryData.getResourceExtractionLimits().get(item.getName());
@@ -240,30 +262,62 @@ class OverviewTab
                 ResourceLine l = new ResourceLine();
                 tableView.getItems().add(l);
                 l.name = item.getName();
-                l.amount = item.toDisplayAmount(plan.getInputItemsPerMinute(item)).toBigDecimal(4, RoundingMode.HALF_UP);
-                totalAmount = totalAmount.add(item.toDisplayAmount(plan.getInputItemsPerMinute(item)));
+                l.amountUsed = item.toDisplayAmount(plan.getInputItemsPerMinute(item));
+                l.amountAvailable = model.getInputItemsPerMinute(item);
+                l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
                 if (max == null){
                     l.maxExtractRate = null;
                     l.percentageOfMaxExtractRate = null;
                 }else{
-                    totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmount(BigFraction.valueOf(max)));
-                    totalPercentOfMaxExtractRate = totalPercentOfMaxExtractRate.add(plan.getInputItemsPerMinute(item).divide(max));
-                    l.maxExtractRate = item.toDisplayAmount(BigFraction.valueOf(max)).toBigDecimal(0, RoundingMode.DOWN);
-                    l.percentageOfMaxExtractRate = plan.getInputItemsPerMinute(item).divide(max).multiply(100)
-                            .toBigDecimal(6, RoundingMode.HALF_UP);
+                    l.maxExtractRate = item.toDisplayAmount(BigFraction.valueOf(max));
+                    l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
+                    totalAmountUsed = totalAmountUsed.add(l.amountUsed);
+                    totalAmountAvailable = totalAmountAvailable.add(l.amountAvailable);
+                    totalMaxExtractRate = totalMaxExtractRate.add(l.maxExtractRate);
                 }
             }
         }
 
-        ResourceLine totals = new ResourceLine();
-        totals.name = "Totals";
-        totals.amount = totalAmount.toBigDecimal(4, RoundingMode.HALF_UP);
-        totals.maxExtractRate = totalMaxExtractRate.toBigDecimal(0, RoundingMode.DOWN);
-        totals.percentageOfMaxExtractRate = totalPercentOfMaxExtractRate.multiply(100).toBigDecimal(6, RoundingMode.HALF_UP);
-        tableView.getItems().add(totals);
+        ResourceLine l = new ResourceLine();
+        l.name = "Total (Resources Used)";
+        l.totalIndex = 0;
+        l.amountAvailable = totalAmountAvailable;
+        l.amountUsed = totalAmountUsed;
+        l.maxExtractRate = totalMaxExtractRate;
+        if (l.amountAvailable.signum() > 0){
+            l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
+        }
+        if (l.maxExtractRate.signum() > 0){
+            l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
+        }
+        tableView.getItems().add(l);
+
+        totalMaxExtractRate = BigFraction.zero();
+
+        for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
+            Item item = gameData.getItemByName(entry.getKey()).orElse(null);
+
+            if (item != null){
+                totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmount(BigFraction.valueOf(entry.getValue())));
+            }
+        }
+
+        l = new ResourceLine();
+        l.name = "Total (All Resources)";
+        l.totalIndex = 1;
+        l.amountAvailable = totalAmountAvailable;
+        l.amountUsed = totalAmountUsed;
+        l.maxExtractRate = totalMaxExtractRate;
+        if (l.amountAvailable.signum() > 0){
+            l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
+        }
+        if (l.maxExtractRate.signum() > 0){
+            l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
+        }
+        tableView.getItems().add(l);
 
         tableView.setSortPolicy(param -> {
-            Comparator<ResourceLine> comparator = Comparators.sortLast(resourceLine -> resourceLine.name.equals("Totals"));
+            Comparator<ResourceLine> comparator = Comparator.comparingInt(value -> value.totalIndex);
 
             if (param.getComparator() != null){
                 comparator = comparator.thenComparing(param.getComparator());
@@ -281,12 +335,12 @@ class OverviewTab
         return tp;
     }
 
-    private static void setContent(Tab tab, ProductionPlan plan)
+    private static void setContent(Tab tab, GameData gameData, ProdPlanModel model)
     {
-        if (plan == null){
+        if (model.getPlan() == null){
             tab.setContent(new Pane());
         }else{
-            tab.setContent(createOverview(plan));
+            tab.setContent(createOverview(gameData, model));
         }
     }
 
@@ -298,9 +352,12 @@ class OverviewTab
 
     private static class ResourceLine
     {
+        private int totalIndex = -1;
         private String name;
-        private BigDecimal amount;
-        private BigDecimal maxExtractRate;
-        private BigDecimal percentageOfMaxExtractRate;
+        private BigFraction amountUsed;
+        private BigFraction amountAvailable;
+        private BigFraction maxExtractRate;
+        private BigFraction percentageOfAvailable;
+        private BigFraction percentageOfMaxExtractRate;
     }
 }

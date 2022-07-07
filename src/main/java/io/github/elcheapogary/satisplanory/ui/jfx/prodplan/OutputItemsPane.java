@@ -112,9 +112,9 @@ class OutputItemsPane
         {
             Label help = new Label("Add desired output items. \"Min\" is the minimum number of items per minute. "
                     + "If \"Weight\" is set to a number greater than zero, and the \"Maximize Output Items\" "
-                    + "optimization target is selected in \"Settings\", then the calculator will attempt to create "
-                    + "as many of these items as possible, trying to balance the amount of each output item according "
-                    + "to its weight.");
+                    + "optimization target is selected in \"Optimization Targets\", then the calculator will attempt "
+                    + "to create as many of these items as possible, trying to balance the amount of each output item "
+                    + "according to its weight.");
             help.setWrapText(true);
             vbox.getChildren().add(help);
         }

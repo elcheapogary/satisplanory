@@ -203,6 +203,19 @@ class ProdPlanModel
         return inputItems;
     }
 
+    public BigFraction getInputItemsPerMinute(Item item)
+    {
+        BigFraction v = BigFraction.zero();
+
+        for (InputItem inputItem : inputItems){
+            if (inputItem.getItem().equals(item)){
+                v = v.add(inputItem.getAmount().getValue());
+            }
+        }
+
+        return v;
+    }
+
     public MultiPlan getMultiPlan()
     {
         return multiPlan.get();

@@ -151,11 +151,10 @@ public class Main
 
         new Thread(() -> {
             try {
-                String thisVersion = Satisplanory.getVersion();
-                if (!thisVersion.endsWith("-SNAPSHOT")){
+                if (!Satisplanory.isDevelopmentVersion()){
                     String latestVersion = Satisplanory.getLatestReleasedVersion();
 
-                    if (!latestVersion.equals(thisVersion)){
+                    if (!latestVersion.equals(Satisplanory.getVersion())){
                         Platform.runLater(() -> Notifications.create()
                                 .position(Pos.TOP_CENTER)
                                 .title("A newer version of Satisplanory, version " + latestVersion + ", is available")
