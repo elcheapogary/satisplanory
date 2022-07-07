@@ -228,6 +228,16 @@ public class ProductionPlanner
             }
         }
 
+        {
+            Expression minimizeAllRecipes = Expression.zero();
+
+            for (Expression e : recipeMap.values()){
+                minimizeAllRecipes = minimizeAllRecipes.subtract(e);
+            }
+
+            objectiveFunctions.add(minimizeAllRecipes);
+        }
+
         OptimizationResult result;
 
         try {

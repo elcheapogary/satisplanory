@@ -122,20 +122,6 @@ public class ProductionPlannerTest
     }
 
     @Test
-    public void testInfeasiblePlan()
-    {
-        TestGameData gd = TestGameData.getUpdate5GameData();
-
-        Assumptions.assumeFalse(gd == null);
-
-        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
-
-        builder.requireOutputItemsPerMinute(gd.requireItemByName("AI Limiter"), 50);
-
-        assertThrows(ProductionPlanNotFeatisbleException.class, () -> builder.build().createPlan());
-    }
-
-    @Test
     public void testErrorCase001()
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
@@ -169,5 +155,46 @@ public class ProductionPlannerTest
         ProductionPlan plan = multiPlan.getUnmodifiedPlan();
 
         assertNotNull(plan);
+    }
+
+    @Test
+    public void testInfeasiblePlan()
+    {
+        TestGameData gd = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gd == null);
+
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+
+        builder.requireOutputItemsPerMinute(gd.requireItemByName("AI Limiter"), 50);
+
+        assertThrows(ProductionPlanNotFeatisbleException.class, () -> builder.build().createPlan());
+    }
+
+    @Test
+    public void testMinRecipes()
+            throws ProductionPlanNotFeatisbleException, InterruptedException, ProductionPlanInternalException
+    {
+        TestGameData gd = TestGameData.getUpdate5GameData();
+
+        Assumptions.assumeFalse(gd == null);
+
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+
+        builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
+        builder.addOptimizationTarget(OptimizationTarget.MIN_RESOURCE_SCARCITY);
+
+        builder.addInputItem(gd.requireItemByName("Alumina Solution"), 720000);
+        builder.addInputItem(gd.requireItemByName("Crude Oil"), 600000);
+
+        builder.addOutputItem(gd.requireItemByName("Aluminum Scrap"), BigFraction.zero(), BigFraction.one());
+
+        builder.addRecipes(gd.getRecipes());
+
+        ProductionPlan plan = createPlan(builder.build());
+
+        assertOutputItems(plan, gd, "Water", 420000);
+        assertOutputItems(plan, gd, "Polymer Resin", 40);
+        assertOutputItems(plan, gd, "Aluminum Scrap", 1200);
     }
 }
