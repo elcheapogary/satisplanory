@@ -12,12 +12,14 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.Comparators;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,6 +30,7 @@ import java.util.function.Function;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.LongBinding;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableLongValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -70,6 +73,7 @@ class OverviewTab
     private static <R> TableColumn<R, BigFraction> createBigFractionColumn(String name, Function<? super R, ? extends BigFraction> valueExtractor, Function<? super BigFraction, String> toStringConverter)
     {
         TableColumn<R, BigFraction> col = new TableColumn<>(name);
+        col.setComparator(Comparator.nullsFirst(BigFraction::compareTo));
         col.setStyle("-fx-alignment: CENTER_RIGHT;");
         col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(valueExtractor.apply(param.getValue())));
         col.setCellFactory(param -> new TableCell<>()
@@ -200,6 +204,7 @@ class OverviewTab
 
         accordion.getPanes().add(createResourcePane(gameData, model));
         accordion.setExpandedPane(accordion.getPanes().get(0));
+        accordion.getPanes().add(createSinkPointsPane(model.getPlan()));
         accordion.getPanes().add(createMachinesPane(model.getPlan()));
 
         return vBox;
@@ -331,6 +336,80 @@ class OverviewTab
 
         TitledPane tp = new TitledPane();
         tp.setText("Resources");
+        tp.setContent(tableView);
+        return tp;
+    }
+
+    private static TitledPane createSinkPointsPane(ProductionPlan plan)
+    {
+        class Row
+        {
+            private final int order;
+            private final String name;
+            private final BigInteger pointsPerItem;
+            private final BigFraction itemsPerMinute;
+            private final BigFraction pointsPerMinute;
+
+            public Row(int order, String name, BigInteger pointsPerItem, BigFraction itemsPerMinute, BigFraction pointsPerMinute)
+            {
+                this.order = order;
+                this.name = name;
+                this.pointsPerItem = pointsPerItem;
+                this.itemsPerMinute = itemsPerMinute;
+                this.pointsPerMinute = pointsPerMinute;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Row{" +
+                        "order=" + order +
+                        ", name='" + name + '\'' +
+                        ", pointsPerItem=" + pointsPerItem +
+                        ", itemsPerMinute=" + itemsPerMinute.toBigDecimal(2, RoundingMode.HALF_UP) +
+                        ", pointsPerMinute=" + pointsPerMinute.toBigDecimal(2, RoundingMode.HALF_UP) +
+                        '}';
+            }
+        }
+        TableView<Row> tableView = new TableView<>();
+
+        {
+            TableColumn<Row, String> col = new TableColumn<>("Item");
+            col.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().name));
+            tableView.getColumns().add(col);
+        }
+
+        tableView.getColumns().add(createBigFractionColumn("Points / item", row -> row.pointsPerItem == null ? null : BigFraction.valueOf(row.pointsPerItem), bigFraction -> bigFraction.toBigInteger().toString()));
+        tableView.getColumns().add(createBigFractionColumn("Items / min", row -> row.itemsPerMinute, bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()));
+        tableView.getColumns().add(createBigFractionColumn("Points / min", row -> row.pointsPerMinute, bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()));
+
+        BigFraction totalItemsPerMinute = BigFraction.zero();
+        BigFraction totalPointsPerMinute = BigFraction.zero();
+        for (Item item : plan.getOutputItems()){
+            if (item.getMatterState() == MatterState.SOLID && item.getSinkValue() > 0){
+                Row row = new Row(0, item.getName(), BigInteger.valueOf(item.getSinkValue()), plan.getOutputItemsPerMinute(item), plan.getOutputItemsPerMinute(item).multiply(item.getSinkValue()));
+                tableView.getItems().add(row);
+                totalItemsPerMinute = totalItemsPerMinute.add(row.itemsPerMinute);
+                totalPointsPerMinute = totalPointsPerMinute.add(row.pointsPerMinute);
+            }
+        }
+
+        tableView.getItems().add(new Row(1, "Totals", null, totalItemsPerMinute, totalPointsPerMinute));
+
+        tableView.setSortPolicy(param -> {
+            Comparator<Row> comparator = Comparator.comparingInt(value -> value.order);
+
+            if (param.getComparator() != null){
+                comparator = comparator.thenComparing(param.getComparator());
+            }
+
+            FXCollections.sort(param.getItems(), comparator);
+
+            return true;
+        });
+
+        TitledPane tp = new TitledPane();
+        tp.setText("Sink Points");
         tp.setContent(tableView);
         return tp;
     }
