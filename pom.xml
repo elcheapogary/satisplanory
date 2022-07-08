@@ -31,7 +31,7 @@
         <version.commons-io>2.11.0</version.commons-io>
         <version.draw2d>3.2.100-v20070529</version.draw2d>
         <version.json>20220320</version.json>
-        <version.openjfx>18</version.openjfx>
+        <version.openjfx>18.0.1</version.openjfx>
     </properties>
 
     <dependencies>
