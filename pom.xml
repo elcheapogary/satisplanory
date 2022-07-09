@@ -234,6 +234,10 @@
                                     </modulePath>
                                     <modules>
                                         <module>${satisplanory.moduleName}</module>
+                                        <!--
+                                            In Java 17, without jdk.crypto.ec, HTTPS often fails.
+                                        -->
+                                        <module>jdk.crypto.ec</module>
                                     </modules>
                                     <launcher>
                                         <name>satisplanory</name>
