@@ -237,7 +237,7 @@ class OverviewTab
                 resourceLine -> Optional.ofNullable(resourceLine.percentageOfAvailable)
                         .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
                         .orElse(null),
-                BigDecimal::toString,
+                bigDecimal -> bigDecimal.toString().concat("%"),
                 BigDecimal::compareTo
         ));
 
@@ -246,7 +246,7 @@ class OverviewTab
                 resourceLine -> Optional.ofNullable(resourceLine.percentageOfMaxExtractRate)
                         .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
                         .orElse(null),
-                BigDecimal::toString,
+                bigDecimal -> bigDecimal.toString().concat("%"),
                 BigDecimal::compareTo
         ));
 
