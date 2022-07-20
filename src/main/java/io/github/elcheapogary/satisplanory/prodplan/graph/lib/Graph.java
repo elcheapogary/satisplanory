@@ -12,33 +12,30 @@ package io.github.elcheapogary.satisplanory.prodplan.graph.lib;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.LinkedList;
 
 public class Graph<N, E>
 {
-    private final Map<String, Node<N, E>> nodeMap = new TreeMap<>();
+    private final Collection<Node<N, E>> nodes = new LinkedList<>();
 
+    /**
+     * Creates a new node in this graph.
+     *
+     * @param name The name of the new node. Node names do not need to be unique in the graph.
+     * @param data The data stored in the node.
+     * @return A new node in this graph.
+     */
     public Node<N, E> createNode(String name, N data)
     {
-        if (nodeMap.containsKey(name)){
-            throw new IllegalArgumentException("Duplicate node name: " + name);
-        }
-
         Node<N, E> node = new Node<>(this, name, data);
 
-        nodeMap.put(name, node);
+        nodes.add(node);
 
         return node;
     }
 
-    public Node<N, E> getNode(String name)
-    {
-        return nodeMap.get(name);
-    }
-
     public Collection<? extends Node<N, E>> getNodes()
     {
-        return Collections.unmodifiableCollection(nodeMap.values());
+        return Collections.unmodifiableCollection(nodes);
     }
 }

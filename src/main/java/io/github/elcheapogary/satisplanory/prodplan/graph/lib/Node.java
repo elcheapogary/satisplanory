@@ -11,16 +11,15 @@
 package io.github.elcheapogary.satisplanory.prodplan.graph.lib;
 
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 public class Node<N, E>
 {
     private final Graph<N, E> graph;
     private final String name;
-    private final Map<Node<N, E>, Edge<N, E>> outgoingEdges = new TreeMap<>(Comparator.comparing(Node::getName));
-    private final Map<Node<N, E>, Edge<N, E>> incomingEdges = new TreeMap<>(Comparator.comparing(Node::getName));
+    private final Map<Node<N, E>, Edge<N, E>> outgoingEdges = new HashMap<>();
+    private final Map<Node<N, E>, Edge<N, E>> incomingEdges = new HashMap<>();
     private final N data;
 
     Node(Graph<N, E> graph, String name, N data)
@@ -40,6 +39,16 @@ public class Node<N, E>
         return outgoingEdges.get(target);
     }
 
+    public Map<Node<N, E>, Edge<N, E>> getIncomingEdges()
+    {
+        return Collections.unmodifiableMap(incomingEdges);
+    }
+
+    /**
+     * Returns the name of this node. The name is not necessarily unique in the graph.
+     *
+     * @return The name of this node.
+     */
     public String getName()
     {
         return name;
@@ -48,11 +57,6 @@ public class Node<N, E>
     public Map<Node<N, E>, Edge<N, E>> getOutgoingEdges()
     {
         return Collections.unmodifiableMap(outgoingEdges);
-    }
-
-    public Map<Node<N, E>, Edge<N, E>> getIncomingEdges()
-    {
-        return Collections.unmodifiableMap(incomingEdges);
     }
 
     public Edge<N, E> link(Node<N, E> targetNode, E edgeData)

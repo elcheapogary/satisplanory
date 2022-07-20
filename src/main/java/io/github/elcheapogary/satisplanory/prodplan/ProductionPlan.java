@@ -22,6 +22,7 @@ import io.github.elcheapogary.satisplanory.prodplan.graph.lib.Node;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -73,20 +74,20 @@ public class ProductionPlan
     {
         Graph<ProdPlanNodeData, ProdPlanEdgeData> graph = new Graph<>();
 
-        Map<Node<ProdPlanNodeData, ProdPlanEdgeData>, Map<Item, BigFraction>> wantsMap = new TreeMap<>(Comparator.comparing(Node::getName));
-        Map<Item, Map<Node<ProdPlanNodeData, ProdPlanEdgeData>, BigFraction>> suppliesMap = new TreeMap<>(Comparator.comparing(Item::getName));
+        Map<Node<ProdPlanNodeData, ProdPlanEdgeData>, Map<Item, BigFraction>> wantsMap = new HashMap<>();
+        Map<Item, Map<Node<ProdPlanNodeData, ProdPlanEdgeData>, BigFraction>> suppliesMap = Item.createMap();
 
         for (Map.Entry<Recipe, BigFraction> entry : recipeAmounts.entrySet()){
             Recipe recipe = entry.getKey();
             BigFraction amount = entry.getValue();
             var node = graph.createNode(recipe.getName(), new RecipeNodeData(recipe, amount));
-            Map<Item, BigFraction> requirementsMap = new TreeMap<>(Comparator.comparing(Item::getName));
+            Map<Item, BigFraction> requirementsMap = Item.createMap();
             wantsMap.put(node, requirementsMap);
             for (Recipe.RecipeItem recipeItem : recipe.getIngredients()){
                 requirementsMap.put(recipeItem.getItem(), recipeItem.getAmount().getAmountPerMinuteFraction().multiply(amount));
             }
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
-                suppliesMap.computeIfAbsent(recipeItem.getItem(), item1 -> new TreeMap<Node<ProdPlanNodeData, ProdPlanEdgeData>, BigFraction>(Comparator.comparing(Node::getName)))
+                suppliesMap.computeIfAbsent(recipeItem.getItem(), item1 -> new HashMap<>())
                         .put(node, recipeItem.getAmount().getAmountPerMinuteFraction().multiply(amount));
             }
         }
@@ -95,7 +96,7 @@ public class ProductionPlan
             Item item = entry.getKey();
             BigFraction amount = entry.getValue();
             var node = graph.createNode("Input Item: " + item.getName(), new InputItemNodeData(item, amount));
-            suppliesMap.computeIfAbsent(item, item1 -> new TreeMap<Node<ProdPlanNodeData, ProdPlanEdgeData>, BigFraction>(Comparator.comparing(Node::getName)))
+            suppliesMap.computeIfAbsent(item, item1 -> new HashMap<>())
                     .put(node, amount);
         }
 

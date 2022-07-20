@@ -38,9 +38,9 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.BiFunction;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -393,7 +393,7 @@ class GraphTab
         contextMenuParent.addEventFilter(MouseEvent.MOUSE_CLICKED, hideContextMenuEventFilter);
     }
 
-    private static <N, E> void configureMouseEvents(Node<N, E> node, Region region, Pane parent, ObjectProperty<? super Node<N, E>> selectedNodeProperty, PaneState paneState)
+    private static <N, E> void configureNodeComponentMouseEvents(Node<N, E> node, Region region, Pane parent, ObjectProperty<? super Node<N, E>> selectedNodeProperty, PaneState paneState)
     {
         final DragInfo dragInfo = new DragInfo();
 
@@ -521,7 +521,7 @@ class GraphTab
 
     private static <N, E> Pane createGraphPane(Graph<N, E> graph, BiFunction<? super N, ? super BooleanBinding, ? extends Region> nodeComponentFactory, BiFunction<? super E, ? super BooleanBinding, ? extends Region> edgeComponentFactory, ObjectProperty<Node<N, E>> selectedNodeProperty)
     {
-        Map<Node<N, E>, Region> nodeComponentMap = new TreeMap<>(Comparator.comparing(Node::getName));
+        Map<Node<N, E>, Region> nodeComponentMap = new HashMap<>();
 
         final PaneState paneState = new PaneState();
 
@@ -563,7 +563,7 @@ class GraphTab
 
         for (Node<N, E> n : graph.getNodes()){
             Region component = nodeComponentFactory.apply(n.getData(), Bindings.createBooleanBinding(() -> selectedNodeProperty.getValue() == n, selectedNodeProperty));
-            configureMouseEvents(n, component, pane, selectedNodeProperty, paneState);
+            configureNodeComponentMouseEvents(n, component, pane, selectedNodeProperty, paneState);
             nodeComponentMap.put(n, component);
         }
 
@@ -816,7 +816,7 @@ class GraphTab
 
     private static <N, E> void doGraphLayout(double width, double height, Map<Node<N, E>, Region> componentMap)
     {
-        Map<Node<N, E>, org.eclipse.draw2d.graph.Node> layoutNodeMap = new TreeMap<>(Comparator.comparing(Node::getName));
+        Map<Node<N, E>, org.eclipse.draw2d.graph.Node> layoutNodeMap = new HashMap<>();
 
         final DirectedGraph layoutGraph = new DirectedGraph();
         layoutGraph.setMargin(new Insets(20));
