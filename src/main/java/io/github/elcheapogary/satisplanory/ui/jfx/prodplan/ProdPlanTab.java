@@ -22,32 +22,6 @@ class ProdPlanTab
     {
     }
 
-    public static Tab create(AppContext appContext, ProdPlanModel model)
-    {
-        Tab tab = new Tab();
-        tab.setClosable(true);
-
-        setUpTabHeading(tab, model);
-
-        TabPane tabPane = new TabPane();
-        tab.setContent(tabPane);
-
-        tabPane.getTabs().add(ConfigTab.create(appContext, model));
-
-        final Tab errorTab = ErrorTab.create(model);
-        final Tab overviewTab = OverviewTab.create(appContext.getGameData(), model);
-        final Tab graphTab = GraphTab.create(model);
-        final Tab tableTab = TableTab.create(model);
-
-        addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab);
-
-        model.planProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
-
-        model.multiPlanProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
-
-        return tab;
-    }
-
     private static void addRemoveTabs(ProdPlanModel model, TabPane tabPane, Tab errorTab, Tab overviewTab, Tab graphTab, Tab tableTab)
     {
         if (model.getPlan() == null){
@@ -80,6 +54,32 @@ class ProdPlanTab
             tabPane.getTabs().add(3, tableTab);
             tabPane.getSelectionModel().select(graphTab);
         }
+    }
+
+    public static Tab create(AppContext appContext, ProdPlanModel model)
+    {
+        Tab tab = new Tab();
+        tab.setClosable(true);
+
+        setUpTabHeading(tab, model);
+
+        TabPane tabPane = new TabPane();
+        tab.setContent(tabPane);
+
+        tabPane.getTabs().add(ConfigTab.create(appContext, model));
+
+        final Tab errorTab = ErrorTab.create(model);
+        final Tab overviewTab = OverviewTab.create(appContext, model);
+        final Tab graphTab = GraphTab.create(model);
+        final Tab tableTab = TableTab.create(appContext, model);
+
+        addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab);
+
+        model.planProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
+
+        model.multiPlanProperty().addListener((observable, oldValue, newValue) -> addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab));
+
+        return tab;
     }
 
     private static void setUpTabHeading(Tab tab, ProdPlanModel model)

@@ -10,12 +10,14 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.TableColumns;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.tableexport.TableExportContextMenu;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.Comparators;
 import java.math.BigDecimal;
@@ -25,8 +27,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.Function;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.LongBinding;
 import javafx.beans.property.SimpleObjectProperty;
@@ -41,7 +43,6 @@ import javafx.scene.control.Accordion;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Tab;
-import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
@@ -55,44 +56,22 @@ class OverviewTab
     {
     }
 
-    public static Tab create(GameData gameData, ProdPlanModel model)
+    public static Tab create(AppContext appContext, ProdPlanModel model)
     {
         Tab tab = new Tab();
         tab.setClosable(false);
         tab.setText("Overview");
 
-        setContent(tab, gameData, model);
+        setContent(tab, appContext, model);
 
-        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, gameData, model));
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, appContext, model));
 
         tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
 
         return tab;
     }
 
-    private static <R> TableColumn<R, BigFraction> createBigFractionColumn(String name, Function<? super R, ? extends BigFraction> valueExtractor, Function<? super BigFraction, String> toStringConverter)
-    {
-        TableColumn<R, BigFraction> col = new TableColumn<>(name);
-        col.setComparator(Comparator.nullsFirst(BigFraction::compareTo));
-        col.setStyle("-fx-alignment: CENTER_RIGHT;");
-        col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(valueExtractor.apply(param.getValue())));
-        col.setCellFactory(param -> new TableCell<>()
-        {
-            @Override
-            protected void updateItem(BigFraction item, boolean empty)
-            {
-                if (item == null || empty){
-                    setText("");
-                }else{
-                    setText(toStringConverter.apply(item));
-                }
-            }
-        });
-
-        return col;
-    }
-
-    private static TitledPane createMachinesPane(ProductionPlan plan)
+    private static TitledPane createMachinesPane(AppContext appContext, ProductionPlan plan)
     {
         VBox vbox = new VBox(10);
 
@@ -162,19 +141,20 @@ class OverviewTab
         tableView.setPrefWidth(0);
         tableView.setPrefHeight(0);
 
+        tableView.setContextMenu(TableExportContextMenu.forTable(appContext, tableView));
+
         {
             TableColumn<MachinesRow, String> col = new TableColumn<>("Machine");
             tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_LEFT;");
             col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().machineName));
         }
 
-        {
-            TableColumn<MachinesRow, Long> col = new TableColumn<>("Number");
-            tableView.getColumns().add(col);
-            col.setStyle("-fx-alignment: CENTER_RIGHT;");
-            col.cellValueFactoryProperty().set(param -> Bindings.createObjectBinding(() -> param.getValue().numberOfMachines.get(), param.getValue().numberOfMachines));
-        }
+        tableView.getColumns().add(TableColumns.createNumericColumn(
+                "Number",
+                machinesRow -> machinesRow.numberOfMachines.get(),
+                l -> Long.toString(l),
+                Long::compareTo
+        ));
 
         tableView.setSortPolicy(param -> {
             Comparator<MachinesRow> comparator = Comparators.sortLast(resourceLine -> resourceLine.machineName.equals("Totals"));
@@ -193,7 +173,7 @@ class OverviewTab
         return tp;
     }
 
-    private static Node createOverview(GameData gameData, ProdPlanModel model)
+    private static Node createOverview(AppContext appContext, ProdPlanModel model)
     {
         VBox vBox = new VBox(10);
         vBox.setPadding(new Insets(10));
@@ -202,19 +182,21 @@ class OverviewTab
         VBox.setVgrow(accordion, Priority.ALWAYS);
         vBox.getChildren().add(accordion);
 
-        accordion.getPanes().add(createResourcePane(gameData, model));
+        accordion.getPanes().add(createResourcePane(appContext, model));
         accordion.setExpandedPane(accordion.getPanes().get(0));
-        accordion.getPanes().add(createSinkPointsPane(model.getPlan()));
-        accordion.getPanes().add(createMachinesPane(model.getPlan()));
+        accordion.getPanes().add(createSinkPointsPane(appContext, model.getPlan()));
+        accordion.getPanes().add(createMachinesPane(appContext, model.getPlan()));
 
         return vBox;
     }
 
-    private static TitledPane createResourcePane(GameData gameData, ProdPlanModel model)
+    private static TitledPane createResourcePane(AppContext appContext, ProdPlanModel model)
     {
         ProductionPlan plan = model.getPlan();
 
         TableView<ResourceLine> tableView = new TableView<>();
+
+        tableView.setContextMenu(TableExportContextMenu.forTable(appContext, tableView));
 
         {
             TableColumn<ResourceLine, String> col = new TableColumn<>("Resource");
@@ -223,34 +205,49 @@ class OverviewTab
             col.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(param.getValue().name));
         }
 
-        tableView.getColumns().add(createBigFractionColumn(
+        tableView.getColumns().add(TableColumns.createNumericColumn(
                 "Amount available",
-                resourceLine -> resourceLine.amountAvailable,
-                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()
+                resourceLine -> Optional.ofNullable(resourceLine.amountAvailable)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
         ));
 
-        tableView.getColumns().add(createBigFractionColumn(
+        tableView.getColumns().add(TableColumns.createNumericColumn(
                 "Max extract rate",
-                resourceLine -> resourceLine.maxExtractRate,
-                bigFraction -> bigFraction.toBigInteger().toString()
+                resourceLine -> Optional.ofNullable(resourceLine.maxExtractRate)
+                        .map(BigFraction::toBigInteger)
+                        .orElse(null),
+                BigInteger::toString,
+                BigInteger::compareTo
         ));
 
-        tableView.getColumns().add(createBigFractionColumn(
+        tableView.getColumns().add(TableColumns.createNumericColumn(
                 "Amount used",
-                resourceLine -> resourceLine.amountUsed,
-                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()
+                resourceLine -> Optional.ofNullable(resourceLine.amountUsed)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
         ));
 
-        tableView.getColumns().add(createBigFractionColumn(
+        tableView.getColumns().add(TableColumns.createNumericColumn(
                 "% of available",
-                resourceLine -> resourceLine.percentageOfAvailable,
-                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString().concat("%")
+                resourceLine -> Optional.ofNullable(resourceLine.percentageOfAvailable)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
         ));
 
-        tableView.getColumns().add(createBigFractionColumn(
+        tableView.getColumns().add(TableColumns.createNumericColumn(
                 "% of max",
-                resourceLine -> resourceLine.percentageOfMaxExtractRate,
-                bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString().concat("%")
+                resourceLine -> Optional.ofNullable(resourceLine.percentageOfMaxExtractRate)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
         ));
 
         List<Item> sortedItems = new ArrayList<>(plan.getInputItems());
@@ -300,7 +297,7 @@ class OverviewTab
         totalMaxExtractRate = BigFraction.zero();
 
         for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
-            Item item = gameData.getItemByName(entry.getKey()).orElse(null);
+            Item item = appContext.getGameData().getItemByName(entry.getKey()).orElse(null);
 
             if (item != null){
                 totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmount(BigFraction.valueOf(entry.getValue())));
@@ -340,7 +337,7 @@ class OverviewTab
         return tp;
     }
 
-    private static TitledPane createSinkPointsPane(ProductionPlan plan)
+    private static TitledPane createSinkPointsPane(AppContext appContext, ProductionPlan plan)
     {
         class Row
         {
@@ -373,15 +370,38 @@ class OverviewTab
         }
         TableView<Row> tableView = new TableView<>();
 
+        tableView.setContextMenu(TableExportContextMenu.forTable(appContext, tableView));
+
         {
             TableColumn<Row, String> col = new TableColumn<>("Item");
             col.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().name));
             tableView.getColumns().add(col);
         }
 
-        tableView.getColumns().add(createBigFractionColumn("Points / item", row -> row.pointsPerItem == null ? null : BigFraction.valueOf(row.pointsPerItem), bigFraction -> bigFraction.toBigInteger().toString()));
-        tableView.getColumns().add(createBigFractionColumn("Items / min", row -> row.itemsPerMinute, bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()));
-        tableView.getColumns().add(createBigFractionColumn("Points / min", row -> row.pointsPerMinute, bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP).toString()));
+        tableView.getColumns().add(TableColumns.createNumericColumn(
+                "Points / item",
+                row -> row.pointsPerItem,
+                BigInteger::toString,
+                BigInteger::compareTo
+        ));
+
+        tableView.getColumns().add(TableColumns.createNumericColumn(
+                "Items / min",
+                row -> Optional.ofNullable(row.itemsPerMinute)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
+        ));
+
+        tableView.getColumns().add(TableColumns.createNumericColumn(
+                "Points / min",
+                row -> Optional.ofNullable(row.pointsPerMinute)
+                        .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
+        ));
 
         BigFraction totalItemsPerMinute = BigFraction.zero();
         BigFraction totalPointsPerMinute = BigFraction.zero();
@@ -414,12 +434,12 @@ class OverviewTab
         return tp;
     }
 
-    private static void setContent(Tab tab, GameData gameData, ProdPlanModel model)
+    private static void setContent(Tab tab, AppContext appContext, ProdPlanModel model)
     {
         if (model.getPlan() == null){
             tab.setContent(new Pane());
         }else{
-            tab.setContent(createOverview(gameData, model));
+            tab.setContent(createOverview(appContext, model));
         }
     }
 

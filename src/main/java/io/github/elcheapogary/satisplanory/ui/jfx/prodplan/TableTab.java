@@ -15,6 +15,9 @@ import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
+import io.github.elcheapogary.satisplanory.ui.jfx.component.TableColumns;
+import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
+import io.github.elcheapogary.satisplanory.ui.jfx.tableexport.TableExportContextMenu;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.Comparators;
 import java.math.BigDecimal;
@@ -25,7 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Tab;
@@ -39,24 +41,26 @@ class TableTab
     {
     }
 
-    public static Tab create(ProdPlanModel model)
+    public static Tab create(AppContext appContext, ProdPlanModel model)
     {
         Tab tab = new Tab();
         tab.setClosable(false);
         tab.setText("Table");
 
-        setContent(tab, model.getPlan());
+        setContent(appContext, tab, model.getPlan());
 
-        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, newValue));
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(appContext, tab, newValue));
 
         tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
 
         return tab;
     }
 
-    private static TableView<Row> createProductionPlanTableView(ProductionPlan plan)
+    private static TableView<Row> createProductionPlanTableView(AppContext appContext, ProductionPlan plan)
     {
         TableView<Row> tableView = new TableView<>();
+
+        tableView.setContextMenu(TableExportContextMenu.forTable(appContext, tableView));
 
         tableView.setPrefWidth(0);
 
@@ -78,25 +82,25 @@ class TableTab
                         .orElse(null)
         ));
 
-        TableColumn<Row, BigDecimal> countColumn = new TableColumn<>("#");
-        tableView.getColumns().add(countColumn);
-        countColumn.setStyle("-fx-alignment: CENTER_RIGHT;");
-        countColumn.cellValueFactoryProperty().set(param -> new SimpleObjectProperty<>(Optional.ofNullable(param.getValue().number)
-                .map(n -> n.toBigDecimal(6, RoundingMode.HALF_UP))
-                .orElse(null)
+        tableView.getColumns().add(TableColumns.createNumericColumn(
+                "#",
+                row -> Optional.ofNullable(row.number)
+                        .map(bigFraction -> bigFraction.toBigDecimal(6, RoundingMode.HALF_UP))
+                        .orElse(null),
+                BigDecimal::toString,
+                BigDecimal::compareTo
         ));
 
         for (Item item : items){
-            TableColumn<Row, BigDecimal> itemColumn = new TableColumn<>(item.getName());
-            tableView.getColumns().add(itemColumn);
-            itemColumn.setStyle("-fx-alignment: CENTER_RIGHT;");
-            itemColumn.cellValueFactoryProperty().set(param -> {
-                BigFraction value = item.toDisplayAmount(Objects.requireNonNullElse(param.getValue().itemAmounts.get(item), BigFraction.zero()));
-                if (value.signum() == 0){
-                    return null;
-                }
-                return new SimpleObjectProperty<>(value.toBigDecimal(4, RoundingMode.HALF_UP));
-            });
+            tableView.getColumns().add(TableColumns.createNumericColumn(
+                    item.getName(),
+                    row -> Optional.ofNullable(row.itemAmounts.get(item))
+                            .map(item::toDisplayAmount)
+                            .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
+                            .orElse(null),
+                    BigDecimal::toString,
+                    BigDecimal::compareTo
+            ));
         }
 
         {
@@ -153,12 +157,12 @@ class TableTab
         return tableView;
     }
 
-    private static void setContent(Tab tab, ProductionPlan plan)
+    private static void setContent(AppContext appContext, Tab tab, ProductionPlan plan)
     {
         if (plan == null){
             tab.setContent(new Pane());
         }else{
-            tab.setContent(createProductionPlanTableView(plan));
+            tab.setContent(createProductionPlanTableView(appContext, plan));
         }
     }
 
