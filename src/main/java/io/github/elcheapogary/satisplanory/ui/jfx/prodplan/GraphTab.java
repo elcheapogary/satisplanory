@@ -51,6 +51,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.SnapshotParameters;
@@ -65,6 +67,8 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -376,6 +380,17 @@ class GraphTab
             contextMenu.show(contextMenuParent, event.getScreenX(), event.getScreenY());
             event.consume();
         });
+
+        EventHandler<MouseEvent> hideContextMenuEventFilter = event -> {
+            if (event.getButton() == MouseButton.PRIMARY && contextMenu.isShowing()){
+                Platform.runLater(contextMenu::hide);
+                event.consume();
+            }
+        };
+
+        contextMenuParent.addEventFilter(MouseEvent.MOUSE_PRESSED, hideContextMenuEventFilter);
+        contextMenuParent.addEventFilter(MouseEvent.MOUSE_DRAGGED, hideContextMenuEventFilter);
+        contextMenuParent.addEventFilter(MouseEvent.MOUSE_CLICKED, hideContextMenuEventFilter);
     }
 
     private static <N, E> void configureMouseEvents(Node<N, E> node, Region region, Pane parent, ObjectProperty<? super Node<N, E>> selectedNodeProperty, PaneState paneState)
@@ -643,6 +658,8 @@ class GraphTab
 
         hbox.setBackground(Background.fill(Color.BLACK));
         hbox.setPadding(new javafx.geometry.Insets(0.5));
+
+        hbox.onContextMenuRequestedProperty().set(Event::consume);
 
         return hbox;
     }
