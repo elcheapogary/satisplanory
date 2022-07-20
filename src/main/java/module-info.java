@@ -11,9 +11,11 @@
 open module io.github.elcheapogary.satisplanory
 {
     requires draw2d;
+    requires java.desktop;
     requires java.net.http;
     requires javafx.base;
     requires javafx.controls;
+    requires javafx.swing;
     requires javafx.web;
     requires jdk.xml.dom;
     requires org.apache.commons.io;

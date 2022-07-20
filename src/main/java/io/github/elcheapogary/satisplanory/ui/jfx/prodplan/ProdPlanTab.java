@@ -70,7 +70,7 @@ class ProdPlanTab
 
         final Tab errorTab = ErrorTab.create(model);
         final Tab overviewTab = OverviewTab.create(appContext, model);
-        final Tab graphTab = GraphTab.create(model);
+        final Tab graphTab = GraphTab.create(appContext, model);
         final Tab tableTab = TableTab.create(appContext, model);
 
         addRemoveTabs(model, tabPane, errorTab, overviewTab, graphTab, tableTab);
