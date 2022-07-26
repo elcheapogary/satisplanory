@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.satisfactory;
 
+import io.github.elcheapogary.satisplanory.steam.Steam;
 import java.io.File;
 
 public class SatisfactoryInstallation
