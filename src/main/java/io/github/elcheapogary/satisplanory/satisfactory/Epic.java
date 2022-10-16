@@ -16,6 +16,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,7 +30,7 @@ class Epic
     {
     }
 
-    public static File findSatisfactoryInstallation()
+    public static Collection<? extends SatisfactoryInstallation> findSatisfactoryInstallations()
     {
         File epicDirectory = getEpicDirectory();
 
@@ -35,7 +38,7 @@ class Epic
         f = new File(f, "LauncherInstalled.dat");
 
         if (!f.isFile()){
-            return null;
+            return Collections.emptyList();
         }
 
         JSONObject wholeFile;
@@ -44,7 +47,8 @@ class Epic
                 wholeFile = new JSONObject(new JSONTokener(r));
             }
         }catch (IOException | JSONException e){
-            return null;
+            e.printStackTrace();
+            return Collections.emptyList();
         }
 
         try {
@@ -87,13 +91,20 @@ class Epic
                 }
             }
 
+            Collection<SatisfactoryInstallation> retv = new LinkedList<>();
+
             if (earlyAccess != null){
-                return earlyAccess;
+                retv.add(new SatisfactoryInstallation(SatisfactoryInstallationDiscoveryMechanism.Epic, SatisfactoryBranch.EARLY_ACCESS, earlyAccess));
             }
 
-            return experimental;
+            if (experimental != null){
+                retv.add(new SatisfactoryInstallation(SatisfactoryInstallationDiscoveryMechanism.Epic, SatisfactoryBranch.EXPERIMENTAL, experimental));
+            }
+
+            return retv;
         }catch (JSONException e){
-            return null;
+            e.printStackTrace();
+            return Collections.emptyList();
         }
     }
 

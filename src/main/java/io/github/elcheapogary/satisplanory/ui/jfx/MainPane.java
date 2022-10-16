@@ -11,10 +11,13 @@
 package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.Satisplanory;
+import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallation;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
 import io.github.elcheapogary.satisplanory.ui.jfx.prodplan.ProdPlanBrowser;
+import io.github.elcheapogary.satisplanory.ui.jfx.satisdata.SatisfactoryDataLoaderUi;
+import io.github.elcheapogary.satisplanory.ui.jfx.satisdata.SatisfactoryInstallationSelectorDialog;
 import java.io.IOException;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
@@ -39,7 +42,19 @@ public class MainPane
     {
         Menu fileMenu = new Menu("File");
 
-        MenuItem saveMenuItem = new MenuItem("Save");
+        MenuItem selectSatisfactoryInstallationMenuItem = new MenuItem("Select Satisfactory Installation");
+        fileMenu.getItems().add(selectSatisfactoryInstallationMenuItem);
+
+        selectSatisfactoryInstallationMenuItem.onActionProperty().set(event -> {
+            SatisfactoryInstallationSelectorDialog.show(appContext, SatisfactoryInstallation.findSatisfactoryInstallations())
+                    .ifPresent(satisfactoryInstallation -> {
+                        SatisfactoryDataLoaderUi.loadSatisfactoryData(appContext, satisfactoryInstallation.getPath());
+                    });
+        });
+
+        fileMenu.getItems().add(new SeparatorMenuItem());
+
+        MenuItem saveMenuItem = new MenuItem("Save Data");
         fileMenu.getItems().add(saveMenuItem);
 
         saveMenuItem.onActionProperty().set(event -> {
@@ -128,7 +143,7 @@ public class MainPane
 
         appContext.gameDataProperty().addListener((observable, oldValue, gameData) -> {
             if (gameData != null){
-                tabPane.getTabs().remove(homeTab);
+                tabPane.getTabs().clear();
                 tabPane.getTabs().add(CodexPane.createTab(gameData));
                 tabPane.getTabs().add(ProdPlanBrowser.create(appContext, gameData));
             }

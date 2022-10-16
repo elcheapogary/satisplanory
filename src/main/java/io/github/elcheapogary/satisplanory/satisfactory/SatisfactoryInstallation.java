@@ -12,30 +12,32 @@ package io.github.elcheapogary.satisplanory.satisfactory;
 
 import io.github.elcheapogary.satisplanory.steam.Steam;
 import java.io.File;
+import java.util.Collection;
+import java.util.LinkedList;
 
 public class SatisfactoryInstallation
 {
-    private SatisfactoryInstallation()
+    private final SatisfactoryInstallationDiscoveryMechanism gameStore;
+    private final SatisfactoryBranch branch;
+    private final File path;
+
+    public SatisfactoryInstallation(SatisfactoryInstallationDiscoveryMechanism gameStore, SatisfactoryBranch branch, File path)
     {
+        this.gameStore = gameStore;
+        this.branch = branch;
+        this.path = path;
     }
 
-    public static File findSatisfactoryInstallation()
+    public static Collection<SatisfactoryInstallation> findSatisfactoryInstallations()
     {
-        File f = Steam.findSatisfactoryInstallation();
+        Collection<SatisfactoryInstallation> installations = new LinkedList<>();
 
-        if (f != null && !isValidSatisfactoryInstallation(f)){
-            f = null;
-        }
+        Steam.findSatisfactoryInstallation()
+                .ifPresent(installations::add);
 
-        if (f == null){
-            f = Epic.findSatisfactoryInstallation();
-        }
+        installations.addAll(Epic.findSatisfactoryInstallations());
 
-        if (f != null && !isValidSatisfactoryInstallation(f)){
-            f = null;
-        }
-
-        return f;
+        return installations;
     }
 
     public static boolean isValidSatisfactoryInstallation(File installFolder)
@@ -44,5 +46,30 @@ public class SatisfactoryInstallation
         f = new File(f, "Docs");
         f = new File(f, "Docs.json");
         return f.isFile();
+    }
+
+    public SatisfactoryBranch getBranch()
+    {
+        return branch;
+    }
+
+    public SatisfactoryInstallationDiscoveryMechanism getGameStore()
+    {
+        return gameStore;
+    }
+
+    public File getPath()
+    {
+        return path;
+    }
+
+    @Override
+    public String toString()
+    {
+        if (branch == null){
+            return gameStore.name() + " / " + path;
+        }else{
+            return gameStore.name() + " / " + branch.getDisplayName() + " / " + path;
+        }
     }
 }

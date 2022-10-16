@@ -10,8 +10,12 @@
 
 package io.github.elcheapogary.satisplanory.steam;
 
+import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryBranch;
+import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallation;
+import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallationDiscoveryMechanism;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Steam
 {
@@ -19,12 +23,12 @@ public class Steam
     {
     }
 
-    public static File findSatisfactoryInstallation()
+    public static Optional<SatisfactoryInstallation> findSatisfactoryInstallation()
     {
         File steamDirectory = findSteamDirectory();
 
         if (steamDirectory == null){
-            return null;
+            return Optional.empty();
         }
 
         return getSatisfactoryInstallPath(steamDirectory);
@@ -67,7 +71,7 @@ public class Steam
         return f;
     }
 
-    private static File getSatisfactoryInstallPath(File steamDirectory)
+    private static Optional<SatisfactoryInstallation> getSatisfactoryInstallPath(File steamDirectory)
     {
         File libraryVdf = getLibraryFoldersVdfFile(steamDirectory);
 
@@ -75,24 +79,44 @@ public class Steam
             SteamDataObject data = SteamDataFile.parse(libraryVdf);
 
             if (!data.hasObject("libraryfolders")){
-                return null;
+                throw new IOException("No \"libraryfolders\" object in " + libraryVdf.getAbsolutePath());
             }
 
             data = data.get("libraryfolders").getAsObject();
 
-            for (String propertyName : data.getPropertyNames()){
-                if (data.hasObject(propertyName)){
-                    SteamDataObject library = data.getAsObject();
+            for (String libraryName : data.getPropertyNames()){
+                if (data.hasObject(libraryName)){
+                    SteamDataObject library = data.get(libraryName).getAsObject();
 
                     if (library.hasString("path") && library.hasObject("apps")){
                         SteamDataObject apps = library.get("apps").getAsObject();
 
                         if (apps.hasString("526870")){
-                            File f = new File(library.get("path").getAsString());
-                            f = new File(f, "steamapps");
-                            f = new File(f, "common");
-                            f = new File(f, "Satisfactory");
-                            return f;
+                            File steamAppsDirectory = new File(library.get("path").getAsString());
+                            steamAppsDirectory = new File(steamAppsDirectory, "steamapps");
+
+                            SteamDataObject appManifest = SteamDataFile.parse(new File(steamAppsDirectory, "appmanifest_526870.acf"));
+
+                            if (appManifest.hasObject("AppState")){
+                                SteamDataObject appState = appManifest.get("AppState").getAsObject();
+
+                                if (appState.hasString("installdir")){
+                                    File installDirectory = new File(steamAppsDirectory, "common");
+                                    installDirectory = new File(installDirectory, appState.get("installdir").getAsString());
+
+                                    SatisfactoryBranch branch = SatisfactoryBranch.EARLY_ACCESS;
+
+                                    if (appState.hasObject("UserConfig")){
+                                        SteamDataObject userConfig = appState.get("UserConfig").getAsObject();
+
+                                        if (userConfig.hasString("betakey") && "experimental".equals(userConfig.get("betakey").getAsString())){
+                                            branch = SatisfactoryBranch.EXPERIMENTAL;
+                                        }
+                                    }
+
+                                    return Optional.of(new SatisfactoryInstallation(SatisfactoryInstallationDiscoveryMechanism.Steam, branch, installDirectory));
+                                }
+                            }
                         }
                     }
                 }
@@ -101,7 +125,7 @@ public class Steam
             e.printStackTrace(System.err);
         }
 
-        return null;
+        return Optional.empty();
     }
 
     private static boolean isValidSteamInstallation(File steamDirectory)
