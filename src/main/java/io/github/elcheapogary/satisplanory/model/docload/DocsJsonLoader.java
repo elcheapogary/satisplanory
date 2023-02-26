@@ -15,13 +15,11 @@ import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
-import io.github.elcheapogary.satisplanory.util.CharStreams;
 import io.github.elcheapogary.satisplanory.util.Pair;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -32,10 +30,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 
 /**
  * Loads game data from the Satisfactory {@code Docs.json} file shipped with the game.
@@ -48,23 +45,21 @@ public class DocsJsonLoader
     {
     }
 
-    private static Set<String> getItemDescriptorFields(JSONArray nativeClassesArray)
+    private static Set<String> getItemDescriptorFields(JsonArray nativeClassesArray)
             throws IOException
     {
-        for (int i = 0; i < nativeClassesArray.length(); i++){
-            JSONObject object = nativeClassesArray.getJSONObject(i);
-
-            String nativeClassName = object.optString("NativeClass", null);
+        for (JsonObject object : nativeClassesArray.getValuesAs(JsonObject.class)){
+            String nativeClassName = object.getString("NativeClass", null);
 
             if (nativeClassName == null || !nativeClassName.equals(ITEM_DESCRIPTOR_NATIVE_CLASS)){
                 continue;
             }
 
-            JSONArray classesArray = object.getJSONArray("Classes");
+            JsonArray classesArray = object.getJsonArray("Classes");
 
-            JSONObject firstClass = classesArray.getJSONObject(0);
+            JsonObject firstClass = classesArray.getJsonObject(0);
 
-            Set<String> fieldNames = new TreeSet<>(firstClass.toMap().keySet());
+            Set<String> fieldNames = new TreeSet<>(firstClass.keySet());
 
             /*
              * Update 6 - some subclasses of FGItemDescriptor do not have mResourceSinkPoints??
@@ -77,51 +72,41 @@ public class DocsJsonLoader
         throw new IOException("Unable to find native class: " + ITEM_DESCRIPTOR_NATIVE_CLASS);
     }
 
-    private static Map<String, Item> getItemsByClassName(JSONArray nativeClassesArray)
+    private static Map<String, Item> getItemsByClassName(JsonArray nativeClassesArray)
             throws DataException, IOException
     {
         Set<String> itemDescriptorFields = getItemDescriptorFields(nativeClassesArray);
 
         Map<String, Item> itemsByClassName = new TreeMap<>();
 
-        for (Object nativeClassObject : nativeClassesArray){
-            if (!(nativeClassObject instanceof JSONObject nativeClass)){
-                continue;
-            }
-
+        for (JsonObject nativeClass : nativeClassesArray.getValuesAs(JsonObject.class)){
             if (!nativeClassIsItemDescriptor(nativeClass, itemDescriptorFields)){
                 continue;
             }
 
             String nativeClassName = nativeClass.getString("NativeClass");
 
-            JSONArray classesArray = nativeClass.getJSONArray("Classes");
+            JsonArray classesArray = nativeClass.getJsonArray("Classes");
 
-            for (int i = 0; i < classesArray.length(); i++){
-                try {
-                    JSONObject jsonItem = classesArray.getJSONObject(i);
+            for (JsonObject jsonItem : classesArray.getValuesAs(JsonObject.class)){
+                Item.Builder itemBuilder = new Item.Builder();
 
-                    Item.Builder itemBuilder = new Item.Builder();
+                itemBuilder.setName(jsonItem.getString("mDisplayName"));
+                itemBuilder.setClassName(jsonItem.getString("ClassName"));
+                itemBuilder.setDescription(jsonItem.getString("mDescription"));
 
-                    itemBuilder.setName(jsonItem.getString("mDisplayName"));
-                    itemBuilder.setClassName(jsonItem.getString("ClassName"));
-                    itemBuilder.setDescription(jsonItem.getString("mDescription"));
-
-                    switch (jsonItem.getString("mForm")){
-                        case "RF_SOLID" -> itemBuilder.setMatterState(MatterState.SOLID);
-                        case "RF_LIQUID" -> itemBuilder.setMatterState(MatterState.LIQUID);
-                        case "RF_GAS" -> itemBuilder.setMatterState(MatterState.GAS);
-                        default ->
-                                throw new DataException("Unknown mForm value for item: " + nativeClassName + "[" + i + "]: " + jsonItem.getString("mForm"));
-                    }
-
-                    itemBuilder.setSinkValue(jsonItem.optInt("mResourceSinkPoints", 0));
-
-                    Item item = itemBuilder.build();
-                    itemsByClassName.put(item.getClassName(), item);
-                }catch (JSONException e){
-                    throw new IOException("Error loading class " + i + " of native class: " + nativeClassName + ": " + e, e);
+                switch (jsonItem.getString("mForm")){
+                    case "RF_SOLID" -> itemBuilder.setMatterState(MatterState.SOLID);
+                    case "RF_LIQUID" -> itemBuilder.setMatterState(MatterState.LIQUID);
+                    case "RF_GAS" -> itemBuilder.setMatterState(MatterState.GAS);
+                    default ->
+                            throw new DataException("Unknown mForm value for item: " + nativeClassName + ": " + jsonItem.getString("mForm"));
                 }
+
+                itemBuilder.setSinkValue(jsonItem.getInt("mResourceSinkPoints", 0));
+
+                Item item = itemBuilder.build();
+                itemsByClassName.put(item.getClassName(), item);
             }
         }
 
@@ -131,33 +116,23 @@ public class DocsJsonLoader
     public static void loadDocsJson(GameData.Builder gameDataBuilder, InputStream in)
             throws IOException, DataException
     {
-        try {
-            JSONArray nativeClassesArray = parseJson(in);
+        try{
+            JsonArray nativeClassesArray = Json.createParser(in).getArray();
 
             Map<String, Item> itemsByClassName = getItemsByClassName(nativeClassesArray);
             Map<String, Building> buildingsByClassName = new TreeMap<>();
 
-            for (int i = 0; i < nativeClassesArray.length(); i++){
-                JSONObject object = nativeClassesArray.getJSONObject(i);
-
-                String nativeClassName = object.optString("NativeClass", null);
+            for (JsonObject nativeClassObject : nativeClassesArray.getValuesAs(JsonObject.class)){
+                String nativeClassName = nativeClassObject.getString("NativeClass");
 
                 if (nativeClassName == null){
                     continue;
                 }
 
-                Object classesObject = object.opt("Classes");
+                if ("Class'/Script/FactoryGame.FGBuildableManufacturer'".equals(nativeClassName) ||
+                        "Class'/Script/FactoryGame.FGBuildableManufacturerVariablePower'".equals(nativeClassName)){
 
-                if (!(classesObject instanceof JSONArray classesArray)){
-                    continue;
-                }
-
-                if ("Class'/Script/FactoryGame.FGBuildableManufacturer'".equals(nativeClassName)
-                        || "Class'/Script/FactoryGame.FGBuildableManufacturerVariablePower'".equals(nativeClassName)
-                ){
-                    for (int j = 0; j < classesArray.length(); j++){
-                        JSONObject jsonBuilding = classesArray.getJSONObject(j);
-
+                    for (JsonObject jsonBuilding : nativeClassObject.getJsonArray("Classes").getValuesAs(JsonObject.class)){
                         String name = jsonBuilding.getString("mDisplayName");
                         String className = jsonBuilding.getString("ClassName");
                         String powerConsumption = jsonBuilding.getString("mPowerConsumption");
@@ -174,20 +149,16 @@ public class DocsJsonLoader
                 }
             }
 
-            for (int i = 0; i < nativeClassesArray.length(); i++){
-                JSONObject object = nativeClassesArray.getJSONObject(i);
-
-                String nativeClassName = object.optString("NativeClass", null);
+            for (JsonObject object : nativeClassesArray.getValuesAs(JsonObject.class)){
+                String nativeClassName = object.getString("NativeClass", null);
 
                 if ("Class'/Script/FactoryGame.FGRecipe'".equals(nativeClassName)){
                     Set<String> unknownBuildingClasses = new TreeSet<>();
                     Collection<Recipe> recipes = new LinkedList<>();
 
-                    JSONArray classesArray = object.getJSONArray("Classes");
+                    JsonArray classesArray = object.getJsonArray("Classes");
 
-                    for (int j = 0; j < classesArray.length(); j++){
-                        JSONObject jsonRecipe = classesArray.getJSONObject(j);
-
+                    for (JsonObject jsonRecipe : classesArray.getValuesAs(JsonObject.class)){
                         String displayName = jsonRecipe.getString("mDisplayName");
 
                         Building producedIn = null;
@@ -201,7 +172,7 @@ public class DocsJsonLoader
 
                             List<String> producedInClasses;
 
-                            try (Stream<String> stream = BracketObjectNotation.parseArray(producedInStr).stream()) {
+                            try (Stream<String> stream = BracketObjectNotation.parseArray(producedInStr).stream()){
                                 producedInClasses = stream.map(s -> {
                                     int idx = s.lastIndexOf(".");
 
@@ -230,11 +201,11 @@ public class DocsJsonLoader
                             continue;
                         }
 
-                        BigDecimal craftingTimeSeconds = jsonRecipe.getBigDecimal("mManufactoringDuration");
+                        BigDecimal craftingTimeSeconds = new BigDecimal(jsonRecipe.getString("mManufactoringDuration"));
 
                         Collection<Pair<Item, Integer>> ingredients;
 
-                        try {
+                        try{
                             ingredients = parseItemAmountList(jsonRecipe.getString("mIngredients"), itemsByClassName);
                         }catch (BracketObjectNotationParseException e){
                             throw new DataException("Error parsing ingredients for recipe: " + displayName + ": " + jsonRecipe.getString("mIngredients") + ": " + e, e);
@@ -242,7 +213,7 @@ public class DocsJsonLoader
 
                         Collection<Pair<Item, Integer>> products;
 
-                        try {
+                        try{
                             products = parseItemAmountList(jsonRecipe.getString("mProduct"), itemsByClassName);
                         }catch (BracketObjectNotationParseException e){
                             throw new DataException("Error parsing products for recipe: " + displayName + ": " + jsonRecipe.getString("mProduct") + ": " + e, e);
@@ -252,8 +223,8 @@ public class DocsJsonLoader
                                 .setName(displayName)
                                 .setCycleTimeSeconds(craftingTimeSeconds)
                                 .setProducedInBuilding(producedIn)
-                                .setVariablePowerConstant(jsonRecipe.getBigDecimal("mVariablePowerConsumptionConstant"))
-                                .setVariablePowerFactor(jsonRecipe.getBigDecimal("mVariablePowerConsumptionFactor"));
+                                .setVariablePowerConstant(new BigDecimal(jsonRecipe.getString("mVariablePowerConsumptionConstant")))
+                                .setVariablePowerFactor(new BigDecimal(jsonRecipe.getString("mVariablePowerConsumptionFactor")));
 
                         for (Pair<Item, Integer> p : ingredients){
                             recipeBuilder.addIngredient(p.key(), p.value());
@@ -285,16 +256,16 @@ public class DocsJsonLoader
                     }
                 }
             }
-        }catch (JSONException e){
-            throw new IOException("Error parsing json data: " + e.getMessage(), e);
+        }catch (RuntimeException e){
+            throw new IOException("Error parsing json data: " + e, e);
         }
     }
 
     public static void loadDocsJson(GameData.Builder gameDataBuilder, File f)
             throws IOException, DataException
     {
-        try {
-            try (InputStream in = new FileInputStream(f)) {
+        try{
+            try (InputStream in = new FileInputStream(f)){
                 loadDocsJson(gameDataBuilder, in);
             }
         }catch (IOException | RuntimeException e){
@@ -302,25 +273,21 @@ public class DocsJsonLoader
         }
     }
 
-    private static boolean nativeClassIsItemDescriptor(JSONObject nativeClass, Set<String> itemDescriptorFields)
+    private static boolean nativeClassIsItemDescriptor(JsonObject nativeClass, Set<String> itemDescriptorFields)
     {
-        Object classesObject = nativeClass.opt("Classes");
+        JsonArray classesArray = nativeClass.getJsonArray("Classes");
 
-        if (!(classesObject instanceof JSONArray classesArray)){
-            return false;
-        }
-
-        JSONObject firstClass = classesArray.getJSONObject(0);
+        JsonObject firstClass = classesArray.getJsonObject(0);
 
         /*
          * Update 6 - building descriptors use mForm RF_INVALID - this gets rid of them.
          */
-        if ("RF_INVALID".equals(firstClass.optString("mForm"))){
+        if ("RF_INVALID".equals(firstClass.getString("mForm", null))){
             return false;
         }
 
         for (String fieldName : itemDescriptorFields){
-            if (!firstClass.has(fieldName)){
+            if (!firstClass.containsKey(fieldName)){
                 return false;
             }
         }
@@ -364,13 +331,5 @@ public class DocsJsonLoader
         }
 
         return retv;
-    }
-
-    private static JSONArray parseJson(InputStream in)
-            throws IOException
-    {
-        try (Reader r = CharStreams.createReader(in)) {
-            return new JSONArray(new JSONTokener(r));
-        }
     }
 }
