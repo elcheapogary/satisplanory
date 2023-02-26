@@ -17,12 +17,12 @@ import io.github.elcheapogary.satisplanory.model.docload.DataException;
 import io.github.elcheapogary.satisplanory.model.docload.DocsJsonLoader;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
@@ -31,8 +31,7 @@ public class TestGameData
         extends GameData
 {
     private static Map<String, String> testDataConfig = null;
-    private static TestGameData update5GameData = null;
-    private static TestGameData update6GameData = null;
+    private static TestGameData update7GameData = null;
 
     private TestGameData(Builder builder)
     {
@@ -48,9 +47,9 @@ public class TestGameData
                 if (!f.isFile()){
                     return testDataConfig = Collections.emptyMap();
                 }else{
-                    try {
+                    try{
                         Map<String, String> m = new TreeMap<>();
-                        try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(f.toPath()), StandardCharsets.UTF_8))) {
+                        try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(f.toPath()), StandardCharsets.UTF_8))){
                             String line;
 
                             while ((line = r.readLine()) != null){
@@ -89,45 +88,29 @@ public class TestGameData
         return testDataConfig;
     }
 
-    public static TestGameData getUpdate5GameData()
+    public static TestGameData getLatestTestData()
     {
-        synchronized (TestGameData.class){
-            if (update5GameData == null){
-                String fileName = loadDataConfig().get("u5.docsjson");
-
-                if (fileName == null){
-                    return null;
-                }
-
-                try {
-                    update5GameData = loadGameDataFromFile(fileName);
-                }catch (IOException | DataException e){
-                    throw new RuntimeException(e);
-                }
-            }
-
-            return update5GameData;
-        }
+        return getUpdate7TestData();
     }
 
-    public static TestGameData getUpdate6GameData()
+    public static TestGameData getUpdate7TestData()
     {
         synchronized (TestGameData.class){
-            if (update6GameData == null){
-                String fileName = loadDataConfig().get("u6.docsjson");
+            if (update7GameData == null){
+                String fileName = loadDataConfig().get("u7.docsjson");
 
                 if (fileName == null){
                     return null;
                 }
 
-                try {
-                    update6GameData = loadGameDataFromFile(fileName);
+                try{
+                    update7GameData = loadGameDataFromFile(fileName);
                 }catch (IOException | DataException e){
                     throw new RuntimeException(e);
                 }
             }
 
-            return update6GameData;
+            return update7GameData;
         }
     }
 
@@ -136,7 +119,7 @@ public class TestGameData
     {
         TestGameDataBuilder gameDataBuilder = new TestGameDataBuilder();
 
-        try (InputStream in = new FileInputStream(fileName)) {
+        try (InputStream in = Files.newInputStream(Path.of(fileName))){
             DocsJsonLoader.loadDocsJson(gameDataBuilder, in);
         }
 

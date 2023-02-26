@@ -49,7 +49,7 @@ public class MultiPlanTest
     public void testMissingRecipe()
             throws ProductionPlanInternalException, InterruptedException, ProductionPlanNotFeatisbleException
     {
-        TestGameData gameData = TestGameData.getUpdate5GameData();
+        TestGameData gameData = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gameData == null);
 
@@ -76,7 +76,7 @@ public class MultiPlanTest
     public void testMissingRecipeAndResources()
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
-        TestGameData gameData = TestGameData.getUpdate5GameData();
+        TestGameData gameData = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gameData == null);
 
@@ -90,7 +90,7 @@ public class MultiPlanTest
     public void testMissingResources()
             throws ProductionPlanInternalException, InterruptedException, ProductionPlanNotFeatisbleException
     {
-        TestGameData gameData = TestGameData.getUpdate5GameData();
+        TestGameData gameData = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gameData == null);
 

@@ -38,17 +38,9 @@ public class DocsJsonLoaderTest
     }
 
     @Test
-    public void testUpdate5Data()
+    public void testUpdate7Data()
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
-        Assumptions.assumeFalse(gd == null);
-        checkGameData(gd);
-    }
-
-    @Test
-    public void testUpdate6Data()
-    {
-        TestGameData gd = TestGameData.getUpdate6GameData();
+        TestGameData gd = TestGameData.getUpdate7TestData();
         Assumptions.assumeFalse(gd == null);
         checkGameData(gd);
     }

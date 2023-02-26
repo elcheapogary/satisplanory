@@ -40,7 +40,7 @@ public class ProductionPlannerTest
     public void testBalanceIronPlatesAndRods()
             throws ProductionPlanNotFeatisbleException, InterruptedException, ProductionPlanInternalException
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
@@ -65,7 +65,7 @@ public class ProductionPlannerTest
     public void testBalancePlasticAndFuel()
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
@@ -100,7 +100,7 @@ public class ProductionPlannerTest
     public void testCanProduceMoreThanInput()
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
@@ -125,7 +125,7 @@ public class ProductionPlannerTest
     public void testErrorCase001()
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
@@ -160,7 +160,7 @@ public class ProductionPlannerTest
     @Test
     public void testInfeasiblePlan()
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
@@ -175,7 +175,7 @@ public class ProductionPlannerTest
     public void testMinRecipes()
             throws ProductionPlanNotFeatisbleException, InterruptedException, ProductionPlanInternalException
     {
-        TestGameData gd = TestGameData.getUpdate5GameData();
+        TestGameData gd = TestGameData.getLatestTestData();
 
         Assumptions.assumeFalse(gd == null);
 
