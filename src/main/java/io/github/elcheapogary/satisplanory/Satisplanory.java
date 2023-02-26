@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -21,9 +22,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 public class Satisplanory
 {
@@ -43,7 +45,7 @@ public class Satisplanory
     {
         URI uri;
 
-        try {
+        try{
             uri = new URI("https://api.github.com/repos/elcheapogary/satisplanory/releases");
         }catch (URISyntaxException e){
             throw new IOException("Supposedly something wrong with the URL syntax, bah humbug!", e);
@@ -56,7 +58,7 @@ public class Satisplanory
 
         HttpResponse<String> response;
 
-        try {
+        try{
             response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         }catch (IOException e){
             throw new IOException("Error making HTTP request", e);
@@ -66,10 +68,10 @@ public class Satisplanory
             throw new IOException("Response code: " + response.statusCode());
         }
 
-        try {
-            JSONArray jsonArray = new JSONArray(response.body());
+        try (JsonReader r = Json.createReader(new StringReader(response.body()))){
+            JsonArray jsonArray = r.readArray();
 
-            JSONObject latestRelease = jsonArray.getJSONObject(0);
+            JsonObject latestRelease = jsonArray.getJsonObject(0);
 
             String tag = latestRelease.getString("tag_name");
 
@@ -78,14 +80,14 @@ public class Satisplanory
             }
 
             return tag;
-        }catch (JSONException e){
-            throw new IOException("Error parsing JSON data", e);
+        }catch (RuntimeException e){
+            throw new IOException("Error parsing JSON data: " + e, e);
         }
     }
 
     public static String getVersion()
     {
-        try {
+        try{
             return loadVersionProperties().getProperty("version");
         }catch (IOException e){
             throw new RuntimeException("Error loading version properties", e);
@@ -107,7 +109,7 @@ public class Satisplanory
                 if (in == null){
                     throw new IOException("Missing resource: version.properties");
                 }
-                try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)){
                     tmp.load(r);
                 }
                 versionProperties = tmp;

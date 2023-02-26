@@ -11,17 +11,14 @@
 package io.github.elcheapogary.satisplanory.model.test;
 
 import io.github.elcheapogary.satisplanory.util.CharStreams;
-import java.io.BufferedWriter;
+import io.github.elcheapogary.satisplanory.util.JsonUtils;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import org.json.JSONArray;
-import org.json.JSONTokener;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonReader;
+import javax.json.JsonWriter;
 
 public class DocsFormatter
 {
@@ -31,14 +28,14 @@ public class DocsFormatter
         File inputFile = new File("");
         File outputFile = new File("");
 
-        JSONArray array;
+        JsonArray array;
 
-        try (Reader r = CharStreams.createReader(new FileInputStream(inputFile))) {
-            array = new JSONArray(new JSONTokener(r));
+        try (JsonReader r = Json.createReader(CharStreams.createReader(new FileInputStream(inputFile)))){
+            array = r.readArray();
         }
 
-        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
-            array.write(w, 1, 0);
+        try (JsonWriter w = JsonUtils.createWriter(outputFile)){
+            w.writeArray(array);
         }
     }
 }

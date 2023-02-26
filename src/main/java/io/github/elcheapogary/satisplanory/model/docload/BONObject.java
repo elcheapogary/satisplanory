@@ -13,7 +13,6 @@ package io.github.elcheapogary.satisplanory.model.docload;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import org.json.JSONObject;
 
 class BONObject
 {
@@ -33,7 +32,7 @@ class BONObject
             throw new BracketObjectNotationParseException("Missing element: " + name);
         }
 
-        try {
+        try{
             return Integer.parseInt(s);
         }catch (NumberFormatException e){
             throw new BracketObjectNotationParseException("Invalid integer for key: " + name + ": " + s, e);
@@ -53,10 +52,5 @@ class BONObject
     public int size()
     {
         return map.size();
-    }
-
-    public JSONObject toJson()
-    {
-        return new JSONObject(map);
     }
 }

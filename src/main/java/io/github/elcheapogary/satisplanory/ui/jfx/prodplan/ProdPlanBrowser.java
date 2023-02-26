@@ -18,22 +18,20 @@ import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import io.github.elcheapogary.satisplanory.util.JsonUtils;
 import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.FutureTask;
@@ -65,11 +63,11 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonWriter;
 import org.controlsfx.control.Notifications;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
 public class ProdPlanBrowser
 {
@@ -167,7 +165,7 @@ public class ProdPlanBrowser
         PlanOpener planOpener = (plan, modelConfigurator) -> {
             Tab tab = tabMap.get(plan);
             if (tab == null){
-                try {
+                try{
                     tab = new TaskProgressDialog(appContext)
                             .setTitle("Loading production plan")
                             .setContentText("Loading production plan")
@@ -271,7 +269,7 @@ public class ProdPlanBrowser
             PersistentProductionPlan p = list.getSelectionModel().getSelectedItem();
 
             PersistentProductionPlan n = new PersistentProductionPlan();
-            try {
+            try{
                 n.loadJson(p.toJson());
                 n.setName(n.getName() + " (Copy)");
                 appContext.getPersistentData().getProductionPlans().add(n);
@@ -349,7 +347,7 @@ public class ProdPlanBrowser
         String url = dialog.showAndWait().orElse(null);
 
         if (url != null){
-            try {
+            try{
                 return new TaskProgressDialog(appContext)
                         .setTitle("Importing link")
                         .setContentText("Downloading and importing link")
@@ -365,7 +363,11 @@ public class ProdPlanBrowser
                                 throw new IOException("Response code: " + response.statusCode());
                             }
 
-                            JSONObject json = new JSONObject(response.body());
+                            JsonObject json;
+
+                            try (JsonReader r = Json.createReader(new StringReader(response.body()))){
+                                json = r.readObject();
+                            }
 
                             PersistentProductionPlan plan = new PersistentProductionPlan();
                             plan.loadJson(json);
@@ -395,9 +397,9 @@ public class ProdPlanBrowser
         File f = fc.showSaveDialog(parentWindow);
         if (f != null){
             appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
-            try {
-                try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), StandardCharsets.UTF_8))) {
-                    plan.toJson().write(w, 4, 0);
+            try{
+                try (JsonWriter w = JsonUtils.createWriter(f)){
+                    w.writeObject(plan.toJson());
                 }
                 Notifications.create()
                         .position(Pos.TOP_CENTER)
@@ -416,26 +418,43 @@ public class ProdPlanBrowser
 
     private static void exportToLink(AppContext appContext, PersistentProductionPlan plan)
     {
-        try {
+        try{
             String url = new TaskProgressDialog(appContext)
                     .setTitle("Exporting to link")
                     .setContentText("Busy uploading the production plan to the Internet")
                     .setCancellable(true)
                     .runTask(taskContext -> {
-                        StringWriter sw = new StringWriter();
-                        plan.toJson().write(sw, 4, 0);
 
-                        JSONObject json = new JSONObject();
-                        JSONArray jsonSectionsArray = new JSONArray();
-                        json.put("sections", jsonSectionsArray);
-                        JSONObject jsonSection = new JSONObject();
-                        jsonSectionsArray.put(jsonSection);
-                        jsonSection.put("contents", sw.toString());
+                        String content;
+                        {
+                            StringWriter sw = new StringWriter();
+                            try (JsonWriter w = JsonUtils.createWriter(sw)){
+                                w.writeObject(plan.toJson());
+                            }
+                            content = sw.toString();
+                        }
+
+                        String requestBody;
+                        {
+                            JsonObject json = Json.createObjectBuilder()
+                                    .add("sections", Json.createArrayBuilder(
+                                            Collections.singleton(
+                                                    Json.createObjectBuilder()
+                                                            .add("contents", content)
+                                            )
+                                    ))
+                                    .build();
+                            StringWriter sw = new StringWriter();
+                            try (JsonWriter w = JsonUtils.createWriter(sw)){
+                                w.writeObject(json);
+                            }
+                            requestBody = sw.toString();
+                        }
 
                         HttpRequest request = HttpRequest.newBuilder(new URI("https://api.paste.ee/v1/pastes"))
                                 .header("Content-Type", "application/json")
                                 .header("X-Auth-Token", "uwr65sq3CxBFuAerU5i5IAd0xw0RyPd98CwpodBSb")
-                                .POST(HttpRequest.BodyPublishers.ofString(json.toString(), StandardCharsets.UTF_8))
+                                .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
                                 .build();
 
                         HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -446,9 +465,12 @@ public class ProdPlanBrowser
 
                         String s = response.body();
 
-                        json = new JSONObject(s);
+                        JsonObject json;
+                        try (JsonReader r = Json.createReader(new StringReader(s))){
+                            json = r.readObject();
+                        }
 
-                        if (!json.has("id")){
+                        if (!json.containsKey("id")){
                             throw new IOException("Response does not have id: " + s);
                         }
 
@@ -484,13 +506,13 @@ public class ProdPlanBrowser
         if (f != null){
             appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
 
-            try {
-                try (Reader r = new InputStreamReader(new BufferedInputStream(new FileInputStream(f)), StandardCharsets.UTF_8)) {
+            try{
+                try (JsonReader r = Json.createReader(new InputStreamReader(new BufferedInputStream(new FileInputStream(f)), StandardCharsets.UTF_8))){
                     PersistentProductionPlan plan = new PersistentProductionPlan();
-                    plan.loadJson(new JSONObject(new JSONTokener(r)));
+                    plan.loadJson(r.readObject());
                     return plan;
                 }
-            }catch (IOException | JSONException e){
+            }catch (IOException | RuntimeException e){
                 new ExceptionDialog(appContext)
                         .setTitle("Error importing production plan")
                         .setContextMessage("An error occurred while importing the production plan")

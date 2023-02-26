@@ -14,15 +14,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
 
 class Epic
 {
@@ -41,24 +40,23 @@ class Epic
             return Collections.emptyList();
         }
 
-        JSONObject wholeFile;
-        try {
-            try (Reader r = new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8)) {
-                wholeFile = new JSONObject(new JSONTokener(r));
+        JsonObject wholeFile;
+        try{
+            try (JsonReader r = Json.createReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))){
+                wholeFile = r.readObject();
             }
-        }catch (IOException | JSONException e){
+        }catch (IOException | RuntimeException e){
             e.printStackTrace();
             return Collections.emptyList();
         }
 
-        try {
-            JSONArray installations = wholeFile.getJSONArray("InstallationList");
+        try{
+            JsonArray installations = wholeFile.getJsonArray("InstallationList");
 
             File earlyAccess = null;
             File experimental = null;
 
-            for (int i = 0; i < installations.length(); i++){
-                JSONObject installation = installations.getJSONObject(i);
+            for (JsonObject installation : installations.getValuesAs(JsonObject.class)){
 
 //        Thanks Goz3rr
 //
@@ -79,8 +77,8 @@ class Epic
 //            "AppName": "CrabTest"
 //        },
 
-                if (installation.has("NamespaceId") && installation.getString("NamespaceId").equals("crab")){
-                    if (installation.has("ArtifactId") && installation.has("InstallLocation")){
+                if (installation.containsKey("NamespaceId") && installation.getString("NamespaceId").equals("crab")){
+                    if (installation.containsKey("ArtifactId") && installation.containsKey("InstallLocation")){
                         File installDir = new File(installation.getString("InstallLocation"));
                         if (installation.getString("ArtifactId").equals("CrabEA")){
                             earlyAccess = installDir;
@@ -102,7 +100,7 @@ class Epic
             }
 
             return retv;
-        }catch (JSONException e){
+        }catch (RuntimeException e){
             e.printStackTrace();
             return Collections.emptyList();
         }

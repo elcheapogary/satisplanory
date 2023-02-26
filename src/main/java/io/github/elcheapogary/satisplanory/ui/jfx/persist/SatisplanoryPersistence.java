@@ -13,21 +13,18 @@ package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 import io.github.elcheapogary.satisplanory.Satisplanory;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
+import io.github.elcheapogary.satisplanory.util.JsonUtils;
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import javax.json.Json;
+import javax.json.JsonReader;
+import javax.json.JsonWriter;
 
 public class SatisplanoryPersistence
 {
@@ -86,8 +83,8 @@ public class SatisplanoryPersistence
             return new PersistentData();
         }
 
-        try (Reader r = new InputStreamReader(new BufferedInputStream(new FileInputStream(jsonFile)), StandardCharsets.UTF_8)) {
-            return new PersistentData(new JSONObject(new JSONTokener(r)));
+        try (JsonReader r = Json.createReader(new InputStreamReader(new BufferedInputStream(new FileInputStream(jsonFile)), StandardCharsets.UTF_8))){
+            return new PersistentData(r.readObject());
         }
     }
 
@@ -98,13 +95,13 @@ public class SatisplanoryPersistence
     {
         File jsonFile = getJsonFile();
 
-        try {
+        try{
             Files.createDirectories(jsonFile.getParentFile().toPath());
 
             File tmpFile = new File(jsonFile.getParentFile(), "." + jsonFile.getName() + ".tmp");
-            try {
-                try (Writer w = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(tmpFile)), StandardCharsets.UTF_8)) {
-                    data.toJson().write(w, 4, 0);
+            try{
+                try (JsonWriter w = JsonUtils.createWriter(tmpFile)){
+                    w.writeObject(data.toJson());
                 }
                 Files.move(tmpFile.toPath(), jsonFile.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             }finally{

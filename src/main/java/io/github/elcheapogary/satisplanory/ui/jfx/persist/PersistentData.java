@@ -22,8 +22,10 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 public class PersistentData
 {
@@ -37,22 +39,22 @@ public class PersistentData
         this.productionPlans = FXCollections.observableList(new ArrayList<>());
     }
 
-    public PersistentData(JSONObject json)
+    public PersistentData(JsonObject json)
             throws UnsupportedVersionException
     {
-        if (json.has("v") && Double.parseDouble(json.getString("v")) > 1.3){
+        if (json.containsKey("v") && Double.parseDouble(json.getString("v")) > 1.3){
             throw new UnsupportedVersionException();
         }
-        this.satisfactoryPath.set(json.optString("satisfactoryPath"));
-        this.preferences = Optional.ofNullable(json.optJSONObject("preferences"))
+        this.satisfactoryPath.set(json.getString("satisfactoryPath", null));
+        this.preferences = Optional.ofNullable(json.getJsonObject("preferences"))
                 .map(Preferences::new)
                 .orElseGet(Preferences::new);
         this.productionPlans = FXCollections.observableList(new ArrayList<>());
-        JSONArray jsonProductionPlans = json.optJSONArray("productionPlans");
+        JsonArray jsonProductionPlans = json.getJsonArray("productionPlans");
         if (jsonProductionPlans != null){
-            for (int i = 0; i < jsonProductionPlans.length(); i++){
+            for (JsonObject jsonPlan : jsonProductionPlans.getValuesAs(JsonObject.class)){
                 PersistentProductionPlan plan = new PersistentProductionPlan();
-                plan.loadJson(jsonProductionPlans.getJSONObject(i));
+                plan.loadJson(jsonPlan);
                 productionPlans.add(plan);
             }
         }
@@ -83,22 +85,18 @@ public class PersistentData
         return satisfactoryPath;
     }
 
-    JSONObject toJson()
+    JsonObject toJson()
     {
-        JSONObject json = new JSONObject();
-
-        json.put("v", "1.3");
-
-        json.put("satisfactoryPath", satisfactoryPath.get());
-        json.put("preferences", preferences.toJson());
-
-        json.put("productionPlans", new JSONArray(
-                productionPlans.stream()
-                        .map(PersistentProductionPlan::toJson)
-                        .collect(Collectors.toList())
-        ));
-
-        return json;
+        return Json.createObjectBuilder()
+                .add("v", "1.3")
+                .add("satisfactoryPath", satisfactoryPath.get())
+                .add("preferences", preferences.toJson())
+                .add("productionPlans", Json.createArrayBuilder(
+                        productionPlans.stream()
+                                .map(PersistentProductionPlan::toJson)
+                                .collect(Collectors.toList())
+                ))
+                .build();
     }
 
     public static class Preferences
@@ -111,13 +109,13 @@ public class PersistentData
             this.uiPreferences = new UIPreferences();
         }
 
-        public Preferences(JSONObject json)
+        public Preferences(JsonObject json)
         {
-            this.uiPreferences = Optional.ofNullable(json.optJSONObject("ui"))
+            this.uiPreferences = Optional.ofNullable(json.getJsonObject("ui"))
                     .map(UIPreferences::new)
                     .orElseGet(UIPreferences::new);
 
-            if (json.has("lastImportExportDirectory")){
+            if (json.containsKey("lastImportExportDirectory")){
                 lastImportExportDirectory.set(new File(json.getString("lastImportExportDirectory")));
             }
         }
@@ -142,14 +140,14 @@ public class PersistentData
             return lastImportExportDirectory;
         }
 
-        JSONObject toJson()
+        JsonObject toJson()
         {
-            JSONObject json = new JSONObject();
-            json.put("ui", uiPreferences.toJson());
+            JsonObjectBuilder b = Json.createObjectBuilder();
+            b = b.add("ui", uiPreferences.toJson());
             if (lastImportExportDirectory.getValue() != null){
-                json.put("lastImportExportDirectory", lastImportExportDirectory.getValue().getAbsolutePath());
+                b = b.add("lastImportExportDirectory", lastImportExportDirectory.getValue().getAbsolutePath());
             }
-            return json;
+            return b.build();
         }
 
         public static class UIPreferences
@@ -160,9 +158,9 @@ public class PersistentData
             {
             }
 
-            public UIPreferences(JSONObject jsonObject)
+            public UIPreferences(JsonObject jsonObject)
             {
-                darkModeEnabled.set(jsonObject.optBoolean("darkModeEnabled", false));
+                darkModeEnabled.set(jsonObject.getBoolean("darkModeEnabled", false));
             }
 
             public BooleanProperty darkModeEnabledProperty()
@@ -180,11 +178,11 @@ public class PersistentData
                 this.darkModeEnabled.set(darkModeEnabled);
             }
 
-            JSONObject toJson()
+            JsonObject toJson()
             {
-                JSONObject json = new JSONObject();
-                json.put("darkModeEnabled", darkModeEnabled.get());
-                return json;
+                return Json.createObjectBuilder()
+                        .add("darkModeEnabled", darkModeEnabled.get())
+                        .build();
             }
         }
     }

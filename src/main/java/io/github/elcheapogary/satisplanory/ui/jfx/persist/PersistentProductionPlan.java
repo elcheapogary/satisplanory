@@ -18,9 +18,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 
 public class PersistentProductionPlan
 {
@@ -57,43 +61,42 @@ public class PersistentProductionPlan
         this.plan = plan;
     }
 
-    public void loadJson(JSONObject json)
+    public void loadJson(JsonObject json)
             throws UnsupportedVersionException
     {
-        if (!json.has("v")){
+        if (!json.containsKey("v")){
             throw new UnsupportedVersionException();
         }
         String version = json.getString("v");
         if (version.equals("1.0")){
-            this.input.loadJson_1_0(json.getJSONObject("input"));
+            this.input.loadJson_1_0(json.getJsonObject("input"));
         }else if (version.equals("2.0")){
-            this.input.loadJson_2_0(json.getJSONObject("input"));
+            this.input.loadJson_2_0(json.getJsonObject("input"));
         }else if (version.equals("3.0")){
-            this.input.loadJson_3_0(json.getJSONObject("input"));
+            this.input.loadJson_3_0(json.getJsonObject("input"));
         }else{
             throw new UnsupportedVersionException();
         }
-        if (json.has("name")){
+        if (json.containsKey("name")){
             this.name = json.getString("name");
         }
-        if (json.has("plan")){
-            this.plan = new Plan(json.getJSONObject("plan"));
+        if (json.containsKey("plan")){
+            this.plan = new Plan(json.getJsonObject("plan"));
         }
     }
 
-    public JSONObject toJson()
+    public JsonObject toJson()
     {
-        JSONObject json = new JSONObject();
-
-        json.put("v", "3.0");
-        json.put("input", input.toJson());
-        json.put("name", name);
+        JsonObjectBuilder b = Json.createObjectBuilder()
+                .add("v", "3.0")
+                .add("input", input.toJson())
+                .add("name", name);
 
         if (plan != null){
-            json.put("plan", plan.toJson());
+            b = b.add("plan", plan.toJson());
         }
 
-        return json;
+        return b.build();
     }
 
     public static class Input
@@ -108,7 +111,7 @@ public class PersistentProductionPlan
         {
         }
 
-        private static <V> Map<String, V> toMap(JSONObject json, BiFunction<? super JSONObject, String, V> extractor)
+        private static <V> Map<String, V> toMap(JsonObject json, BiFunction<? super JsonObject, String, V> extractor)
         {
             Map<String, V> map = new TreeMap<>();
             for (String key : json.keySet()){
@@ -117,9 +120,9 @@ public class PersistentProductionPlan
             return map;
         }
 
-        private static Map<String, String> toMapFromDecimal(JSONObject json)
+        private static Map<String, String> toMapFromDecimal(JsonObject json)
         {
-            return toMap(json, (jsonObject, s) -> jsonObject.getBigDecimal(s).toString());
+            return toMap(json, JsonObject::getString);
         }
 
         public Map<String, String> getInputItems()
@@ -147,71 +150,85 @@ public class PersistentProductionPlan
             return settings;
         }
 
-        public void loadJson_1_0(JSONObject json)
+        public void loadJson_1_0(JsonObject json)
         {
-            this.settings.loadJson_1_0(json.getJSONObject("settings"));
-            this.recipes.loadJson(json.getJSONObject("recipes"));
+            this.settings.loadJson_1_0(json.getJsonObject("settings"));
+            this.recipes.loadJson(json.getJsonObject("recipes"));
 
-            if (json.has("inputItems")){
-                this.inputItems.putAll(toMapFromDecimal(json.getJSONObject("inputItems")));
+            if (json.containsKey("inputItems")){
+                this.inputItems.putAll(toMapFromDecimal(json.getJsonObject("inputItems")));
             }
 
-            if (json.has("outputItemsPerMinute")){
-                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJSONObject("outputItemsPerMinute")));
+            if (json.containsKey("outputItemsPerMinute")){
+                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJsonObject("outputItemsPerMinute")));
             }
 
-            if (json.has("maximizedOutputItems")){
-                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJSONObject("maximizedOutputItems")));
+            if (json.containsKey("maximizedOutputItems")){
+                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJsonObject("maximizedOutputItems")));
             }
         }
 
-        public void loadJson_2_0(JSONObject json)
+        public void loadJson_2_0(JsonObject json)
         {
-            this.settings.loadJson_2_0(json.getJSONObject("settings"));
-            this.recipes.loadJson(json.getJSONObject("recipes"));
+            this.settings.loadJson_2_0(json.getJsonObject("settings"));
+            this.recipes.loadJson(json.getJsonObject("recipes"));
 
-            if (json.has("inputItems")){
-                this.inputItems.putAll(toMapFromDecimal(json.getJSONObject("inputItems")));
+            if (json.containsKey("inputItems")){
+                this.inputItems.putAll(toMapFromDecimal(json.getJsonObject("inputItems")));
             }
 
-            if (json.has("outputItemsPerMinute")){
-                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJSONObject("outputItemsPerMinute")));
+            if (json.containsKey("outputItemsPerMinute")){
+                this.outputItemsPerMinute.putAll(toMapFromDecimal(json.getJsonObject("outputItemsPerMinute")));
             }
 
-            if (json.has("maximizedOutputItems")){
-                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJSONObject("maximizedOutputItems")));
+            if (json.containsKey("maximizedOutputItems")){
+                this.maximizedOutputItems.putAll(toMapFromDecimal(json.getJsonObject("maximizedOutputItems")));
             }
         }
 
-        public void loadJson_3_0(JSONObject json)
+        public void loadJson_3_0(JsonObject json)
         {
-            this.settings.loadJson_2_0(json.getJSONObject("settings"));
-            this.recipes.loadJson(json.getJSONObject("recipes"));
+            this.settings.loadJson_2_0(json.getJsonObject("settings"));
+            this.recipes.loadJson(json.getJsonObject("recipes"));
 
-            if (json.has("inputItems")){
-                this.inputItems.putAll(toMap(json.getJSONObject("inputItems"), JSONObject::getString));
+            if (json.containsKey("inputItems")){
+                this.inputItems.putAll(toMap(json.getJsonObject("inputItems"), JsonObject::getString));
             }
 
-            if (json.has("outputItemsPerMinute")){
-                this.outputItemsPerMinute.putAll(toMap(json.getJSONObject("outputItemsPerMinute"), JSONObject::getString));
+            if (json.containsKey("outputItemsPerMinute")){
+                this.outputItemsPerMinute.putAll(toMap(json.getJsonObject("outputItemsPerMinute"), JsonObject::getString));
             }
 
-            if (json.has("maximizedOutputItems")){
-                this.maximizedOutputItems.putAll(toMap(json.getJSONObject("maximizedOutputItems"), JSONObject::getString));
+            if (json.containsKey("maximizedOutputItems")){
+                this.maximizedOutputItems.putAll(toMap(json.getJsonObject("maximizedOutputItems"), JsonObject::getString));
             }
         }
 
-        JSONObject toJson()
+        JsonObject toJson()
         {
-            JSONObject json = new JSONObject();
+            return Json.createObjectBuilder()
+                    .add("settings", settings.toJson())
+                    .add("recipes", recipes.toJson())
+                    .add("inputItems", stringMapToJsonObject(inputItems))
+                    .add("outputItemsPerMinute", stringMapToJsonObject(outputItemsPerMinute))
+                    .add("maximizedOutputItems", stringMapToJsonObject(maximizedOutputItems))
+                    .build();
+        }
 
-            json.put("settings", settings.toJson());
-            json.put("recipes", recipes.toJson());
-            json.put("inputItems", inputItems);
-            json.put("outputItemsPerMinute", outputItemsPerMinute);
-            json.put("maximizedOutputItems", maximizedOutputItems);
+        private static JsonObject stringMapToJsonObject(Map<String, String> map)
+        {
+            return mapToJsonObject(map, (jsonObjectBuilder, stringStringEntry) -> jsonObjectBuilder.add(stringStringEntry.getKey(), stringStringEntry.getValue()));
+        }
 
-            return json;
+        private static <V> JsonObject mapToJsonObject(Map<String, V> map, BiFunction<? super JsonObjectBuilder, Map.Entry<String, V>, ? extends JsonObjectBuilder> setter)
+        {
+            JsonObjectBuilder b = Json.createObjectBuilder();
+
+            for (var e : map.entrySet()){
+                b = setter.apply(b, e);
+            }
+
+            return b.build();
         }
 
         public static class RecipeSet
@@ -227,24 +244,22 @@ public class PersistentProductionPlan
                 return recipeNames;
             }
 
-            public void loadJson(JSONObject json)
+            public void loadJson(JsonObject json)
             {
-                if (json.has("recipeNames")){
-                    JSONArray jsonArray = json.getJSONArray("recipeNames");
+                if (json.containsKey("recipeNames")){
+                    JsonArray jsonArray = json.getJsonArray("recipeNames");
 
-                    for (int i = 0; i < jsonArray.length(); i++){
+                    for (int i = 0; i < jsonArray.size(); i++){
                         recipeNames.add(jsonArray.getString(i));
                     }
                 }
             }
 
-            public JSONObject toJson()
+            public JsonObject toJson()
             {
-                JSONObject json = new JSONObject();
-
-                json.put("recipeNames", new JSONArray(recipeNames));
-
-                return json;
+                return Json.createObjectBuilder()
+                        .add("recipeNames", Json.createArrayBuilder(recipeNames))
+                        .build();
             }
         }
 
@@ -261,9 +276,9 @@ public class PersistentProductionPlan
                 return optimizationTargets;
             }
 
-            public void loadJson_1_0(JSONObject json)
+            public void loadJson_1_0(JsonObject json)
             {
-                if (json.has("optimizationTarget")){
+                if (json.containsKey("optimizationTarget")){
                     switch (json.getString("optimizationTarget")){
                         case "":{
                             break;
@@ -272,23 +287,21 @@ public class PersistentProductionPlan
                 }
             }
 
-            public void loadJson_2_0(JSONObject json)
+            public void loadJson_2_0(JsonObject json)
             {
-                if (json.has("optimizationTargets")){
-                    JSONArray array = json.getJSONArray("optimizationTargets");
-                    for (int i = 0; i < array.length(); i++){
-                        optimizationTargets.add(array.getString(i));
+                if (json.containsKey("optimizationTargets")){
+                    JsonArray array = json.getJsonArray("optimizationTargets");
+                    for (JsonString s : array.getValuesAs(JsonString.class)){
+                        optimizationTargets.add(s.getString());
                     }
                 }
             }
 
-            JSONObject toJson()
+            JsonObject toJson()
             {
-                JSONObject json = new JSONObject();
-
-                json.put("optimizationTargets", optimizationTargets);
-
-                return json;
+                return Json.createObjectBuilder()
+                        .add("optimizationTargets", Json.createArrayBuilder(optimizationTargets).build())
+                        .build();
             }
         }
     }
@@ -303,20 +316,20 @@ public class PersistentProductionPlan
         {
         }
 
-        public Plan(JSONObject json)
+        public Plan(JsonObject json)
         {
-            if (json.has("inputItems")){
-                inputItems.putAll(toBigFractionMap(json.getJSONObject("inputItems")));
+            if (json.containsKey("inputItems")){
+                inputItems.putAll(toBigFractionMap(json.getJsonObject("inputItems")));
             }
-            if (json.has("outputItems")){
-                outputItems.putAll(toBigFractionMap(json.getJSONObject("outputItems")));
+            if (json.containsKey("outputItems")){
+                outputItems.putAll(toBigFractionMap(json.getJsonObject("outputItems")));
             }
-            if (json.has("recipes")){
-                recipes.putAll(toBigFractionMap(json.getJSONObject("recipes")));
+            if (json.containsKey("recipes")){
+                recipes.putAll(toBigFractionMap(json.getJsonObject("recipes")));
             }
         }
 
-        private static Map<String, BigFraction> toBigFractionMap(JSONObject object)
+        private static Map<String, BigFraction> toBigFractionMap(JsonObject object)
         {
             Map<String, BigFraction> map = new TreeMap<>();
 
@@ -350,26 +363,24 @@ public class PersistentProductionPlan
             return recipes;
         }
 
-        JSONObject toJson()
+        JsonObject toJson()
         {
-            JSONObject json = new JSONObject();
-
-            json.put("inputItems", toJson(inputItems));
-            json.put("outputItems", toJson(outputItems));
-            json.put("recipes", toJson(recipes));
-
-            return json;
+            return Json.createObjectBuilder()
+                    .add("inputItems", toJson(inputItems))
+                    .add("outputItems", toJson(outputItems))
+                    .add("recipes", toJson(recipes))
+                    .build();
         }
 
-        private JSONObject toJson(Map<String, BigFraction> map)
+        private JsonObject toJson(Map<String, BigFraction> map)
         {
-            JSONObject json = new JSONObject();
+            JsonObjectBuilder b = Json.createObjectBuilder();
 
             for (var entry : map.entrySet()){
-                json.put(entry.getKey(), entry.getValue().toString());
+                b = b.add(entry.getKey(), entry.getValue().toString());
             }
 
-            return json;
+            return b.build();
         }
     }
 }

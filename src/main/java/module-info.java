@@ -20,7 +20,6 @@ open module io.github.elcheapogary.satisplanory
     requires jdk.xml.dom;
     requires org.apache.commons.io;
     requires org.controlsfx.controls;
-    requires org.json;
 
     exports io.github.elcheapogary.satisplanory.ui.jfx.app;
 }
