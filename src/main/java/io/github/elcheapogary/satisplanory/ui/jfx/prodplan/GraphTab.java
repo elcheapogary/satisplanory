@@ -28,6 +28,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import io.github.elcheapogary.satisplanory.util.FileNameUtils;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -276,7 +278,7 @@ class GraphTab
         layoutGraph.nodes.add(node);
     }
 
-    private static void configureGraphContextMenu(AppContext appContext, ScrollPane scrollPane, Pane graphPane, Graph<ProdPlanNodeData, ProdPlanEdgeData> graph)
+    private static void configureGraphContextMenu(AppContext appContext, ScrollPane scrollPane, Pane graphPane, Graph<ProdPlanNodeData, ProdPlanEdgeData> graph, Supplier<String> planNameSupplier)
     {
         ContextMenu contextMenu = new ContextMenu();
         contextMenu.setAutoHide(true);
@@ -305,7 +307,7 @@ class GraphTab
                     fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
                 }
                 fc.setTitle("Select output file");
-                fc.setInitialFileName("graph.png");
+                fc.setInitialFileName(FileNameUtils.removeUnsafeFilenameCharacters(planNameSupplier.get()) + ".png");
                 fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
                 File f = fc.showSaveDialog(graphPane.getScene().getWindow());
                 if (f != null){
@@ -346,7 +348,7 @@ class GraphTab
                     fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
                 }
                 fc.setTitle("Select output file");
-                fc.setInitialFileName("graph.graphml");
+                fc.setInitialFileName(FileNameUtils.removeUnsafeFilenameCharacters(planNameSupplier.get()) + ".graphml");
                 fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("GraphML Files", "*.graphml"));
                 File f = fc.showSaveDialog(graphPane.getScene().getWindow());
                 if (f != null){
@@ -466,9 +468,9 @@ class GraphTab
         tab.setClosable(false);
         tab.setText("Graph");
 
-        setContent(tab, appContext, model.getPlan());
+        setContent(tab, appContext, model);
 
-        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, appContext, newValue));
+        model.planProperty().addListener((observable, oldValue, newValue) -> setContent(tab, appContext, model));
 
         tab.disableProperty().bind(Bindings.createBooleanBinding(() -> model.planProperty().getValue() == null, model.planProperty()));
 
@@ -526,7 +528,7 @@ class GraphTab
         return l;
     }
 
-    private static Region createGraphPane(AppContext appContext, ProductionPlan plan)
+    private static Region createGraphPane(AppContext appContext, ProductionPlan plan, Supplier<String> planNameSupplier)
     {
         BorderPane bp = new BorderPane();
         ObjectProperty<Node<ProdPlanNodeData, ProdPlanEdgeData>> selectedNodeProperty = new SimpleObjectProperty<>();
@@ -554,7 +556,7 @@ class GraphTab
             }
         });
 
-        configureGraphContextMenu(appContext, sp, pane, graph);
+        configureGraphContextMenu(appContext, sp, pane, graph, planNameSupplier);
 
         return bp;
     }
@@ -919,12 +921,12 @@ class GraphTab
         }
     }
 
-    private static void setContent(Tab tab, AppContext appContext, ProductionPlan plan)
+    private static void setContent(Tab tab, AppContext appContext, ProdPlanModel model)
     {
-        if (plan == null){
+        if (model.getPlan() == null){
             tab.setContent(new Pane());
         }else{
-            tab.setContent(createGraphPane(appContext, plan));
+            tab.setContent(createGraphPane(appContext, model.getPlan(), model::getName));
         }
     }
 
