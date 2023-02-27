@@ -397,8 +397,13 @@ class GraphTab
     {
         final DragInfo dragInfo = new DragInfo();
 
+        region.onMouseClickedProperty().set(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.isStillSincePress()){
+                selectedNodeProperty.set(node);
+                event.consume();
+            }
+        });
         region.onMousePressedProperty().set(event -> {
-            selectedNodeProperty.set(node);
             dragInfo.startSceneX = event.getSceneX();
             dragInfo.startSceneY = event.getSceneY();
             dragInfo.dragged = false;
@@ -514,8 +519,11 @@ class GraphTab
         sp.setPannable(true);
         bp.setCenter(sp);
 
-        sp.onMousePressedProperty().set(event -> {
-            selectedNodeProperty.set(null);
+        sp.onMouseClickedProperty().set(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.isStillSincePress()){
+                selectedNodeProperty.set(null);
+                event.consume();
+            }
         });
 
         configureGraphContextMenu(appContext, sp, pane, graph);
