@@ -535,11 +535,12 @@ public class ProdPlanBrowser
                 new ExceptionDialog(appContext)
                         .setTitle("Requires newer version of Satisplanory")
                         .setContextMessage("Unsupported production plan format, please upgrade Satisplanory")
-                        .setDetailsMessage("The production plan you are trying to import was created with a newer version of Satisplanory.\n"
-                                + "\n"
-                                + "This version of Satisplanory does not support the newer file format.\n"
-                                + "\n"
-                                + "Please upgrade Satisplanory to allow importing this plan. See Help -> About for links.")
+                        .setDetailsMessage("""
+                                The production plan you are trying to import was created with a newer version of Satisplanory.
+
+                                This version of Satisplanory does not support the newer file format.
+
+                                Please upgrade Satisplanory to allow importing this plan. See Help -> About for links.""")
                         .setException(e)
                         .showAndWait();
             }
