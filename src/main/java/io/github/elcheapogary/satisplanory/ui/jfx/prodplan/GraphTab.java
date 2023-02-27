@@ -404,17 +404,21 @@ class GraphTab
             }
         });
         region.onMousePressedProperty().set(event -> {
-            dragInfo.startSceneX = event.getSceneX();
-            dragInfo.startSceneY = event.getSceneY();
-            dragInfo.dragged = false;
-            event.consume();
+            if (event.getButton() == MouseButton.PRIMARY){
+                dragInfo.startSceneX = event.getSceneX();
+                dragInfo.startSceneY = event.getSceneY();
+                dragInfo.dragged = false;
+                event.consume();
+            }
         });
         region.onMouseDraggedProperty().set(event -> {
-            dragInfo.dragged = true;
-            paneState.hadAnyDragging = true;
-            region.translateXProperty().set((event.getSceneX() - dragInfo.startSceneX) / parent.getScaleX());
-            region.translateYProperty().set((event.getSceneY() - dragInfo.startSceneY) / parent.getScaleY());
-            event.consume();
+            if (event.getButton() == MouseButton.PRIMARY && !event.isStillSincePress()){
+                dragInfo.dragged = true;
+                paneState.hadAnyDragging = true;
+                region.translateXProperty().set((event.getSceneX() - dragInfo.startSceneX) / parent.getScaleX());
+                region.translateYProperty().set((event.getSceneY() - dragInfo.startSceneY) / parent.getScaleY());
+                event.consume();
+            }
         });
         region.onMouseDragReleasedProperty().set(event -> {
             region.layoutXProperty().set(region.layoutXProperty().doubleValue() + region.translateXProperty().doubleValue());
