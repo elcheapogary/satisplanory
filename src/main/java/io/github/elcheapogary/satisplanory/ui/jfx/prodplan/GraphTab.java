@@ -393,7 +393,7 @@ class GraphTab
         contextMenuParent.addEventFilter(MouseEvent.MOUSE_CLICKED, hideContextMenuEventFilter);
     }
 
-    private static <N, E> void configureNodeComponentMouseEvents(Node<N, E> node, Region region, Pane parent, ObjectProperty<? super Node<N, E>> selectedNodeProperty, PaneState paneState)
+    private static <N, E> void configureNodeComponentMouseEvents(Node<N, E> node, Region region, Pane parent, ObjectProperty<? super Node<N, E>> selectedNodeProperty, PaneState paneState, Collection<? extends Region> allNodes)
     {
         final DragInfo dragInfo = new DragInfo();
 
@@ -417,23 +417,47 @@ class GraphTab
                 paneState.hadAnyDragging = true;
                 region.translateXProperty().set((event.getSceneX() - dragInfo.startSceneX) / parent.getScaleX());
                 region.translateYProperty().set((event.getSceneY() - dragInfo.startSceneY) / parent.getScaleY());
-                event.consume();
             }
+            event.consume();
         });
         region.onMouseDragReleasedProperty().set(event -> {
-            region.layoutXProperty().set(region.layoutXProperty().doubleValue() + region.translateXProperty().doubleValue());
-            region.layoutYProperty().set(region.layoutYProperty().doubleValue() + region.translateYProperty().doubleValue());
-            region.translateXProperty().set(0);
-            region.translateYProperty().set(0);
+            updateNodeLayoutPosition(region, allNodes);
+            event.consume();
         });
         region.onMouseReleasedProperty().set(event -> {
             if (dragInfo.dragged){
-                region.layoutXProperty().set(region.layoutXProperty().doubleValue() + region.translateXProperty().doubleValue());
-                region.layoutYProperty().set(region.layoutYProperty().doubleValue() + region.translateYProperty().doubleValue());
-                region.translateXProperty().set(0);
-                region.translateYProperty().set(0);
+                updateNodeLayoutPosition(region, allNodes);
             }
+            event.consume();
         });
+    }
+
+    private static void updateNodeLayoutPosition(Region region, Collection<? extends Region> allNodes)
+    {
+        double x = region.layoutXProperty().doubleValue() + region.translateXProperty().doubleValue();
+        double y = region.layoutYProperty().doubleValue() + region.translateYProperty().doubleValue();
+
+        double xAdjust = 20 - x;
+        double yAdjust = 20 - y;
+
+        for (Region other : allNodes){
+            if (other != region){
+                xAdjust = Math.max(xAdjust, 20 - other.layoutXProperty().get());
+                yAdjust = Math.max(yAdjust, 20 - other.layoutYProperty().get());
+            }
+        }
+
+        region.layoutXProperty().set(x + xAdjust);
+        region.layoutYProperty().set(y + yAdjust);
+        region.translateXProperty().set(0);
+        region.translateYProperty().set(0);
+
+        for (Region other : allNodes){
+            if (other != region){
+                other.layoutXProperty().set(other.layoutXProperty().get() + xAdjust);
+                other.layoutYProperty().set(other.layoutYProperty().get() + yAdjust);
+            }
+        }
     }
 
     public static Tab create(AppContext appContext, ProdPlanModel model)
@@ -548,7 +572,9 @@ class GraphTab
             {
                 super.layoutChildren();
                 if (!paneState.hadAnyDragging){
-                    Platform.runLater(() -> doGraphLayout(getWidth(), getHeight(), nodeComponentMap));
+                    double w = getWidth() - (getInsets().getLeft() + getInsets().getRight());
+                    double h = getHeight() - (getInsets().getTop() + getInsets().getBottom());
+                    Platform.runLater(() -> doGraphLayout(w, h, nodeComponentMap));
                 }
             }
         };
@@ -557,8 +583,13 @@ class GraphTab
 
         for (Node<N, E> n : graph.getNodes()){
             Region component = nodeComponentFactory.apply(n.getData(), Bindings.createBooleanBinding(() -> selectedNodeProperty.getValue() == n, selectedNodeProperty));
-            configureNodeComponentMouseEvents(n, component, pane, selectedNodeProperty, paneState);
             nodeComponentMap.put(n, component);
+        }
+
+        for (var entry : nodeComponentMap.entrySet()){
+            var n = entry.getKey();
+            Region component = entry.getValue();
+            configureNodeComponentMouseEvents(n, component, pane, selectedNodeProperty, paneState, nodeComponentMap.values());
         }
 
         for (Node<N, E> n : graph.getNodes()){
