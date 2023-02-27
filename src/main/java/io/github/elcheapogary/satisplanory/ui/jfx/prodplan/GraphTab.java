@@ -320,7 +320,7 @@ class GraphTab
                             .setTitle("Saving image")
                             .setContentText("Saving image")
                             .runTask(taskContext -> {
-                                try {
+                                try{
                                     ImageIO.write(SwingFXUtils.fromFXImage(img, null), "PNG", f);
                                 }catch (IOException e){
                                     Platform.runLater(() -> new ExceptionDialog(appContext)
@@ -356,8 +356,8 @@ class GraphTab
                             .setTitle("Exporting GraphML")
                             .setContentText("Exporting GraphML")
                             .runTask(taskContext -> {
-                                try {
-                                    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f))) {
+                                try{
+                                    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(f))){
                                         ProdPlanGraphML.export(out, graph);
                                     }
                                 }catch (IOException | RuntimeException e){
@@ -513,6 +513,10 @@ class GraphTab
         ScrollPane sp = ZoomableScrollPane.create(pane, 0.1, 5.0);
         sp.setPannable(true);
         bp.setCenter(sp);
+
+        sp.onMousePressedProperty().set(event -> {
+            selectedNodeProperty.set(null);
+        });
 
         configureGraphContextMenu(appContext, sp, pane, graph);
 
