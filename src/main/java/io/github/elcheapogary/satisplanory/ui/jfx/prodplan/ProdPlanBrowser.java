@@ -281,19 +281,31 @@ public class ProdPlanBrowser
         duplicateButton.onActionProperty().set(event -> {
             PersistentProductionPlan p = list.getSelectionModel().getSelectedItem();
 
-            PersistentProductionPlan n = new PersistentProductionPlan();
-            try{
-                n.loadJson(p.toJson());
-                n.setName(n.getName() + " (Copy)");
-                appContext.getPersistentData().getProductionPlans().add(n);
-                planOpener.openPlan(n);
-            }catch (UnsupportedVersionException e){
-                new ExceptionDialog(appContext)
-                        .setTitle("Error duplicating plan")
-                        .setContextMessage("This should never happen")
-                        .setException(e)
-                        .showAndWait();
-            }
+            TextInputDialog dlg = new TextInputDialog();
+            dlg.getEditor().setText(p.getName() + " (Copy)");
+            dlg.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+            dlg.setHeaderText("Please provide a name for the new factory");
+            dlg.setTitle("New factory name");
+            dlg.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ev -> {
+                if (dlg.getEditor().getText().isBlank()){
+                    ev.consume();
+                }
+            });
+            dlg.showAndWait().ifPresent(name -> {
+                PersistentProductionPlan n = new PersistentProductionPlan();
+                try{
+                    n.loadJson(p.toJson());
+                    n.setName(name);
+                    appContext.getPersistentData().getProductionPlans().add(n);
+                    planOpener.openPlan(n);
+                }catch (UnsupportedVersionException e){
+                    new ExceptionDialog(appContext)
+                            .setTitle("Error duplicating plan")
+                            .setContextMessage("This should never happen")
+                            .setException(e)
+                            .showAndWait();
+                }
+            });
         });
 
         HBox importExportButtons = new HBox(10);
