@@ -40,6 +40,7 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -204,13 +205,25 @@ public class ProdPlanBrowser
         };
 
         newPlanButton.onActionProperty().set(event -> {
-            PersistentProductionPlan plan = new PersistentProductionPlan();
-            appContext.getPersistentData().getProductionPlans().add(plan);
-            planOpener.openPlan(plan, model -> {
-                for (Recipe recipe : gameData.getRecipes()){
-                    model.getEnabledRecipes().add(recipe);
+            TextInputDialog dlg = new TextInputDialog();
+            dlg.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+            dlg.setHeaderText("Please provide a name for the new factory");
+            dlg.setTitle("New factory name");
+            dlg.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ev -> {
+                if (dlg.getEditor().getText().isBlank()){
+                    ev.consume();
                 }
-                model.getSettings().getOptimizationTargets().addAll(OptimizationTargetModel.MAXIMIZE_OUTPUT_ITEMS, OptimizationTargetModel.MINIMIZE_RESOURCE_SCARCITY);
+            });
+            dlg.showAndWait().ifPresent(name -> {
+                PersistentProductionPlan plan = new PersistentProductionPlan();
+                plan.setName(name.trim());
+                appContext.getPersistentData().getProductionPlans().add(plan);
+                planOpener.openPlan(plan, model -> {
+                    for (Recipe recipe : gameData.getRecipes()){
+                        model.getEnabledRecipes().add(recipe);
+                    }
+                    model.getSettings().getOptimizationTargets().addAll(OptimizationTargetModel.MAXIMIZE_OUTPUT_ITEMS, OptimizationTargetModel.MINIMIZE_RESOURCE_SCARCITY);
+                });
             });
         });
 
