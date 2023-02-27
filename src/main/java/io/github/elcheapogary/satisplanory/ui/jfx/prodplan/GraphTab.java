@@ -540,30 +540,6 @@ class GraphTab
         final Pane pane = new Pane()
         {
             @Override
-            protected double computeMinHeight(double width)
-            {
-                return super.computeMinHeight(width) + 40.0;
-            }
-
-            @Override
-            protected double computeMinWidth(double height)
-            {
-                return super.computeMinWidth(height) + 40.0;
-            }
-
-            @Override
-            protected double computePrefHeight(double width)
-            {
-                return super.computePrefHeight(width) + 40.0;
-            }
-
-            @Override
-            protected double computePrefWidth(double height)
-            {
-                return super.computePrefWidth(height) + 40.0;
-            }
-
-            @Override
             protected void layoutChildren()
             {
                 super.layoutChildren();
@@ -572,6 +548,8 @@ class GraphTab
                 }
             }
         };
+
+        pane.setPadding(new javafx.geometry.Insets(20));
 
         for (Node<N, E> n : graph.getNodes()){
             Region component = nodeComponentFactory.apply(n.getData(), Bindings.createBooleanBinding(() -> selectedNodeProperty.getValue() == n, selectedNodeProperty));
@@ -831,7 +809,6 @@ class GraphTab
         Map<Node<N, E>, org.eclipse.draw2d.graph.Node> layoutNodeMap = new HashMap<>();
 
         final DirectedGraph layoutGraph = new DirectedGraph();
-        layoutGraph.setMargin(new Insets(20));
         layoutGraph.setDefaultPadding(new Insets(50));
         layoutGraph.setDirection(PositionConstants.SOUTH);
 
