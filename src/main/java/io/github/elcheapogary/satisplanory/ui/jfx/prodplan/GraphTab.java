@@ -528,16 +528,42 @@ class GraphTab
         return l;
     }
 
+    private static TitledPane createEmptyRightPane()
+    {
+        TitledPane p = createRightTitledPane();
+        p.setText("No item selected");
+        p.setPrefWidth(250);
+
+        VBox vbox = new VBox(10);
+        p.setContent(vbox);
+
+        for (String s : new String[]{
+                "Click on one the items in the graph to the left for more details.",
+                "You can drag nodes to re-organize them, zoom with the scroll sheel etc."
+        }){
+            Label l = new Label(s);
+            l.setWrapText(true);
+            vbox.getChildren().add(l);
+        }
+
+        return p;
+    }
+
     private static Region createGraphPane(AppContext appContext, ProductionPlan plan, Supplier<String> planNameSupplier)
     {
         BorderPane bp = new BorderPane();
         ObjectProperty<Node<ProdPlanNodeData, ProdPlanEdgeData>> selectedNodeProperty = new SimpleObjectProperty<>();
 
+        BorderPane rightContainer = new BorderPane();
+        rightContainer.setMinWidth(250);
+        bp.setRight(rightContainer);
+        rightContainer.setCenter(createEmptyRightPane());
+
         selectedNodeProperty.addListener((observable, oldValue, newValue) -> {
             if (newValue == null){
-                bp.setRight(null);
+                rightContainer.setCenter(createEmptyRightPane());
             }else{
-                bp.setRight(createNodeDetailPane(newValue.getData()));
+                rightContainer.setCenter(createNodeDetailPane(newValue.getData()));
             }
         });
 
@@ -619,11 +645,7 @@ class GraphTab
 
         vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
 
-        TitledPane titledPane = new TitledPane();
-        titledPane.setCollapsible(false);
-        titledPane.setAlignment(Pos.CENTER);
-        titledPane.setMaxHeight(Double.MAX_VALUE);
-        titledPane.getStyleClass().add("stpnr-tenbold");
+        TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Input: " + nodeData.getItem().getName());
         titledPane.setContent(vbox);
         return titledPane;
@@ -711,11 +733,7 @@ class GraphTab
 
         vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
 
-        TitledPane titledPane = new TitledPane();
-        titledPane.setCollapsible(false);
-        titledPane.setAlignment(Pos.CENTER);
-        titledPane.setMaxHeight(Double.MAX_VALUE);
-        titledPane.getStyleClass().add("stpnr-tenbold");
+        TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Output: " + nodeData.getItem().getName());
         titledPane.setContent(vbox);
         return titledPane;
@@ -831,13 +849,19 @@ class GraphTab
             vbox.getChildren().add(grower);
         }
 
+        TitledPane titledPane = createRightTitledPane();
+        titledPane.setText(nodeData.getRecipe().getName());
+        titledPane.setContent(vbox);
+        return titledPane;
+    }
+
+    private static TitledPane createRightTitledPane()
+    {
         TitledPane titledPane = new TitledPane();
         titledPane.setCollapsible(false);
         titledPane.setAlignment(Pos.CENTER);
         titledPane.setMaxHeight(Double.MAX_VALUE);
         titledPane.getStyleClass().add("stpnr-tenbold");
-        titledPane.setText(nodeData.getRecipe().getName());
-        titledPane.setContent(vbox);
         return titledPane;
     }
 
