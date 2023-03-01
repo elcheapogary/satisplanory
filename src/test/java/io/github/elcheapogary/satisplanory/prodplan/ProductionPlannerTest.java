@@ -15,6 +15,7 @@ import io.github.elcheapogary.satisplanory.model.test.TestGameData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -171,9 +172,11 @@ public class ProductionPlannerTest
         assertThrows(ProductionPlanNotFeatisbleException.class, () -> builder.build().createPlan());
     }
 
+    /*
+     * We should not create plans with surplus fluid, as fluids cannot be sinked.
+     */
     @Test
-    public void testMinRecipes()
-            throws ProductionPlanNotFeatisbleException, InterruptedException, ProductionPlanInternalException
+    public void testNoFluidByProducts() throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
@@ -183,18 +186,25 @@ public class ProductionPlannerTest
 
         builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
         builder.addOptimizationTarget(OptimizationTarget.MIN_RESOURCE_SCARCITY);
-
-        builder.addInputItem(gd.requireItemByName("Alumina Solution"), 720000);
-        builder.addInputItem(gd.requireItemByName("Crude Oil"), 600000);
-
-        builder.addOutputItem(gd.requireItemByName("Aluminum Scrap"), BigFraction.zero(), BigFraction.one());
-
         builder.addRecipes(gd.getRecipes());
+
+        builder.addInputItem(gd.requireItemByName("Packaged Water"), 1);
+        builder.addOutputItem(gd.requireItemByName("Empty Canister"), BigFraction.one(), BigFraction.zero());
+
+        /*
+         * The only way to generate the required empty canisters is by unpackaging water, resulting in surplus water.
+         * The plan should fail.
+         */
+        Assertions.assertThrows(ProductionPlanNotFeatisbleException.class, () -> createPlan(builder.build()));
+
+        /*
+         * If we add limestone, we are then able to convert the excess water into concrete using the wet concrete
+         * recipe. Concrete, being sinkable, is an acceptable by-product, so the plan should succeed.
+         */
+        builder.addInputItem(gd.requireItemByName("Limestone"), BigFraction.valueOf(100));
 
         ProductionPlan plan = createPlan(builder.build());
 
-        assertOutputItems(plan, gd, "Water", 420000);
-        assertOutputItems(plan, gd, "Polymer Resin", 40);
-        assertOutputItems(plan, gd, "Aluminum Scrap", 1200);
+        Assertions.assertFalse(plan.getOutputItems().contains(gd.requireItemByName("Water")));
     }
 }

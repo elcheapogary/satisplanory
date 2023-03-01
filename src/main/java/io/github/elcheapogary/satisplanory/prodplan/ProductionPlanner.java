@@ -11,6 +11,7 @@
 package io.github.elcheapogary.satisplanory.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.lp.Expression;
 import io.github.elcheapogary.satisplanory.prodplan.lp.InfeasibleSolutionException;
@@ -200,9 +201,16 @@ public class ProductionPlanner
                 }
             }
 
+            if (weight == null){
+                weight = BigFraction.zero();
+            }
+
             Expression itemSurplus;
 
-            if (min.signum() == 0){
+            if (item.getMatterState() != MatterState.SOLID && weight.signum() == 0){
+                itemSurplus = Expression.zero();
+                model.addConstraint(itemOutputMap.get(item).eq(min));
+            }else if (min.signum() == 0){
                 itemSurplus = itemOutputMap.get(item);
             }else{
                 itemSurplus = model.addVariable("Surplus: " + item.getName());
@@ -240,7 +248,7 @@ public class ProductionPlanner
 
         OptimizationResult result;
 
-        try {
+        try{
             result = model.maximize(objectiveFunctions);
         }catch (InfeasibleSolutionException e){
             throw new ProductionPlanNotFeatisbleException(e);
