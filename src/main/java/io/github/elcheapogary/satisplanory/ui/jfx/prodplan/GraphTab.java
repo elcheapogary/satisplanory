@@ -680,6 +680,10 @@ class GraphTab
             }
         };
 
+        /*
+         * Set background color to it comes through in exported image
+         */
+        pane.setStyle("-fx-background-color: -fx-background;");
         pane.setPadding(new javafx.geometry.Insets(20));
 
         for (Node<N, E> n : graph.getNodes()){
