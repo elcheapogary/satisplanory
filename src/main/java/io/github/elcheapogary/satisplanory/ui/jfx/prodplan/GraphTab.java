@@ -26,6 +26,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.component.ZoomableScrollPane;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
+import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.FileNameUtils;
@@ -49,6 +50,7 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
+import javafx.beans.binding.StringBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
@@ -58,11 +60,14 @@ import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.WritableImage;
@@ -86,6 +91,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurve;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Transform;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import javax.imageio.ImageIO;
@@ -278,6 +284,68 @@ class GraphTab
         layoutGraph.nodes.add(node);
     }
 
+    private static Dialog<Double> createScaleSelectionDialog(AppContext appContext, Pane graphPage)
+    {
+        double w = graphPage.getWidth();
+        double h = graphPage.getHeight();
+
+        Dialog<Double> dialog = new Dialog<>();
+        dialog.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+        dialog.setTitle("Select image scale");
+        dialog.setHeaderText("Select the scale of the image");
+        dialog.getDialogPane().setMinWidth(300);
+
+        VBox vbox = new VBox(10);
+        dialog.getDialogPane().setContent(vbox);
+
+        Slider slider = new Slider();
+        slider.setMin(1);
+        slider.setMax(20);
+        slider.setValue(10);
+        slider.setMajorTickUnit(1);
+        slider.setShowTickMarks(true);
+        slider.setSnapToTicks(true);
+
+        DoubleBinding scaleBinding = Bindings.createDoubleBinding(() -> {
+            double v = slider.getValue();
+
+            if (v < 10.0){
+                v /= 10.0;
+            }else if (v > 10.0){
+                v = (((v - 10.0) / 10.0) * 4.0) + 1.0;
+            }else{
+                v = 1;
+            }
+
+            return v;
+        }, slider.valueProperty());
+
+        StringBinding labelTextBinding = Bindings.createStringBinding(() -> {
+            double v = scaleBinding.get();
+
+            return "Scale: " + ((int)(v * 100.0)) + "%, " + ((int)Math.ceil(w * v)) + "x" + ((int)Math.ceil(h * v));
+        }, scaleBinding);
+
+        Label l = new Label();
+        l.textProperty().bind(labelTextBinding);
+
+        vbox.getChildren().add(l);
+        vbox.getChildren().add(slider);
+
+        dialog.setResultConverter(param -> {
+            if (param == ButtonType.OK){
+                return scaleBinding.get();
+            }else{
+                return null;
+            }
+        });
+
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CANCEL);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.OK);
+
+        return dialog;
+    }
+
     private static void configureGraphContextMenu(AppContext appContext, ScrollPane scrollPane, Pane graphPane, Graph<ProdPlanNodeData, ProdPlanEdgeData> graph, Supplier<String> planNameSupplier)
     {
         ContextMenu contextMenu = new ContextMenu();
@@ -288,12 +356,14 @@ class GraphTab
             contextMenu.getItems().add(menuItem);
 
             menuItem.onActionProperty().set(event -> {
-                SnapshotParameters parameters = new SnapshotParameters();
-                parameters.setFill(Color.TRANSPARENT);
+                createScaleSelectionDialog(appContext, graphPane).showAndWait().ifPresent(scale -> {
+                    SnapshotParameters parameters = new SnapshotParameters();
+                    parameters.setFill(Color.TRANSPARENT);
 
-                WritableImage img = graphPane.snapshot(parameters, null);
+                    WritableImage img = graphPane.snapshot(parameters, null);
 
-                Clipboard.getSystemClipboard().setContent(Map.of(DataFormat.IMAGE, img));
+                    Clipboard.getSystemClipboard().setContent(Map.of(DataFormat.IMAGE, img));
+                });
             });
         }
 
@@ -302,39 +372,42 @@ class GraphTab
             contextMenu.getItems().add(menuItem);
 
             menuItem.onActionProperty().set(event -> {
-                FileChooser fc = new FileChooser();
-                if (appContext.getPersistentData().getPreferences().getLastImportExportDirectory() != null && appContext.getPersistentData().getPreferences().getLastImportExportDirectory().isDirectory()){
-                    fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
-                }
-                fc.setTitle("Select output file");
-                fc.setInitialFileName(FileNameUtils.removeUnsafeFilenameCharacters(planNameSupplier.get()) + ".png");
-                fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
-                File f = fc.showSaveDialog(graphPane.getScene().getWindow());
-                if (f != null){
-                    appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
+                createScaleSelectionDialog(appContext, graphPane).showAndWait().ifPresent(scale -> {
+                    FileChooser fc = new FileChooser();
+                    if (appContext.getPersistentData().getPreferences().getLastImportExportDirectory() != null && appContext.getPersistentData().getPreferences().getLastImportExportDirectory().isDirectory()){
+                        fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
+                    }
+                    fc.setTitle("Select output file");
+                    fc.setInitialFileName(FileNameUtils.removeUnsafeFilenameCharacters(planNameSupplier.get()) + ".png");
+                    fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
+                    File f = fc.showSaveDialog(graphPane.getScene().getWindow());
+                    if (f != null){
+                        appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
 
-                    SnapshotParameters parameters = new SnapshotParameters();
-                    parameters.setFill(Color.TRANSPARENT);
+                        SnapshotParameters parameters = new SnapshotParameters();
+                        parameters.setFill(Color.TRANSPARENT);
+                        parameters.setTransform(Transform.scale(scale / graphPane.getScaleX(), scale / graphPane.getScaleY()));
 
-                    WritableImage img = graphPane.snapshot(parameters, null);
+                        WritableImage img = graphPane.snapshot(parameters, null);
 
-                    new TaskProgressDialog(appContext)
-                            .setTitle("Saving image")
-                            .setContentText("Saving image")
-                            .runTask(taskContext -> {
-                                try{
-                                    ImageIO.write(SwingFXUtils.fromFXImage(img, null), "PNG", f);
-                                }catch (IOException e){
-                                    Platform.runLater(() -> new ExceptionDialog(appContext)
-                                            .setTitle("Error saving image")
-                                            .setContextMessage("An error occurred while saving the image")
-                                            .setException(e)
-                                            .showAndWait());
-                                }
+                        new TaskProgressDialog(appContext)
+                                .setTitle("Saving image")
+                                .setContentText("Saving image")
+                                .runTask(taskContext -> {
+                                    try{
+                                        ImageIO.write(SwingFXUtils.fromFXImage(img, null), "PNG", f);
+                                    }catch (IOException e){
+                                        Platform.runLater(() -> new ExceptionDialog(appContext)
+                                                .setTitle("Error saving image")
+                                                .setContextMessage("An error occurred while saving the image")
+                                                .setException(e)
+                                                .showAndWait());
+                                    }
 
-                                return null;
-                            });
-                }
+                                    return null;
+                                });
+                    }
+                });
             });
         }
 
