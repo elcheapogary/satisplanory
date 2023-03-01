@@ -39,7 +39,8 @@ Don't like this calculator? Try these:
 
 ## Building
 
-To build Satisplanory, you'll need Apache Maven.
+To build Satisplanory from source, you'll need Apache Maven. Only developers will need to do this -
+ordinary users should just use the download link above.
 
 To build the Windows distribution zip file, do: 
 
