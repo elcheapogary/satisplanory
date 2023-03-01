@@ -19,15 +19,9 @@ public enum MatterState
 {
     SOLID{
         @Override
-        public BigDecimal fromDisplayAmount(BigDecimal amount)
-        {
-            return amount;
-        }
-
-        @Override
         public BigDecimal toDisplayAmount(BigDecimal amount)
         {
-            return amount;
+            return amount.setScale(4, RoundingMode.HALF_UP);
         }
 
         @Override
@@ -37,29 +31,72 @@ public enum MatterState
         }
 
         @Override
-        public BigFraction toDisplayAmount(BigFraction amount)
+        public BigFraction toDisplayAmountFraction(BigFraction amount)
         {
             return amount;
         }
-    }, LIQUID, GAS;
 
-    public BigDecimal fromDisplayAmount(BigDecimal amount)
-    {
-        return BigDecimalUtils.normalize(amount.multiply(BigDecimal.valueOf(1000)));
-    }
+        @Override
+        protected String appendDisplayUnits(String displayAmount)
+        {
+            return displayAmount;
+        }
+    }, LIQUID, GAS;
 
     public BigFraction fromDisplayAmount(BigFraction amount)
     {
         return amount.multiply(1000);
     }
 
+    /**
+     * Returns the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     *
+     * @param amount The amount to convert to display units.
+     * @return the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     */
     public BigDecimal toDisplayAmount(BigDecimal amount)
     {
-        return BigDecimalUtils.normalize(amount.divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP));
+        return amount.divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);
     }
 
-    public BigFraction toDisplayAmount(BigFraction amount)
+    public BigFraction toDisplayAmountFraction(BigFraction amount)
     {
         return amount.divide(1000);
+    }
+
+    /**
+     * Returns the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     *
+     * @param amount The amount to convert to display units.
+     * @return the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     */
+    public final BigDecimal toDisplayAmount(BigFraction amount)
+    {
+        return toDisplayAmountFraction(amount).toBigDecimal(4, RoundingMode.HALF_UP);
+    }
+
+    protected String appendDisplayUnits(String displayAmount)
+    {
+        return displayAmount + "m³";
+    }
+
+    public final String toDisplayAmountString(BigDecimal amount)
+    {
+        return appendDisplayUnits(toDisplayAmount(amount).toString());
+    }
+
+    public final String toNormalizedDisplayAmountString(BigDecimal amount)
+    {
+        return appendDisplayUnits(BigDecimalUtils.normalize(toDisplayAmount(amount)).toString());
+    }
+
+    public final String toDisplayAmountString(BigFraction amount)
+    {
+        return appendDisplayUnits(toDisplayAmount(amount).toString());
+    }
+
+    public final String toNormalizedDisplayAmountString(BigFraction amount)
+    {
+        return appendDisplayUnits(BigDecimalUtils.normalize(toDisplayAmount(amount)).toString());
     }
 }

@@ -87,7 +87,7 @@ public enum OptimizationTarget
                     BigFraction weight = entry.getValue();
                     maximizeExpression = maximizeExpression.add(
                             model.getItemSurplusMap().get(item)
-                                    .multiply(item.toDisplayAmount(weight))
+                                    .multiply(item.toDisplayAmountFraction(weight))
                     );
                 }
 

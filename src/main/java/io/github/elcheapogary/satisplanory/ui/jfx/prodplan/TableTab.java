@@ -96,7 +96,6 @@ class TableTab
                     item.getName(),
                     row -> Optional.ofNullable(row.itemAmounts.get(item))
                             .map(item::toDisplayAmount)
-                            .map(bigFraction -> bigFraction.toBigDecimal(4, RoundingMode.HALF_UP))
                             .orElse(null),
                     BigDecimal::toString,
                     BigDecimal::compareTo
@@ -119,7 +118,7 @@ class TableTab
             for (Recipe.RecipeItem recipeItem : recipe.getIngredients()){
                 itemAmounts.put(
                         recipeItem.getItem(),
-                        BigFraction.valueOf(recipeItem.getAmount().getAmountPerMinute())
+                        recipeItem.getAmount().getAmountPerMinute()
                                 .multiply(n)
                                 .negate()
                 );
@@ -127,7 +126,7 @@ class TableTab
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
                 itemAmounts.compute(recipeItem.getItem(), (item, amount) ->
                         Objects.requireNonNullElse(amount, BigFraction.zero())
-                                .add(BigFraction.valueOf(recipeItem.getAmount().getAmountPerMinute()).multiply(n))
+                                .add(recipeItem.getAmount().getAmountPerMinute().multiply(n))
                 );
             }
             tableView.getItems().add(new Row(recipe.getName(), recipe.getProducedInBuilding(), n, itemAmounts));

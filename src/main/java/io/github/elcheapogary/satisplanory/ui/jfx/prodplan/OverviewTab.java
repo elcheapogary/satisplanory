@@ -264,14 +264,14 @@ class OverviewTab
                 ResourceLine l = new ResourceLine();
                 tableView.getItems().add(l);
                 l.name = item.getName();
-                l.amountUsed = item.toDisplayAmount(plan.getInputItemsPerMinute(item));
+                l.amountUsed = item.toDisplayAmountFraction(plan.getInputItemsPerMinute(item));
                 l.amountAvailable = model.getInputItemsPerMinute(item);
                 l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
                 if (max == null){
                     l.maxExtractRate = null;
                     l.percentageOfMaxExtractRate = null;
                 }else{
-                    l.maxExtractRate = item.toDisplayAmount(BigFraction.valueOf(max));
+                    l.maxExtractRate = item.toDisplayAmountFraction(BigFraction.valueOf(max));
                     l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
                     totalAmountUsed = totalAmountUsed.add(l.amountUsed);
                     totalAmountAvailable = totalAmountAvailable.add(l.amountAvailable);
@@ -300,7 +300,7 @@ class OverviewTab
             Item item = appContext.getGameData().getItemByName(entry.getKey()).orElse(null);
 
             if (item != null){
-                totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmount(BigFraction.valueOf(entry.getValue())));
+                totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmountFraction(BigFraction.valueOf(entry.getValue())));
             }
         }
 

@@ -59,13 +59,8 @@ public class Item
     {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Item item = (Item) o;
+        Item item = (Item)o;
         return className.equals(item.className) && name.equals(item.name) && matterState == item.matterState;
-    }
-
-    public BigDecimal fromDisplayAmount(BigDecimal amount)
-    {
-        return matterState.fromDisplayAmount(amount);
     }
 
     public BigFraction fromDisplayAmount(BigFraction amount)
@@ -104,14 +99,51 @@ public class Item
         return Objects.hash(className, name, matterState);
     }
 
+    /**
+     * Returns the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     *
+     * @param amount The amount to convert to display units.
+     * @return the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     */
     public BigDecimal toDisplayAmount(BigDecimal amount)
     {
         return matterState.toDisplayAmount(amount);
     }
 
-    public BigFraction toDisplayAmount(BigFraction amount)
+    /**
+     * Returns the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     *
+     * @param amount The amount to convert to display units.
+     * @return the provided {@code amount} in display units, scaled to 4 decimal places. This result is not normalized.
+     */
+    public BigDecimal toDisplayAmount(BigFraction amount)
     {
         return matterState.toDisplayAmount(amount);
+    }
+
+    public BigFraction toDisplayAmountFraction(BigFraction amount)
+    {
+        return matterState.toDisplayAmountFraction(amount);
+    }
+
+    public String toDisplayAmountString(BigDecimal amount)
+    {
+        return matterState.toDisplayAmountString(amount);
+    }
+
+    public String toNormalizedDisplayAmountString(BigDecimal amount)
+    {
+        return matterState.toNormalizedDisplayAmountString(amount);
+    }
+
+    public String toDisplayAmountString(BigFraction amount)
+    {
+        return matterState.toDisplayAmountString(amount);
+    }
+
+    public String toNormalizedDisplayAmountString(BigFraction amount)
+    {
+        return matterState.toNormalizedDisplayAmountString(amount);
     }
 
     @Override

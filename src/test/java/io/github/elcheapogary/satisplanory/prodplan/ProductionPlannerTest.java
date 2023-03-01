@@ -78,8 +78,8 @@ public class ProductionPlannerTest
         Item crudeOil = gd.requireItemByName("Crude Oil");
         Item water = gd.requireItemByName("Water");
 
-        pb.addInputItem(water, water.fromDisplayAmount(BigDecimal.valueOf(999999999999L)));
-        pb.addInputItem(crudeOil, crudeOil.fromDisplayAmount(BigDecimal.valueOf(360)));
+        pb.addInputItem(water, water.fromDisplayAmount(BigFraction.valueOf(999999999999L)));
+        pb.addInputItem(crudeOil, crudeOil.fromDisplayAmount(BigFraction.valueOf(360)));
 
         pb.requireOutputItemsPerMinute(plastic, 20);
         pb.maximizeOutputItem(plastic, 1);
@@ -93,7 +93,7 @@ public class ProductionPlannerTest
         BigFraction nFuel = plan.getOutputItemsPerMinute(fuel);
 
         assertTrue(nPlastic.compareTo(BigFraction.valueOf(20)) > 0);
-        assertEquals(plastic.toDisplayAmount(nPlastic).subtract(20), fuel.toDisplayAmount(nFuel));
+        assertEquals(plastic.toDisplayAmountFraction(nPlastic).subtract(20), fuel.toDisplayAmountFraction(nFuel));
     }
 
     @Test

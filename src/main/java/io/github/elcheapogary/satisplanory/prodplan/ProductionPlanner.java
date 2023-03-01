@@ -150,14 +150,14 @@ public class ProductionPlanner
                 for (Recipe.RecipeItem ri : recipe.getIngredients()){
                     itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
                             Objects.requireNonNullElse(expression, Expression.zero())
-                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinuteFraction()))
+                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinute()))
                     );
                 }
 
                 for (Recipe.RecipeItem ri : recipe.getProducts()){
                     itemsProducedExpressionMap.compute(ri.getItem(), (item, expression) ->
                             Objects.requireNonNullElse(expression, Expression.zero())
-                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinuteFraction()))
+                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinute()))
                     );
                 }
             }

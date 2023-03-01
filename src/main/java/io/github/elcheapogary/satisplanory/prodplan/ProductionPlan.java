@@ -84,11 +84,11 @@ public class ProductionPlan
             Map<Item, BigFraction> requirementsMap = Item.createMap();
             wantsMap.put(node, requirementsMap);
             for (Recipe.RecipeItem recipeItem : recipe.getIngredients()){
-                requirementsMap.put(recipeItem.getItem(), recipeItem.getAmount().getAmountPerMinuteFraction().multiply(amount));
+                requirementsMap.put(recipeItem.getItem(), recipeItem.getAmount().getAmountPerMinute().multiply(amount));
             }
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
                 suppliesMap.computeIfAbsent(recipeItem.getItem(), item1 -> new HashMap<>())
-                        .put(node, recipeItem.getAmount().getAmountPerMinuteFraction().multiply(amount));
+                        .put(node, recipeItem.getAmount().getAmountPerMinute().multiply(amount));
             }
         }
 

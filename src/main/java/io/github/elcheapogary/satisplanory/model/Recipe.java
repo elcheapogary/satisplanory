@@ -10,7 +10,6 @@
 
 package io.github.elcheapogary.satisplanory.model;
 
-import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -268,13 +267,7 @@ public class Recipe
             return amountPerCycle;
         }
 
-        public BigDecimal getAmountPerMinute()
-        {
-            BigDecimal n = BigDecimal.valueOf(60).divide(cycleTimeSeconds, 10, RoundingMode.HALF_UP).multiply(amountPerCycle);
-            return BigDecimalUtils.normalize(n);
-        }
-
-        public BigFraction getAmountPerMinuteFraction()
+        public BigFraction getAmountPerMinute()
         {
             return BigFraction.valueOf(60).divide(BigFraction.valueOf(cycleTimeSeconds)).multiply(BigFraction.valueOf(amountPerCycle));
         }
@@ -318,21 +311,6 @@ public class Recipe
         public RecipeItemAmount getAmount()
         {
             return amount;
-        }
-
-        private BigDecimal getDisplayAmount(BigDecimal n)
-        {
-            return BigDecimalUtils.normalize(item.toDisplayAmount(n));
-        }
-
-        public BigDecimal getDisplayAmountPerCycle()
-        {
-            return getDisplayAmount(getAmount().getAmountPerCycle());
-        }
-
-        public BigDecimal getDisplayAmountPerMinute()
-        {
-            return getDisplayAmount(getAmount().getAmountPerMinute());
         }
 
         public Item getItem()

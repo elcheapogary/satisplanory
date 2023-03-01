@@ -565,7 +565,7 @@ class GraphTab
             }
             sb.append(item.getName());
             sb.append("\n");
-            sb.append(BigDecimalUtils.normalize(item.toDisplayAmount(amount).toBigDecimal(4, RoundingMode.HALF_UP)));
+            sb.append(item.toNormalizedDisplayAmountString(amount));
             sb.append(" / min");
         }
 
@@ -720,7 +720,7 @@ class GraphTab
         VBox vbox = new VBox(10);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
-        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getItem().toDisplayAmount(nodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+        vbox.getChildren().add(new Label("Amount: " + nodeData.getItem().toNormalizedDisplayAmountString(nodeData.getAmount()) + " / min"));
 
         TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Input: " + nodeData.getItem().getName());
@@ -742,11 +742,11 @@ class GraphTab
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-input");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
-            line2 = BigDecimalUtils.normalize(inputItemNodeData.getItem().toDisplayAmount(inputItemNodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min";
+            line2 = inputItemNodeData.getItem().toNormalizedDisplayAmountString(inputItemNodeData.getAmount()) + " / min";
         }else if (nodeData instanceof OutputItemNodeData outputItemNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-output");
             line1 = "Output: " + outputItemNodeData.getItem().getName();
-            line2 = BigDecimalUtils.normalize(outputItemNodeData.getItem().toDisplayAmount(outputItemNodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min";
+            line2 = outputItemNodeData.getItem().toNormalizedDisplayAmountString(outputItemNodeData.getAmount()) + " / min";
         }else{
             throw new AssertionError();
         }
@@ -808,7 +808,7 @@ class GraphTab
         VBox vbox = new VBox(10);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
-        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getItem().toDisplayAmount(nodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+        vbox.getChildren().add(new Label("Amount: " + nodeData.getItem().toNormalizedDisplayAmountString(nodeData.getAmount()) + " / min"));
 
         TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Output: " + nodeData.getItem().getName());
@@ -831,7 +831,7 @@ class GraphTab
         sortedRecipeItems.sort(Comparator.comparing(recipeItem -> recipeItem.getItem().getName()));
 
         for (Recipe.RecipeItem ri : sortedRecipeItems){
-            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + BigDecimalUtils.normalize(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerMinuteFraction().multiply(amount)).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + ri.getItem().toNormalizedDisplayAmountString(ri.getAmount().getAmountPerMinute().multiply(amount)) + " / min"));
         }
 
         return titledPane;
@@ -897,7 +897,7 @@ class GraphTab
                 menuButton.getItems().add(itemsPerMin);
                 itemsPerMin.onActionProperty().set(event -> {
                     String copyText = BigDecimalUtils.normalize(nodeData.getRecipe().getPrimaryProductAmount()
-                            .getAmountPerMinuteFraction()
+                            .getAmountPerMinute()
                             .multiply(nodeData.getAmount().subtract(BigFraction.valueOf(i)))
                             .toBigDecimal(4, RoundingMode.HALF_UP)
                     ).toString();

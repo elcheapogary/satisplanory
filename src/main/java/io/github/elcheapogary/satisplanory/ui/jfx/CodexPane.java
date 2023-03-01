@@ -421,7 +421,7 @@ public class CodexPane
             setBorder(perCycle, 0, 1, 1, 0);
             GridPane.setFillWidth(perCycle, true);
             gp.add(perCycle, 1, row);
-            Label perMin = new Label(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerMinute()).setScale(4, RoundingMode.HALF_UP).toString());
+            Label perMin = new Label(ri.getItem().toDisplayAmountString(ri.getAmount().getAmountPerMinute()));
             perMin.setPadding(new Insets(5));
             perMin.setMaxWidth(Double.MAX_VALUE);
             perMin.setAlignment(Pos.BASELINE_RIGHT);
