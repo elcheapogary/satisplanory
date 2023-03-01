@@ -37,18 +37,20 @@ Don't like this calculator? Try these:
 - https://satisfactory-calculator.com/
 - https://daniel2013.github.io/satisfactory/
 
-## Building
+## Building from source
 
-To build Satisplanory from source, you'll need Apache Maven. Only developers will need to do this -
-ordinary users should just use the download link above.
+Only developers would need to build Satisplanory from source - normal users should just use the
+download link above.
 
-To build the Windows distribution zip file, do: 
+To build Satisplanory from source, you'll need Apache Maven and OpenJDK 17.
+
+To build the Windows distribution zip file, run the following command on a Windows machine: 
 
 ```
 mvn -P "jlink,windows" clean verify
 ```
 
-To build the Linux distribution tar file, do:
+To build the Linux distribution tar file, run the following command on a Linux machine:
 
 ```
 mvn -P "jlink,linux" clean verify
