@@ -720,7 +720,7 @@ class GraphTab
         VBox vbox = new VBox(10);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
-        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getItem().toDisplayAmount(nodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
 
         TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Input: " + nodeData.getItem().getName());
@@ -808,7 +808,7 @@ class GraphTab
         VBox vbox = new VBox(10);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
-        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
+        vbox.getChildren().add(new Label("Amount: " + BigDecimalUtils.normalize(nodeData.getItem().toDisplayAmount(nodeData.getAmount()).toBigDecimal(4, RoundingMode.HALF_UP)) + " / min"));
 
         TitledPane titledPane = createRightTitledPane();
         titledPane.setText("Output: " + nodeData.getItem().getName());
