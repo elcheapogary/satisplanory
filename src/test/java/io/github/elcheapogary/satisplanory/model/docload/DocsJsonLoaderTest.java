@@ -10,7 +10,6 @@
 
 package io.github.elcheapogary.satisplanory.model.docload;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
 import io.github.elcheapogary.satisplanory.model.test.TestGameData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 public class DocsJsonLoaderTest
 {
-    private static void checkGameData(GameData gameData)
+    private static void checkGameData(TestGameData gameData)
     {
         for (String itemName : new String[]{"Iron Plate", "Iron Ore", "Crude Oil", "Wood", "Nitrogen Gas", "Portable Miner", "Water", "Uranium Waste", "Plutonium Fuel Rod"}){
             Assertions.assertTrue(gameData.getItemByName(itemName).isPresent(), "Failed to load item: " + itemName);
@@ -35,6 +34,8 @@ public class DocsJsonLoaderTest
         for (String recipeName : recipes){
             Assertions.assertTrue(gameData.getRecipeByName(recipeName).isPresent(), "Failed to load recipe: " + recipeName);
         }
+
+        Assertions.assertFalse(gameData.requireItemByName("Thermal Propulsion Rocket").getSinkValue() < 1);
     }
 
     @Test

@@ -103,7 +103,7 @@ public class DocsJsonLoader
                             throw new DataException("Unknown mForm value for item: " + nativeClassName + ": " + jsonItem.getString("mForm"));
                 }
 
-                itemBuilder.setSinkValue(jsonItem.getInt("mResourceSinkPoints", 0));
+                itemBuilder.setSinkValue(Integer.parseInt(jsonItem.getString("mResourceSinkPoints", "0")));
 
                 Item item = itemBuilder.build();
                 itemsByClassName.put(item.getClassName(), item);
