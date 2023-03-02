@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +52,12 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.binding.StringBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.PseudoClass;
 import javafx.embed.swing.SwingFXUtils;
@@ -61,6 +67,7 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -837,16 +844,52 @@ class GraphTab
         return titledPane;
     }
 
+    private static void addMachines(boolean even, double maxClockSpeed, String buildingName, BigFraction amount, VBox lines, Property<BigFraction> copyClockSpeedProperty)
+    {
+        lines.getChildren().clear();
+
+        BigDecimal maxClockSpeedDecimal = BigDecimal.valueOf(maxClockSpeed);
+
+        BigFraction nBuildings = amount.divide(BigFraction.valueOf(maxClockSpeedDecimal).divide(100));
+
+        if (even){
+            if (!nBuildings.isInteger()){
+                nBuildings = BigFraction.valueOf(nBuildings.toBigInteger().add(BigInteger.ONE));
+            }
+            BigFraction clockSpeed = amount.divide(nBuildings).multiply(100);
+            copyClockSpeedProperty.setValue(clockSpeed);
+
+            lines.getChildren().add(new Label("" + nBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(clockSpeed.toBigDecimal(4, RoundingMode.HALF_UP)) + "%"));
+        }else{
+            BigInteger intBuildings = nBuildings.toBigInteger();
+
+            if (intBuildings.signum() > 0){
+                lines.getChildren().add(new Label("" + intBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(maxClockSpeedDecimal.setScale(4, RoundingMode.HALF_UP)) + "%"));
+            }
+
+            BigFraction remainder = amount.subtract(BigFraction.valueOf(maxClockSpeedDecimal).divide(100).multiply(intBuildings)).multiply(100);
+            copyClockSpeedProperty.setValue(remainder);
+
+            if (remainder.signum() > 0){
+                lines.getChildren().add(new Label("1 x " + buildingName + " @ " + BigDecimalUtils.normalize(remainder.toBigDecimal(4, RoundingMode.HALF_UP)) + "%"));
+            }
+        }
+    }
+
     private static Region createRecipeNodeDetailPane(RecipeNodeData nodeData)
     {
         VBox vbox = new VBox(10);
         vbox.setPadding(new javafx.geometry.Insets(10));
 
         {
+            BooleanProperty evenClockSpeedProperty = new SimpleBooleanProperty(true);
+            IntegerProperty maxClockSpeedProperty = new SimpleIntegerProperty(100);
+            Property<BigFraction> copyClockSpeedProperty = new SimpleObjectProperty<>();
+
             TitledPane titledPane = new TitledPane();
             vbox.getChildren().add(titledPane);
 
-            titledPane.setText("Buildings");
+            titledPane.setText("Clock speed");
             titledPane.setCollapsible(true);
 
             VBox container = new VBox(10);
@@ -856,63 +899,133 @@ class GraphTab
             VBox lines = new VBox(3);
             container.getChildren().add(lines);
 
-            BigDecimal n = nodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP);
-            BigDecimal i = n.setScale(0, RoundingMode.DOWN);
-            n = n.subtract(i);
-
-            if (i.signum() != 0){
-                lines.getChildren().add(new Label(i + " × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at 100%"));
+            {
+                CheckBox checkbox = new CheckBox();
+                checkbox.setText("Even clock speeds");
+                checkbox.setSelected(true);
+                container.getChildren().add(checkbox);
+                evenClockSpeedProperty.bind(checkbox.selectedProperty());
             }
 
-            if (n.signum() != 0){
-                final BigDecimal underclockedClockSpeedPercent = BigDecimalUtils.normalize(n.movePointRight(2));
-                Label l = new Label("1 × " + nodeData.getRecipe().getProducedInBuilding().getName() + " at " + underclockedClockSpeedPercent + "%");
-                lines.getChildren().add(l);
+            {
+                Slider slider = new Slider();
+                slider.setMin(0);
+                slider.setMax(250);
+                slider.setValue(100);
+                slider.setMajorTickUnit(50);
+                slider.setMinorTickCount(10);
+                slider.setShowTickMarks(true);
+                slider.setSnapToTicks(true);
+                slider.setShowTickLabels(true);
+                slider.setSnapToPixel(false);
 
-                l.onMouseClickedProperty().set(event -> {
-                    ClipboardContent clipboardContent = new ClipboardContent();
-                    clipboardContent.putString(underclockedClockSpeedPercent.toString());
-                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+                    slider.setValue(BigDecimal.valueOf(newValue.doubleValue())
+                            .divide(BigDecimal.valueOf(5), 0, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(5))
+                            .doubleValue()
+                    );
                 });
 
-                MenuButton menuButton = new MenuButton("Copy Underclocked");
-                container.getChildren().add(menuButton);
+                maxClockSpeedProperty.bind(Bindings.createIntegerBinding(() -> Math.max(1, (int)slider.valueProperty().get()), slider.valueProperty()));
 
-                MenuItem clockSpeed = new MenuItem("Clock speed");
-                menuButton.getItems().add(clockSpeed);
-                clockSpeed.onActionProperty().set(event -> {
-                    ClipboardContent clipboardContent = new ClipboardContent();
-                    clipboardContent.putString(underclockedClockSpeedPercent.toString().concat("%"));
-                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                VBox v = new VBox(5);
 
-                    Notifications.create()
-                            .title("Clock speed copied")
-                            .text("Clock speed copied to clipboard: " + underclockedClockSpeedPercent + "%")
-                            .hideAfter(Duration.seconds(3))
-                            .position(Pos.TOP_CENTER)
-                            .show();
-                });
+                StringBinding labelBinding = Bindings.createStringBinding(() -> "Max clock speed: " + maxClockSpeedProperty.get() + "%", maxClockSpeedProperty);
+                Label label = new Label();
+                label.textProperty().bind(labelBinding);
 
-                MenuItem itemsPerMin = new MenuItem("Output items / min");
-                menuButton.getItems().add(itemsPerMin);
-                itemsPerMin.onActionProperty().set(event -> {
-                    String copyText = BigDecimalUtils.normalize(nodeData.getRecipe().getPrimaryProductAmount()
-                            .getAmountPerMinute()
-                            .multiply(nodeData.getAmount().subtract(BigFraction.valueOf(i)))
-                            .toBigDecimal(4, RoundingMode.HALF_UP)
-                    ).toString();
-                    ClipboardContent clipboardContent = new ClipboardContent();
-                    clipboardContent.putString(copyText);
-                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                v.getChildren().add(label);
+                v.getChildren().add(slider);
 
-                    Notifications.create()
-                            .title("Output items / min copied")
-                            .text("Output items / min copies to clipboard: " + copyText)
-                            .hideAfter(Duration.seconds(3))
-                            .position(Pos.TOP_CENTER)
-                            .show();
-                });
+                container.getChildren().add(v);
             }
+
+            addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+            maxClockSpeedProperty.addListener(observable -> {
+                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+            });
+            evenClockSpeedProperty.addListener(observable -> {
+                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+            });
+
+            MenuButton menuButton = new MenuButton("Copy");
+            container.getChildren().add(menuButton);
+            menuButton.managedProperty().bind(Bindings.createBooleanBinding(() -> copyClockSpeedProperty.getValue() != null, copyClockSpeedProperty));
+
+            MenuItem clockSpeed = new MenuItem("Clock speed");
+            menuButton.getItems().add(clockSpeed);
+            clockSpeed.onActionProperty().set(event -> {
+                ClipboardContent clipboardContent = new ClipboardContent();
+                String copyText = BigDecimalUtils.normalize(copyClockSpeedProperty.getValue().toBigDecimal(4, RoundingMode.HALF_UP)).toString().concat("%");
+                clipboardContent.putString(copyText);
+                Clipboard.getSystemClipboard().setContent(clipboardContent);
+
+                Notifications.create()
+                        .title("Clock speed copied")
+                        .text("Clock speed copied to clipboard: " + copyText)
+                        .hideAfter(Duration.seconds(3))
+                        .position(Pos.TOP_CENTER)
+                        .show();
+            });
+
+            MenuItem clockspeedFraction = new MenuItem("Clock speed as fraction");
+            menuButton.getItems().add(clockspeedFraction);
+            clockspeedFraction.onActionProperty().set(event -> {
+                ClipboardContent clipboardContent = new ClipboardContent();
+                String copyText = copyClockSpeedProperty.getValue().toString();
+                clipboardContent.putString(copyText);
+                Clipboard.getSystemClipboard().setContent(clipboardContent);
+
+                Notifications.create()
+                        .title("Clock speed copied")
+                        .text("Clock speed copied to clipboard: " + copyText)
+                        .hideAfter(Duration.seconds(3))
+                        .position(Pos.TOP_CENTER)
+                        .show();
+            });
+
+            MenuItem itemsPerMin = new MenuItem("Target production rate");
+            menuButton.getItems().add(itemsPerMin);
+            itemsPerMin.onActionProperty().set(event -> {
+                String copyText = BigDecimalUtils.normalize(
+                        nodeData.getRecipe().getPrimaryProduct().toDisplayAmountFraction(
+                                nodeData.getRecipe().getPrimaryProductAmount()
+                                        .getAmountPerMinute()
+                                        .multiply(copyClockSpeedProperty.getValue().divide(100))
+                        ).toBigDecimal(4, RoundingMode.HALF_UP)
+                ).toString();
+                ClipboardContent clipboardContent = new ClipboardContent();
+                clipboardContent.putString(copyText);
+                Clipboard.getSystemClipboard().setContent(clipboardContent);
+
+                Notifications.create()
+                        .title("Target production rate copied")
+                        .text("Target production rate copied to clipboard: " + copyText)
+                        .hideAfter(Duration.seconds(3))
+                        .position(Pos.TOP_CENTER)
+                        .show();
+            });
+
+            MenuItem itemsPerMinFraction = new MenuItem("Target production rate as fraction");
+            menuButton.getItems().add(itemsPerMinFraction);
+            itemsPerMinFraction.onActionProperty().set(event -> {
+                String copyText = nodeData.getRecipe().getPrimaryProduct().toDisplayAmountFraction(
+                        nodeData.getRecipe().getPrimaryProductAmount()
+                                .getAmountPerMinute()
+                                .multiply(copyClockSpeedProperty.getValue().divide(100))
+                ).toString();
+                ClipboardContent clipboardContent = new ClipboardContent();
+                clipboardContent.putString(copyText);
+                Clipboard.getSystemClipboard().setContent(clipboardContent);
+
+                Notifications.create()
+                        .title("Target production rate copied")
+                        .text("Target production rate copied to clipboard: " + copyText)
+                        .hideAfter(Duration.seconds(3))
+                        .position(Pos.TOP_CENTER)
+                        .show();
+            });
         }
 
         vbox.getChildren().add(createRecipeItemsDetailPane("Consumes", nodeData.getAmount(), nodeData.getRecipe().getIngredients()));
