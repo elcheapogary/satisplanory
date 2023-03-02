@@ -13,6 +13,7 @@ package io.github.elcheapogary.satisplanory.lp;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -21,6 +22,7 @@ import java.util.TreeSet;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 
 public class Expression
 {
@@ -33,7 +35,7 @@ public class Expression
         this.constantValue = constantValue;
     }
 
-    static Expression fromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
+    static Expression fromJson(JsonObject json, List<? extends DecisionVariable> decisionVariables)
     {
         BigFraction constantValue = BigFraction.parse(json.getString("c"));
         Map<DecisionVariable, BigFraction> coefficients = new TreeMap<>(Variable.COMPARATOR);
@@ -50,8 +52,9 @@ public class Expression
 
             if (isInt){
                 int variableId = Integer.parseInt(entry.getKey());
-                DecisionVariable decisionVariable = decisionVariableMap.get(variableId);
-                coefficients.put(decisionVariable, BigFraction.parse(entry.getValue().toString()));
+                DecisionVariable decisionVariable = decisionVariables.get(variableId);
+                BigFraction amount = BigFraction.parse(((JsonString)entry.getValue()).getString());
+                coefficients.put(decisionVariable, amount);
             }
         }
 

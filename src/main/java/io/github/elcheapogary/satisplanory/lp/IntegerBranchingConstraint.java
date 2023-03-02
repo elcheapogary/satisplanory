@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonObject;
 
@@ -31,9 +30,9 @@ class IntegerBranchingConstraint
         this.expression = expression;
     }
 
-    static IntegerBranchingConstraint fromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
+    static IntegerBranchingConstraint fromJson(JsonObject json, List<? extends DecisionVariable> decisionVariables)
     {
-        Expression expression = Expression.fromJson(json.getJsonObject("expression"), decisionVariableMap);
+        Expression expression = Expression.fromJson(json.getJsonObject("expression"), decisionVariables);
         return new IntegerBranchingConstraint(expression);
     }
 

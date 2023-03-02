@@ -29,6 +29,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonString;
 import javax.json.JsonWriter;
 
 public class Model
@@ -39,23 +40,8 @@ public class Model
 
     public static Model fromJson(String json)
     {
-        try (JsonReader r = Json.createReader(new StringReader(json))){
+        try (JsonReader r = Json.createReader(new StringReader(json))) {
             return fromJson(r.readObject());
-        }
-    }
-
-    private static BranchingConstraint loadBranchingConstraintFromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
-    {
-        String type = json.getString("type");
-
-        if (IntegerBranchingConstraint.JSON_TYPE.equals(type)){
-            return IntegerBranchingConstraint.fromJson(json, decisionVariableMap);
-        }else if (ZeroIfLessThanBranchingConstraint.JSON_TYPE.equals(type)){
-            return ZeroIfLessThanBranchingConstraint.fromJson(json, decisionVariableMap);
-        }else if (ZeroIfGreaterThanBranchingConstraint.JSON_TYPE.equals(type)){
-            return ZeroIfGreaterThanBranchingConstraint.fromJson(json, decisionVariableMap);
-        }else{
-            throw new IllegalArgumentException("Unsupported branching constraint type: " + type);
         }
     }
 
@@ -63,32 +49,37 @@ public class Model
     {
         Model model = new Model();
 
-        JsonObject decisionVariables = jsonObject.getJsonObject("variables");
-
-        int maxId = -1;
-        Map<Integer, DecisionVariable> decisionVariableMap = new TreeMap<>();
-
-        for (String key : decisionVariables.keySet()){
-            int id = Integer.parseInt(key);
-            maxId = Math.max(id, maxId);
-            DecisionVariable v = new DecisionVariable(id, decisionVariables.getString(key));
+        int id = 0;
+        for (JsonString s : jsonObject.getJsonArray("variables").getValuesAs(JsonString.class)){
+            DecisionVariable v = new DecisionVariable(id, s.getString());
             model.decisionVariables.add(v);
-            decisionVariableMap.put(id, v);
-        }
-
-        if (maxId + 1 != model.decisionVariables.size()){
-            throw new IllegalArgumentException("Invalid decision variables list, maxId: " + maxId + " expected: " + (model.decisionVariables.size() - 1));
+            id++;
         }
 
         for (JsonObject jsonConstraint : jsonObject.getJsonArray("constraints").getValuesAs(JsonObject.class)){
-            model.addConstraint(Constraint.fromJson(jsonConstraint, decisionVariableMap));
+            model.addConstraint(Constraint.fromJson(jsonConstraint, model.decisionVariables));
         }
 
         for (JsonObject jsonBranchingConstraint : jsonObject.getJsonArray("branching-constraints").getValuesAs(JsonObject.class)){
-            model.branchingConstraints.add(loadBranchingConstraintFromJson(jsonBranchingConstraint, decisionVariableMap));
+            model.branchingConstraints.add(loadBranchingConstraintFromJson(jsonBranchingConstraint, model.decisionVariables));
         }
 
         return model;
+    }
+
+    private static BranchingConstraint loadBranchingConstraintFromJson(JsonObject json, List<? extends DecisionVariable> decisionVariables)
+    {
+        String type = json.getString("type");
+
+        if (IntegerBranchingConstraint.JSON_TYPE.equals(type)){
+            return IntegerBranchingConstraint.fromJson(json, decisionVariables);
+        }else if (ZeroIfLessThanBranchingConstraint.JSON_TYPE.equals(type)){
+            return ZeroIfLessThanBranchingConstraint.fromJson(json, decisionVariables);
+        }else if (ZeroIfGreaterThanBranchingConstraint.JSON_TYPE.equals(type)){
+            return ZeroIfGreaterThanBranchingConstraint.fromJson(json, decisionVariables);
+        }else{
+            throw new IllegalArgumentException("Unsupported branching constraint type: " + type);
+        }
     }
 
     public BinaryExpression addBinaryVariable(String name)
@@ -159,6 +150,11 @@ public class Model
         this.branchingConstraints.add(new ZeroIfGreaterThanBranchingConstraint(expression, maximum));
     }
 
+    public Expression loadExpressionFromJson(JsonObject json)
+    {
+        return Expression.fromJson(json, decisionVariables);
+    }
+
     public OptimizationResult maximize(Expression objectiveFunction)
             throws InfeasibleSolutionException, UnboundedSolutionException, InterruptedException
     {
@@ -184,7 +180,7 @@ public class Model
             logger = new Logger(logger);
 
             StringWriter sw = new StringWriter();
-            try (JsonWriter w = Json.createWriter(sw)){
+            try (JsonWriter w = Json.createWriter(sw)) {
                 w.writeObject(toJson());
             }
             logger.accept(sw.toString());
@@ -237,10 +233,10 @@ public class Model
         JsonObjectBuilder jsonModel = Json.createObjectBuilder();
 
         {
-            JsonObjectBuilder jsonDecisionVariables = Json.createObjectBuilder();
+            JsonArrayBuilder jsonDecisionVariables = Json.createArrayBuilder();
 
             for (DecisionVariable v : decisionVariables){
-                jsonDecisionVariables.add(Integer.toString(v.id), v.getName());
+                jsonDecisionVariables.add(v.getName());
             }
 
             jsonModel.add("variables", jsonDecisionVariables.build());
