@@ -34,7 +34,7 @@ public class OptimizationResult
 
     public BigFraction getFractionValue(Expression expression)
     {
-        try (var stream = expression.getCoefficients().entrySet().parallelStream()) {
+        try (var stream = expression.getCoefficients().entrySet().parallelStream()){
             return stream.map(entry -> variableValues.get(entry.getKey()).multiply(entry.getValue()))
                     .reduce(expression.getConstantValue(), BigFraction::add);
         }

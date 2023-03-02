@@ -581,27 +581,6 @@ class Tableau
         }
     }
 
-    private static class TableauVariable
-            extends Variable
-    {
-        private final String debugName;
-        private final Set<Row> rows = Collections.synchronizedSet(new TreeSet<>(Row.COMPARATOR));
-        private Row basicRow;
-        private boolean knownZero = false;
-
-        public TableauVariable(int id, String debugName)
-        {
-            super(id);
-            this.debugName = debugName;
-        }
-
-        @Override
-        public String getDebugName()
-        {
-            return debugName;
-        }
-    }
-
     private static class Row
     {
         private static final Comparator<Row> COMPARATOR = Comparator.comparingInt(Row::getId);
@@ -744,6 +723,27 @@ class Tableau
         public Collection<? extends TableauVariable> variables()
         {
             return coefficients.keySet();
+        }
+    }
+
+    private static class TableauVariable
+            extends Variable
+    {
+        private final String debugName;
+        private final Set<Row> rows = Collections.synchronizedSet(new TreeSet<>(Row.COMPARATOR));
+        private Row basicRow;
+        private boolean knownZero = false;
+
+        public TableauVariable(int id, String debugName)
+        {
+            super(id);
+            this.debugName = debugName;
+        }
+
+        @Override
+        public String getDebugName()
+        {
+            return debugName;
         }
     }
 }

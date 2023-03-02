@@ -11,6 +11,10 @@
 package io.github.elcheapogary.satisplanory.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.util.Map;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 public class Constraint
 {
@@ -23,6 +27,13 @@ public class Constraint
         this.comparison = comparison;
     }
 
+    static Constraint fromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
+    {
+        Comparison comparison = Comparison.valueOf(json.getString("cmp"));
+        Expression expression = Expression.fromJson(json, decisionVariableMap);
+        return new Constraint(expression, comparison);
+    }
+
     Comparison getComparison()
     {
         return comparison;
@@ -31,6 +42,14 @@ public class Constraint
     Expression getExpression()
     {
         return expression;
+    }
+
+    public JsonObject toJson()
+    {
+        JsonObjectBuilder b = Json.createObjectBuilder();
+        b.add("cmp", comparison.name());
+        expression.toJson(b);
+        return b.build();
     }
 
     @Override

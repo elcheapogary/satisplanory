@@ -117,7 +117,7 @@ class BranchingSolver
         protected void compute()
         {
             tableau.addConstraint(constraint);
-            try {
+            try{
                 tableau.solveFeasibility();
                 BigFraction objectiveValue = tableau.maximize(objective);
                 if (bestSolutionHolder.isIncompleteSolutionWorthContinuing(objectiveValue)){

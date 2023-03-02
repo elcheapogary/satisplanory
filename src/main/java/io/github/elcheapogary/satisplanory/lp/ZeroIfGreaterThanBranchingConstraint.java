@@ -15,10 +15,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import javax.json.Json;
+import javax.json.JsonObject;
 
 class ZeroIfGreaterThanBranchingConstraint
         extends BranchingConstraint
 {
+    static final String JSON_TYPE = "zero-if-gt";
     private final Expression expression;
     private final BigFraction maximum;
 
@@ -26,6 +30,13 @@ class ZeroIfGreaterThanBranchingConstraint
     {
         this.expression = expression;
         this.maximum = maximum;
+    }
+
+    static ZeroIfGreaterThanBranchingConstraint fromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
+    {
+        Expression expression = Expression.fromJson(json.getJsonObject("expression"), decisionVariableMap);
+        BigFraction maximum = BigFraction.parse(json.getString("max"));
+        return new ZeroIfGreaterThanBranchingConstraint(expression, maximum);
     }
 
     @Override
@@ -41,5 +52,15 @@ class ZeroIfGreaterThanBranchingConstraint
         }else{
             return Collections.emptyList();
         }
+    }
+
+    @Override
+    public JsonObject toJson()
+    {
+        return Json.createObjectBuilder()
+                .add("type", JSON_TYPE)
+                .add("expression", expression.toJson())
+                .add("max", maximum.toString())
+                .build();
     }
 }

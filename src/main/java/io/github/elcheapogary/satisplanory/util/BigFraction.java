@@ -15,11 +15,14 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BigFraction
         extends Number
         implements Comparable<BigFraction>
 {
+    private static final Pattern parsePattern = Pattern.compile("((-)?(\\d+))(/([1-9]\\d*))?");
     protected final BigInteger numerator;
     protected final BigInteger denominator;
 
@@ -109,6 +112,24 @@ public class BigFraction
     public static BigFraction zero()
     {
         return Zero.INSTANCE;
+    }
+
+    public static BigFraction parse(String value)
+    {
+        Matcher m = parsePattern.matcher(value);
+
+        if (!m.matches()){
+            throw new NumberFormatException(value);
+        }
+
+        String numerator = m.group(1);
+        String denominator = m.group(5);
+
+        if (denominator == null){
+            return valueOf(new BigInteger(numerator));
+        }else{
+            return valueOf(new BigInteger(numerator), new BigInteger(denominator));
+        }
     }
 
     public BigFraction abs()

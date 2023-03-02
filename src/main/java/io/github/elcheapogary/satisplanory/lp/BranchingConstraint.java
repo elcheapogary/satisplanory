@@ -11,8 +11,11 @@
 package io.github.elcheapogary.satisplanory.lp;
 
 import java.util.Collection;
+import javax.json.JsonObject;
 
 abstract class BranchingConstraint
 {
     abstract Collection<? extends Constraint> getConstraints(Tableau tableau);
+
+    public abstract JsonObject toJson();
 }

@@ -18,6 +18,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 public class Expression
 {
@@ -28,6 +31,31 @@ public class Expression
     {
         this.coefficients = coefficients;
         this.constantValue = constantValue;
+    }
+
+    static Expression fromJson(JsonObject json, Map<Integer, ? extends DecisionVariable> decisionVariableMap)
+    {
+        BigFraction constantValue = BigFraction.parse(json.getString("c"));
+        Map<DecisionVariable, BigFraction> coefficients = new TreeMap<>(Variable.COMPARATOR);
+
+        for (var entry : json.entrySet()){
+            boolean isInt = true;
+
+            for (char c : entry.getKey().toCharArray()){
+                if (!Character.isDigit(c)){
+                    isInt = false;
+                    break;
+                }
+            }
+
+            if (isInt){
+                int variableId = Integer.parseInt(entry.getKey());
+                DecisionVariable decisionVariable = decisionVariableMap.get(variableId);
+                coefficients.put(decisionVariable, BigFraction.parse(entry.getValue().toString()));
+            }
+        }
+
+        return new Expression(coefficients, constantValue);
     }
 
     public static BinaryExpression zero()
@@ -345,6 +373,22 @@ public class Expression
     public Expression subtract(double subtrahend)
     {
         return subtract(BigDecimal.valueOf(subtrahend));
+    }
+
+    void toJson(JsonObjectBuilder jsonExpression)
+    {
+        jsonExpression.add("c", getConstantValue().toString());
+
+        for (Map.Entry<DecisionVariable, BigFraction> entry : getCoefficients().entrySet()){
+            jsonExpression.add(Integer.toString(entry.getKey().getId()), entry.getValue().toString());
+        }
+    }
+
+    public JsonObject toJson()
+    {
+        JsonObjectBuilder b = Json.createObjectBuilder();
+        toJson(b);
+        return b.build();
     }
 
     @Override
