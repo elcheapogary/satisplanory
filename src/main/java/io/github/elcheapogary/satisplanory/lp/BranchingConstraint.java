@@ -8,15 +8,11 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.lp;
 
-public class UnboundedSolutionException
-        extends Exception
+import java.util.Collection;
+
+abstract class BranchingConstraint
 {
-    private final Variable variable;
-
-    UnboundedSolutionException(Variable variable)
-    {
-        this.variable = variable;
-    }
+    abstract Collection<? extends Constraint> getConstraints(Tableau tableau);
 }

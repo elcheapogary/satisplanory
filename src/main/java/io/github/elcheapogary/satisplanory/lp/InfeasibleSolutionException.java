@@ -8,11 +8,12 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.lp;
 
-import java.util.Collection;
-
-abstract class BranchingConstraint
+public class InfeasibleSolutionException
+    extends Exception
 {
-    abstract Collection<? extends Constraint> getConstraints(Tableau tableau);
+    public InfeasibleSolutionException()
+    {
+    }
 }

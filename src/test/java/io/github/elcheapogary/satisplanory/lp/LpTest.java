@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.lp;
 
 import org.junit.jupiter.api.Test;
 

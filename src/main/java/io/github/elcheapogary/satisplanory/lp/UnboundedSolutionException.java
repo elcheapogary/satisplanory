@@ -8,12 +8,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.lp;
 
-public class InfeasibleSolutionException
-    extends Exception
+public class UnboundedSolutionException
+        extends Exception
 {
-    public InfeasibleSolutionException()
+    private final Variable variable;
+
+    UnboundedSolutionException(Variable variable)
     {
+        this.variable = variable;
     }
 }

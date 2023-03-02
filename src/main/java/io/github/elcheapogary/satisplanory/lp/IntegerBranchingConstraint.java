@@ -8,24 +8,23 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package io.github.elcheapogary.satisplanory.prodplan.lp;
+package io.github.elcheapogary.satisplanory.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-class ZeroIfGreaterThanBranchingConstraint
+class IntegerBranchingConstraint
         extends BranchingConstraint
 {
     private final Expression expression;
-    private final BigFraction maximum;
 
-    public ZeroIfGreaterThanBranchingConstraint(Expression expression, BigFraction maximum)
+    public IntegerBranchingConstraint(Expression expression)
     {
         this.expression = expression;
-        this.maximum = maximum;
     }
 
     @Override
@@ -33,13 +32,17 @@ class ZeroIfGreaterThanBranchingConstraint
     {
         BigFraction value = tableau.getValue(expression);
 
-        if (value.signum() < 0 && value.compareTo(maximum) > 0){
-            List<Constraint> constraints = new ArrayList<>(2);
-            constraints.add(expression.eq(0));
-            constraints.add(expression.lte(maximum));
-            return constraints;
-        }else{
+        if (value.isInteger()){
             return Collections.emptyList();
         }
+
+        BigInteger lower = value.toBigInteger();
+
+        List<Constraint> constraints = new ArrayList<>(2);
+
+        constraints.add(expression.lte(lower));
+        constraints.add(expression.gte(lower.add(BigInteger.ONE)));
+
+        return constraints;
     }
 }

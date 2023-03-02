@@ -10,10 +10,10 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.lp.Expression;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.MatterState;
 import io.github.elcheapogary.satisplanory.model.Recipe;
-import io.github.elcheapogary.satisplanory.prodplan.lp.Expression;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.ArrayList;
@@ -186,7 +186,7 @@ public enum OptimizationTarget
             return Collections.singletonList(objectiveFunction);
         }
     },
-    MAX_SINK_POINTS {
+    MAX_SINK_POINTS{
         @Override
         List<? extends Expression> getObjectiveFunctions(OptimizationModel model)
         {
