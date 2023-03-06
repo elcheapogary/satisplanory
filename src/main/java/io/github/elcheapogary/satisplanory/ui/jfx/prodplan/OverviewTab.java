@@ -257,6 +257,8 @@ class OverviewTab
         BigFraction totalAmountUsed = BigFraction.zero();
         BigFraction totalAmountAvailable = BigFraction.zero();
         BigFraction totalMaxExtractRate = BigFraction.zero();
+        int resourceTypesUsed = 0;
+        BigFraction usedRatioOfMaxExtract = BigFraction.zero();
 
         for (Item item : sortedItems){
             Long max = SatisfactoryData.getResourceExtractionLimits().get(item.getName());
@@ -276,12 +278,14 @@ class OverviewTab
                     totalAmountUsed = totalAmountUsed.add(l.amountUsed);
                     totalAmountAvailable = totalAmountAvailable.add(l.amountAvailable);
                     totalMaxExtractRate = totalMaxExtractRate.add(l.maxExtractRate);
+                    usedRatioOfMaxExtract = usedRatioOfMaxExtract.add(l.amountUsed.divide(l.maxExtractRate));
+                    resourceTypesUsed++;
                 }
             }
         }
 
         ResourceLine l = new ResourceLine();
-        l.name = "Total (Resources Used)";
+        l.name = "Total (" + resourceTypesUsed + " Resource" + (resourceTypesUsed == 1 ? "" : "s") + " used)";
         l.totalIndex = 0;
         l.amountAvailable = totalAmountAvailable;
         l.amountUsed = totalAmountUsed;
@@ -290,22 +294,24 @@ class OverviewTab
             l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
         }
         if (l.maxExtractRate.signum() > 0){
-            l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
+            l.percentageOfMaxExtractRate = usedRatioOfMaxExtract.divide(resourceTypesUsed).multiply(100);
         }
         tableView.getItems().add(l);
 
         totalMaxExtractRate = BigFraction.zero();
+        int totalResourceTypes = 0;
 
         for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
             Item item = appContext.getGameData().getItemByName(entry.getKey()).orElse(null);
 
             if (item != null){
+                totalResourceTypes++;
                 totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmountFraction(BigFraction.valueOf(entry.getValue())));
             }
         }
 
         l = new ResourceLine();
-        l.name = "Total (All Resources)";
+        l.name = "Total (All " + totalResourceTypes + " resources)";
         l.totalIndex = 1;
         l.amountAvailable = totalAmountAvailable;
         l.amountUsed = totalAmountUsed;
@@ -314,7 +320,7 @@ class OverviewTab
             l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
         }
         if (l.maxExtractRate.signum() > 0){
-            l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
+            l.percentageOfMaxExtractRate = usedRatioOfMaxExtract.divide(totalResourceTypes).multiply(100);
         }
         tableView.getItems().add(l);
 
