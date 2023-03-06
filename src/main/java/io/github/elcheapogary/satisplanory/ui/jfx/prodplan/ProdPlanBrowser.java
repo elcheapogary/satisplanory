@@ -463,12 +463,13 @@ public class ProdPlanBrowser
                         {
                             JsonObject json = Json.createObjectBuilder()
                                     .add("sections", Json.createArrayBuilder(
-                                            Collections.singleton(
-                                                    Json.createObjectBuilder()
-                                                            .add("contents", content)
-                                            )
-                                    ))
-                                    .build();
+                                                    Collections.singleton(
+                                                            Json.createObjectBuilder()
+                                                                    .add("contents", content)
+                                                                    .build()
+                                                    )
+                                            ).build()
+                                    ).build();
                             StringWriter sw = new StringWriter();
                             try (JsonWriter w = JsonUtils.createWriter(sw)){
                                 w.writeObject(json);
