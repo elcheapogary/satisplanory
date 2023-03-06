@@ -246,6 +246,27 @@ public class ProductionPlanner
             objectiveFunctions.add(minimizeAllRecipes);
         }
 
+        /*
+
+        // export model to json for jmh benchmarking
+
+        try (JsonWriter w = Json.createWriter(new FileOutputStream("/tmp/x"))) {
+            w.writeObject(Json.createObjectBuilder()
+                    .add("model", model.toJson())
+                    .add("objectives", Json.createArrayBuilder(
+                                    objectiveFunctions.stream()
+                                            .map(Expression::toJson)
+                                            .collect(Collectors.toList())
+                            ).build()
+                    )
+                    .build()
+            );
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+         */
+
         OptimizationResult result;
 
         try {
