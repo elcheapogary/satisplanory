@@ -14,10 +14,6 @@ You can get the latest version here: https://github.com/elcheapogary/satisplanor
 
 The first time you run it, you will be prompted to select your Satisfactory installation directory. Don't worry, it makes no changes to the Satisfactory installation - it just reads the item and recipe data from the Satisfactory installation. Just browse to whereever your Satisfactory installation is and select the `Satisfactory` folder.
 
-## Discord
-
-Join our Discord at https://discord.gg/NncUggkwQB to be notified of new version, provide feedback, or to ask for help.
-
 ## Alternatives
 
 Don't like this calculator? Try these:
