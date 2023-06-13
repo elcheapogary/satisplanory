@@ -50,11 +50,19 @@ class BracketObjectNotation
             if (chars[i] == '('){
                 nestedBracketLevel++;
             }else if (chars[i] == ',' && nestedBracketLevel == 0){
-                retv.add(elementParser.apply(new String(chars, elementStart, i - elementStart)));
+                String part = new String(chars, elementStart, i - elementStart);
+                if (part.startsWith("\"") && part.endsWith("\"")){
+                    part = part.substring(1, part.length() - 1);
+                }
+                retv.add(elementParser.apply(part));
                 elementStart = i + 1;
             }else if (chars[i] == ')'){
                 if (nestedBracketLevel == 0){
-                    retv.add(elementParser.apply(new String(chars, elementStart, i - elementStart)));
+                    String part = new String(chars, elementStart, i - elementStart);
+                    if (part.startsWith("\"") && part.endsWith("\"")){
+                        part = part.substring(1, part.length() - 1);
+                    }
+                    retv.add(elementParser.apply(part));
                     if (i < chars.length - 1){
                         throw new BracketObjectNotationParseException("Invalid array: " + new String(chars));
                     }
