@@ -32,6 +32,7 @@ public class TestGameData
 {
     private static Map<String, String> testDataConfig = null;
     private static TestGameData update7GameData = null;
+    private static TestGameData update8GameData = null;
 
     private TestGameData(Builder builder)
     {
@@ -90,7 +91,7 @@ public class TestGameData
 
     public static TestGameData getLatestTestData()
     {
-        return getUpdate7TestData();
+        return getUpdate8TestData();
     }
 
     public static TestGameData getUpdate7TestData()
@@ -111,6 +112,27 @@ public class TestGameData
             }
 
             return update7GameData;
+        }
+    }
+
+    public static TestGameData getUpdate8TestData()
+    {
+        synchronized (TestGameData.class){
+            if (update8GameData == null){
+                String fileName = loadDataConfig().get("u8.docsjson");
+
+                if (fileName == null){
+                    return null;
+                }
+
+                try{
+                    update8GameData = loadGameDataFromFile(fileName);
+                }catch (IOException | DataException e){
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return update8GameData;
         }
     }
 

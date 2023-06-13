@@ -29,6 +29,17 @@ public class BracketObjectNotationTest
     }
 
     @Test
+    public void testQuotedStringsInArray()
+            throws BracketObjectNotationParseException
+    {
+        List<String> l = BracketObjectNotation.parseArray("(\"a\",\"b\")");
+
+        Assertions.assertEquals(2, l.size());
+        Assertions.assertEquals("a", l.get(0));
+        Assertions.assertEquals("b", l.get(1));
+    }
+
+    @Test
     public void testArrayNaive()
             throws BracketObjectNotationParseException
     {

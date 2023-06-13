@@ -39,8 +39,6 @@ import javax.json.JsonObject;
  */
 public class DocsJsonLoader
 {
-    private static final String ITEM_DESCRIPTOR_NATIVE_CLASS = "Class'/Script/FactoryGame.FGItemDescriptor'";
-
     private DocsJsonLoader()
     {
     }
@@ -51,25 +49,27 @@ public class DocsJsonLoader
         for (JsonObject object : nativeClassesArray.getValuesAs(JsonObject.class)){
             String nativeClassName = object.getString("NativeClass", null);
 
-            if (nativeClassName == null || !nativeClassName.equals(ITEM_DESCRIPTOR_NATIVE_CLASS)){
+            if (nativeClassName == null){
                 continue;
             }
 
-            JsonArray classesArray = object.getJsonArray("Classes");
+            if (nativeClassName.endsWith("'/Script/FactoryGame.FGItemDescriptor'")){
+                JsonArray classesArray = object.getJsonArray("Classes");
 
-            JsonObject firstClass = classesArray.getJsonObject(0);
+                JsonObject firstClass = classesArray.getJsonObject(0);
 
-            Set<String> fieldNames = new TreeSet<>(firstClass.keySet());
+                Set<String> fieldNames = new TreeSet<>(firstClass.keySet());
 
-            /*
-             * Update 6 - some subclasses of FGItemDescriptor do not have mResourceSinkPoints??
-             */
-            fieldNames.remove("mResourceSinkPoints");
+                /*
+                 * Update 6 - some subclasses of FGItemDescriptor do not have mResourceSinkPoints??
+                 */
+                fieldNames.remove("mResourceSinkPoints");
 
-            return fieldNames;
+                return fieldNames;
+            }
         }
 
-        throw new IOException("Unable to find native class: " + ITEM_DESCRIPTOR_NATIVE_CLASS);
+        throw new IOException("Unable to find native class: /Script/FactoryGame.FGItemDescriptor");
     }
 
     private static Map<String, Item> getItemsByClassName(JsonArray nativeClassesArray)
@@ -129,9 +129,7 @@ public class DocsJsonLoader
                     continue;
                 }
 
-                if ("Class'/Script/FactoryGame.FGBuildableManufacturer'".equals(nativeClassName) ||
-                        "Class'/Script/FactoryGame.FGBuildableManufacturerVariablePower'".equals(nativeClassName)){
-
+                if (nativeClassName.endsWith("'/Script/FactoryGame.FGBuildableManufacturer'") || nativeClassName.endsWith("'/Script/FactoryGame.FGBuildableManufacturerVariablePower'")){
                     for (JsonObject jsonBuilding : nativeClassObject.getJsonArray("Classes").getValuesAs(JsonObject.class)){
                         String name = jsonBuilding.getString("mDisplayName");
                         String className = jsonBuilding.getString("ClassName");
@@ -152,7 +150,7 @@ public class DocsJsonLoader
             for (JsonObject object : nativeClassesArray.getValuesAs(JsonObject.class)){
                 String nativeClassName = object.getString("NativeClass", null);
 
-                if ("Class'/Script/FactoryGame.FGRecipe'".equals(nativeClassName)){
+                if (nativeClassName != null && nativeClassName.endsWith("'/Script/FactoryGame.FGRecipe'")){
                     Set<String> unknownBuildingClasses = new TreeSet<>();
                     Collection<Recipe> recipes = new LinkedList<>();
 
