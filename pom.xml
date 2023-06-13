@@ -15,7 +15,7 @@
 
     <groupId>io.github.elcheapogary.satisplanory</groupId>
     <artifactId>satisplanory</artifactId>
-    <version>1.7.1-SNAPSHOT</version>
+    <version>1.7.1</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
