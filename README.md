@@ -23,11 +23,6 @@ it cannot find Satisfactory, you will be prompted to select your Satisfactory in
 browse to where ever your Satisfactory installation is and select it. On Steam the folder should be called
 `Satisfactory`, on Epic, it should be `SatisfactoryEarlyAccess` or `SatisfactoryExperimental`.
 
-## Discord
-
-Join our Discord at https://discord.gg/NncUggkwQB to be notified of new version, provide feedback, request features,
-or to ask for help.
-
 ## Alternatives
 
 Don't like this calculator? Try these:
