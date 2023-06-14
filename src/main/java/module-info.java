@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-open module io.github.elcheapogary.satisplanory
+module io.github.elcheapogary.satisplanory
 {
     requires draw2d;
     requires java.json;
