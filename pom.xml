@@ -205,17 +205,6 @@
                                         </module>
                                         <module>
                                             <artifact>
-                                                <groupId>org.json</groupId>
-                                                <artifactId>json</artifactId>
-                                                <version>${version.json}</version>
-                                            </artifact>
-                                            <moduleInfoSource>
-                                                open module org.json {
-                                                }
-                                            </moduleInfoSource>
-                                        </module>
-                                        <module>
-                                            <artifact>
                                                 <groupId>org.eclipse</groupId>
                                                 <artifactId>draw2d</artifactId>
                                                 <version>${version.draw2d}</version>
