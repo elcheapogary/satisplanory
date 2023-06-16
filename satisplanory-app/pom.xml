@@ -33,12 +33,16 @@
         <build.date>${generated.build.date}</build.date>
 
         <version.commons-io>2.13.0</version.commons-io>
-        <version.draw2d>3.2.100-v20070529</version.draw2d>
         <version.openjfx>20.0.1</version.openjfx>
         <version.johnzon>1.2.20</version.johnzon>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>satisplanory-graph-layout</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -73,17 +77,6 @@
             <groupId>org.controlsfx</groupId>
             <artifactId>controlsfx</artifactId>
             <version>11.1.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse</groupId>
-            <artifactId>draw2d</artifactId>
-            <version>${version.draw2d}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse</groupId>
-                    <artifactId>swt</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -204,17 +197,6 @@
                                             </artifact>
                                             <moduleInfoSource>
                                                 open module org.apache.commons.io {
-                                                }
-                                            </moduleInfoSource>
-                                        </module>
-                                        <module>
-                                            <artifact>
-                                                <groupId>org.eclipse</groupId>
-                                                <artifactId>draw2d</artifactId>
-                                                <version>${version.draw2d}</version>
-                                            </artifact>
-                                            <moduleInfoSource>
-                                                open module draw2d {
                                                 }
                                             </moduleInfoSource>
                                         </module>

@@ -10,7 +10,7 @@
 
 module io.github.elcheapogary.satisplanory
 {
-    requires draw2d;
+    requires io.github.elcheapogary.satisplanory.graphlayout;
     requires java.json;
     requires java.net.http;
     requires javafx.base;

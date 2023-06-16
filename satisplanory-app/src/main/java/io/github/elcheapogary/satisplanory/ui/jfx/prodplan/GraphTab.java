@@ -10,6 +10,10 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
+import io.github.elcheapogary.satisplanory.graphlayout.draw2d.PositionConstants;
+import io.github.elcheapogary.satisplanory.graphlayout.draw2d.geometry.Insets;
+import io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.DirectedGraph;
+import io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.DirectedGraphLayout;
 import io.github.elcheapogary.satisplanory.model.Item;
 import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
@@ -103,10 +107,6 @@ import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import javax.imageio.ImageIO;
 import org.controlsfx.control.Notifications;
-import org.eclipse.draw2d.PositionConstants;
-import org.eclipse.draw2d.geometry.Insets;
-import org.eclipse.draw2d.graph.DirectedGraph;
-import org.eclipse.draw2d.graph.DirectedGraphLayout;
 
 class GraphTab
 {
@@ -124,7 +124,7 @@ class GraphTab
      * @param edge        The edge to add to the graph.
      */
     @SuppressWarnings("unchecked")
-    private static void addEdgeToLayoutGraph(DirectedGraph layoutGraph, org.eclipse.draw2d.graph.Edge edge)
+    private static void addEdgeToLayoutGraph(DirectedGraph layoutGraph, io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Edge edge)
     {
         layoutGraph.edges.add(edge);
     }
@@ -286,7 +286,7 @@ class GraphTab
      * @param node        The node to add to the graph.
      */
     @SuppressWarnings("unchecked")
-    private static void addNodeToLayoutGraph(DirectedGraph layoutGraph, org.eclipse.draw2d.graph.Node node)
+    private static void addNodeToLayoutGraph(DirectedGraph layoutGraph, io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Node node)
     {
         layoutGraph.nodes.add(node);
     }
@@ -1057,7 +1057,7 @@ class GraphTab
 
     private static <N, E> void doGraphLayout(double width, double height, Map<Node<N, E>, Region> componentMap)
     {
-        Map<Node<N, E>, org.eclipse.draw2d.graph.Node> layoutNodeMap = new HashMap<>();
+        Map<Node<N, E>, io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Node> layoutNodeMap = new HashMap<>();
 
         final DirectedGraph layoutGraph = new DirectedGraph();
         layoutGraph.setDefaultPadding(new Insets(50));
@@ -1067,7 +1067,7 @@ class GraphTab
             var n = entry.getKey();
             Region r = entry.getValue();
 
-            org.eclipse.draw2d.graph.Node layoutNode = new org.eclipse.draw2d.graph.Node();
+            io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Node layoutNode = new io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Node();
             layoutNode.width = (int)r.getWidth();
             layoutNode.height = (int)r.getHeight();
             layoutNodeMap.put(n, layoutNode);
@@ -1076,7 +1076,7 @@ class GraphTab
 
         for (Node<N, E> n : componentMap.keySet()){
             for (Node<N, E> c : n.getOutgoingEdges().keySet()){
-                org.eclipse.draw2d.graph.Edge layoutEdge = new org.eclipse.draw2d.graph.Edge(layoutNodeMap.get(n), layoutNodeMap.get(c));
+                io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Edge layoutEdge = new io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Edge(layoutNodeMap.get(n), layoutNodeMap.get(c));
                 addEdgeToLayoutGraph(layoutGraph, layoutEdge);
             }
         }
@@ -1098,7 +1098,7 @@ class GraphTab
             var key = entry.getKey();
             Region r = entry.getValue();
 
-            org.eclipse.draw2d.graph.Node layoutNode = layoutNodeMap.get(key);
+            io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.Node layoutNode = layoutNodeMap.get(key);
 
             r.layoutXProperty().set(layoutNode.x + xOffset);
             r.layoutYProperty().set(layoutNode.y + yOffset);
