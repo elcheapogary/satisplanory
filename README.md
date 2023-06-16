@@ -42,19 +42,21 @@ To build Satisplanory from source, you'll need Apache Maven and OpenJDK 17.
 To build the Windows distribution zip file, run the following command on a Windows machine: 
 
 ```
-mvn -P "jlink,windows" clean verify
+mvn -P "jlink,windows" clean install
 ```
 
 To build the Linux distribution tar file, run the following command on a Linux machine:
 
 ```
-mvn -P "jlink,linux" clean verify
+mvn -P "jlink,linux" clean install
 ```
 
-The distribution files will be in the `target/dist/` directory.
+The distribution files will be in the `satisplanory-app/target/dist/` directory.
 
 To launch the app from the source code, without building a distribution image, do: 
 
 ```
+mvn clean install
+cd satisplanory-app
 mvn javafx:run
 ```
