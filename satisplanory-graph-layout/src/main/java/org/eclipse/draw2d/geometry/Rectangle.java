@@ -73,17 +73,6 @@ public class Rectangle implements Cloneable, java.io.Serializable, Translatable 
 	}
 
 	/**
-	 * Constructs a copy of the provided SWT
-	 * {@link org.eclipse.swt.graphics.Rectangle}.
-	 * 
-	 * @param rect The SWT Rectangle being copied
-	 * @since 2.0
-	 */
-	public Rectangle(org.eclipse.swt.graphics.Rectangle rect) {
-		this(rect.x, rect.y, rect.width, rect.height);
-	}
-
-	/**
 	 * Constructs a Rectangle given a location and size.
 	 * 
 	 * @param p    the location

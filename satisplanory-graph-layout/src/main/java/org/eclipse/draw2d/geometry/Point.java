@@ -92,17 +92,6 @@ public class Point implements Cloneable, java.io.Serializable, Translatable {
 	}
 
 	/**
-	 * Constructs a Point at the same location as the given SWT Point.
-	 * 
-	 * @param p Point from which the initial values are taken.
-	 * @since 2.0
-	 */
-	public Point(org.eclipse.swt.graphics.Point p) {
-		x = p.x;
-		y = p.y;
-	}
-
-	/**
 	 * Constructs a Point at the same location as the given Point.
 	 * 
 	 * @param p Point from which the initial values are taken.
@@ -268,17 +257,6 @@ public class Point implements Cloneable, java.io.Serializable, Translatable {
 	 */
 	public Point getScaled(double xFactor, double yFactor) {
 		return getCopy().scale(xFactor, yFactor);
-	}
-
-	/**
-	 * Creates a new SWT {@link org.eclipse.swt.graphics.Point Point} from this
-	 * Point.
-	 * 
-	 * @return A new SWT Point
-	 * @since 2.0
-	 */
-	public org.eclipse.swt.graphics.Point getSWTPoint() {
-		return new org.eclipse.swt.graphics.Point(x, y);
 	}
 
 	/**
