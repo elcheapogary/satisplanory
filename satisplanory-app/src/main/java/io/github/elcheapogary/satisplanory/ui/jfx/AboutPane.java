@@ -12,12 +12,12 @@ package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.ResourceUtils;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import javafx.application.Application;
 import javafx.concurrent.Worker;
 import javafx.scene.Node;
@@ -57,7 +57,10 @@ public class AboutPane
     private static Node createWebView(String resourceName, Application application, AppContext appContext)
             throws IOException
     {
-        String content = ResourceUtils.getResourceAsString(AboutPane.class, resourceName);
+        String content;
+        try (Reader r = new BufferedReader(new InputStreamReader(Optional.ofNullable(AboutPane.class.getResourceAsStream(resourceName)).orElseThrow(() -> new IOException("Missing resource: " + resourceName)), StandardCharsets.UTF_8))){
+            content = IOUtils.toString(r);
+        }
         WebView webView = new WebView();
         Style.configureWebView(appContext, webView);
         webView.getEngine().getLoadWorker().stateProperty().addListener((observable, oldValue, newValue) -> {

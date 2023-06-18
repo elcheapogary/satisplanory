@@ -1,3 +1,5 @@
 */target/
 /.idea/
 /testdata.conf
+/u8-docs.json
+/u7-docs.json

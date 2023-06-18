@@ -23,13 +23,17 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.ResourceUtils;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javafx.beans.binding.Bindings;
@@ -58,6 +62,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.web.WebView;
+import org.apache.commons.io.IOUtils;
 
 class ConfigTab
 {
@@ -137,7 +142,7 @@ class ConfigTab
 
             MultiPlan plan;
 
-            try {
+            try{
                 plan = new TaskProgressDialog(appContext)
                         .setTitle("Calculating")
                         .setContentText("Calculating production plan")
@@ -198,8 +203,12 @@ class ConfigTab
         webView.setMaxHeight(Double.MAX_VALUE);
         titledPane.setContent(webView);
 
-        try {
-            webView.getEngine().loadContent(ResourceUtils.getResourceAsString(ConfigTab.class, "help.html"), "text/html");
+        try{
+            String content;
+            try (Reader r = new BufferedReader(new InputStreamReader(Optional.ofNullable(ConfigTab.class.getResourceAsStream("help.html")).orElseThrow(() -> new IOException("Missing resource: help.html")), StandardCharsets.UTF_8))){
+                content = IOUtils.toString(r);
+            }
+            webView.getEngine().loadContent(content, "text/html");
         }catch (IOException e){
             e.printStackTrace(System.err);
         }
