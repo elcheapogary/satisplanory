@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,8 +50,6 @@ public class MultiPlanTest
     {
         TestGameData gameData = TestGameData.getLatestTestData();
 
-        Assumptions.assumeFalse(gameData == null);
-
         ProductionPlanner planner = new ProductionPlanner.Builder()
                 .addInputItem(gameData.requireItemByName("Iron Ore"), 60)
                 .addRecipe(gameData.requireRecipeByName("Iron Ingot"))
@@ -78,8 +75,6 @@ public class MultiPlanTest
     {
         TestGameData gameData = TestGameData.getLatestTestData();
 
-        Assumptions.assumeFalse(gameData == null);
-
         assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Alclad Aluminum Sheet");
         assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Iron Ingot");
         assertCanBeBuiltWithAllRawResourcesAndRecipes(gameData, "Crystal Oscillator");
@@ -91,8 +86,6 @@ public class MultiPlanTest
             throws ProductionPlanInternalException, InterruptedException, ProductionPlanNotFeatisbleException
     {
         TestGameData gameData = TestGameData.getLatestTestData();
-
-        Assumptions.assumeFalse(gameData == null);
 
         ProductionPlanner planner = new ProductionPlanner.Builder()
                 .addRecipe(gameData.requireRecipeByName("Iron Ingot"))

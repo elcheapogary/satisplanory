@@ -16,7 +16,6 @@ import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,8 +42,6 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        Assumptions.assumeFalse(gd == null);
-
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
         builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
@@ -67,8 +64,6 @@ public class ProductionPlannerTest
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         TestGameData gd = TestGameData.getLatestTestData();
-
-        Assumptions.assumeFalse(gd == null);
 
         ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
 
@@ -103,8 +98,6 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        Assumptions.assumeFalse(gd == null);
-
         ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
 
         pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
@@ -127,8 +120,6 @@ public class ProductionPlannerTest
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         TestGameData gd = TestGameData.getLatestTestData();
-
-        Assumptions.assumeFalse(gd == null);
 
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
@@ -163,8 +154,6 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        Assumptions.assumeFalse(gd == null);
-
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
         builder.requireOutputItemsPerMinute(gd.requireItemByName("AI Limiter"), 50);
@@ -180,8 +169,6 @@ public class ProductionPlannerTest
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         TestGameData gd = TestGameData.getLatestTestData();
-
-        Assumptions.assumeFalse(gd == null);
 
         ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
 
