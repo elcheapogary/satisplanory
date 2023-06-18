@@ -11,13 +11,10 @@
 package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.Satisplanory;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallation;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
 import io.github.elcheapogary.satisplanory.ui.jfx.prodplan.ProdPlanBrowser;
-import io.github.elcheapogary.satisplanory.ui.jfx.satisdata.SatisfactoryDataLoaderUi;
-import io.github.elcheapogary.satisplanory.ui.jfx.satisdata.SatisfactoryInstallationSelectorDialog;
 import java.io.IOException;
 import javafx.application.Application;
 import javafx.beans.property.BooleanProperty;
@@ -41,18 +38,6 @@ public class MainPane
     private static Menu createFileMenu(Application application, Stage stage, AppContext appContext)
     {
         Menu fileMenu = new Menu("File");
-
-        MenuItem selectSatisfactoryInstallationMenuItem = new MenuItem("Select Satisfactory Installation");
-        fileMenu.getItems().add(selectSatisfactoryInstallationMenuItem);
-
-        selectSatisfactoryInstallationMenuItem.onActionProperty().set(event -> {
-            SatisfactoryInstallationSelectorDialog.show(appContext, SatisfactoryInstallation.findSatisfactoryInstallations())
-                    .ifPresent(satisfactoryInstallation -> {
-                        SatisfactoryDataLoaderUi.loadSatisfactoryData(appContext, satisfactoryInstallation.getPath());
-                    });
-        });
-
-        fileMenu.getItems().add(new SeparatorMenuItem());
 
         MenuItem saveMenuItem = new MenuItem("Save Data");
         fileMenu.getItems().add(saveMenuItem);
@@ -79,7 +64,7 @@ public class MainPane
         helpMenu.getItems().add(licensesMenuItem);
 
         licensesMenuItem.onActionProperty().setValue(actionEvent -> {
-            try {
+            try{
                 Tab tab = new Tab("About " + Satisplanory.getApplicationName());
                 tab.setClosable(true);
                 tab.setContent(AboutPane.create(application, appContext));
@@ -137,9 +122,6 @@ public class MainPane
     private static TabPane createTabPane(AppContext appContext)
     {
         TabPane tabPane = new TabPane();
-
-        final Tab homeTab = HomeTab.create(appContext);
-        tabPane.getTabs().add(homeTab);
 
         appContext.gameDataProperty().addListener((observable, oldValue, gameData) -> {
             if (gameData != null){

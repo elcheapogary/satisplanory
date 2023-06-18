@@ -10,15 +10,15 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
+import io.github.elcheapogary.satisplanory.json.JsonUtils;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import io.github.elcheapogary.satisplanory.util.JsonUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

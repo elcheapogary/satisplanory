@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.component;
 
-import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;

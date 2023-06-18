@@ -10,9 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Building;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Manufacturer;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.TableColumns;
@@ -77,8 +77,8 @@ class TableTab
         TableColumn<Row, String> machineColumns = new TableColumn<>("Machine");
         tableView.getColumns().add(machineColumns);
         machineColumns.cellValueFactoryProperty().set(param -> new SimpleStringProperty(
-                Optional.ofNullable(param.getValue().building)
-                        .map(Building::getName)
+                Optional.ofNullable(param.getValue().manufacturer)
+                        .map(Manufacturer::getName)
                         .orElse(null)
         ));
 
@@ -118,7 +118,7 @@ class TableTab
             for (Recipe.RecipeItem recipeItem : recipe.getIngredients()){
                 itemAmounts.put(
                         recipeItem.getItem(),
-                        recipeItem.getAmount().getAmountPerMinute()
+                        recipeItem.getAmountPerMinute()
                                 .multiply(n)
                                 .negate()
                 );
@@ -126,10 +126,10 @@ class TableTab
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
                 itemAmounts.compute(recipeItem.getItem(), (item, amount) ->
                         Objects.requireNonNullElse(amount, BigFraction.zero())
-                                .add(recipeItem.getAmount().getAmountPerMinute().multiply(n))
+                                .add(recipeItem.getAmountPerMinute().multiply(n))
                 );
             }
-            tableView.getItems().add(new Row(recipe.getName(), recipe.getProducedInBuilding(), n, itemAmounts));
+            tableView.getItems().add(new Row(recipe.getName(), recipe.getManufacturer(), n, itemAmounts));
         }
 
         {
@@ -168,14 +168,14 @@ class TableTab
     private static class Row
     {
         private final String name;
-        private final Building building;
+        private final Manufacturer manufacturer;
         private final BigFraction number;
         private final Map<Item, BigFraction> itemAmounts;
 
-        public Row(String name, Building building, BigFraction number, Map<Item, BigFraction> itemAmounts)
+        public Row(String name, Manufacturer manufacturer, BigFraction number, Map<Item, BigFraction> itemAmounts)
         {
             this.name = name;
-            this.building = building;
+            this.manufacturer = manufacturer;
             this.number = number;
             this.itemAmounts = itemAmounts;
         }

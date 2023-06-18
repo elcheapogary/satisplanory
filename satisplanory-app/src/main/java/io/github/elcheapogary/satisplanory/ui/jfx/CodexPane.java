@@ -10,9 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -198,13 +198,13 @@ public class CodexPane
         vbox.getChildren().add(new Label("These are the recipes that can be used to create: " + item.getName()));
 
         for (Recipe recipe : defaultRecipes){
-            Node n = createRecipeNode(recipe, item);
+            Node n = createRecipeNode(recipe);
             VBox.setVgrow(n, Priority.NEVER);
             vbox.getChildren().add(n);
         }
 
         for (Recipe recipe : alternateRecipes){
-            Node n = createRecipeNode(recipe, item);
+            Node n = createRecipeNode(recipe);
             VBox.setVgrow(n, Priority.NEVER);
             vbox.getChildren().add(n);
         }
@@ -244,7 +244,7 @@ public class CodexPane
         recipes.sort(Comparator.comparing(Recipe::getName));
 
         for (Recipe recipe : recipes){
-            Node n = createRecipeNode(recipe, item);
+            Node n = createRecipeNode(recipe);
             VBox.setVgrow(n, Priority.NEVER);
             vbox.getChildren().add(n);
         }
@@ -257,7 +257,7 @@ public class CodexPane
         return craftingPane;
     }
 
-    private static Node createRecipeNode(Recipe recipe, Item primaryItem)
+    private static Node createRecipeNode(Recipe recipe)
     {
         VBox vbox = new VBox(10);
 
@@ -294,7 +294,7 @@ public class CodexPane
                 }
 
                 {
-                    Label l = new Label(recipe.getProducedInBuilding().getName());
+                    Label l = new Label(recipe.getManufacturer().getName());
                     l.setMaxWidth(Double.MAX_VALUE);
                     setBorder(l, 1, 1, 1, 0);
                     l.setPadding(new Insets(5));
@@ -404,7 +404,7 @@ public class CodexPane
         }
 
         List<Recipe.RecipeItem> sortedList = new ArrayList<>(items);
-        sortedList.sort(Comparator.<Recipe.RecipeItem, String>comparing(recipeItem -> recipeItem.getItem().getName()));
+        sortedList.sort(Comparator.comparing(recipeItem -> recipeItem.getItem().getName()));
 
         int row = 2;
         for (Recipe.RecipeItem ri : sortedList){
@@ -414,14 +414,14 @@ public class CodexPane
             setBorder(itemName, 0, 1, 1, 1);
             GridPane.setFillWidth(itemName, true);
             gp.add(itemName, 0, row);
-            Label perCycle = new Label(ri.getItem().toDisplayAmount(ri.getAmount().getAmountPerCycle()).setScale(1, RoundingMode.HALF_UP).toString());
+            Label perCycle = new Label(ri.getItem().toDisplayAmount(ri.getAmountPerCycle()).setScale(1, RoundingMode.HALF_UP).toString());
             perCycle.setPadding(new Insets(5));
             perCycle.setMaxWidth(Double.MAX_VALUE);
             perCycle.setAlignment(Pos.BASELINE_RIGHT);
             setBorder(perCycle, 0, 1, 1, 0);
             GridPane.setFillWidth(perCycle, true);
             gp.add(perCycle, 1, row);
-            Label perMin = new Label(ri.getItem().toDisplayAmountString(ri.getAmount().getAmountPerMinute()));
+            Label perMin = new Label(ri.getItem().toDisplayAmountString(ri.getAmountPerMinute()));
             perMin.setPadding(new Insets(5));
             perMin.setMaxWidth(Double.MAX_VALUE);
             perMin.setAlignment(Pos.BASELINE_RIGHT);

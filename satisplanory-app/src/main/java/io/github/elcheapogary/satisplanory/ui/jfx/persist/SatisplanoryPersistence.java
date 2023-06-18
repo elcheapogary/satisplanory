@@ -13,7 +13,7 @@ package io.github.elcheapogary.satisplanory.ui.jfx.persist;
 import io.github.elcheapogary.satisplanory.Satisplanory;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
-import io.github.elcheapogary.satisplanory.util.JsonUtils;
+import io.github.elcheapogary.satisplanory.json.JsonUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

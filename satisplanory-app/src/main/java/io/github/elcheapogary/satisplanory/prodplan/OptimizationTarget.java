@@ -10,10 +10,10 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.MatterState;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.lp.Expression;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.MatterState;
-import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public enum OptimizationTarget
                         Item item = entry.getKey();
                         BigFraction weight = entry.getValue();
 
-                        model.getLpModel().addConstraint(model.getItemSurplusMap().get(item).eq(balanceVariable.multiply(item.fromDisplayAmount(weight))));
+                        model.getLpModel().addConstraint(model.getItemSurplusMap().get(item).eq(balanceVariable.multiply(weight)));
                     }
                 }else{
                     Expression balanceExpression = Expression.zero();
@@ -56,8 +56,8 @@ public enum OptimizationTarget
 
                             Expression balanceVariable = model.getLpModel().addVariable("Balance between " + a.getName() + " and " + b.getName());
                             balanceExpression = balanceExpression.add(balanceVariable);
-                            model.getLpModel().addConstraint(model.getItemSurplusMap().get(a).gte(balanceVariable.multiply(a.fromDisplayAmount(itemMaximizeWeights.get(a)))));
-                            model.getLpModel().addConstraint(model.getItemSurplusMap().get(b).gte(balanceVariable.multiply(b.fromDisplayAmount(itemMaximizeWeights.get(b)))));
+                            model.getLpModel().addConstraint(model.getItemSurplusMap().get(a).gte(balanceVariable.multiply(itemMaximizeWeights.get(a))));
+                            model.getLpModel().addConstraint(model.getItemSurplusMap().get(b).gte(balanceVariable.multiply(itemMaximizeWeights.get(b))));
 
                             model.getLpModel().addConstraint(perItemBalanceVariableMap.computeIfAbsent(a, item -> model.getLpModel().addVariable("Balance for item: " + item.getName())).lte(balanceVariable));
                             model.getLpModel().addConstraint(perItemBalanceVariableMap.computeIfAbsent(b, item -> model.getLpModel().addVariable("Balance for item: " + item.getName())).lte(balanceVariable));
@@ -87,7 +87,7 @@ public enum OptimizationTarget
                     BigFraction weight = entry.getValue();
                     maximizeExpression = maximizeExpression.add(
                             model.getItemSurplusMap().get(item)
-                                    .multiply(item.toDisplayAmountFraction(weight))
+                                    .multiply(weight)
                     );
                 }
 

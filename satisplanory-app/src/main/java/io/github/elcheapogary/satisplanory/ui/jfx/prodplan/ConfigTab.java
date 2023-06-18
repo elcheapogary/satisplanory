@@ -10,8 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.prodplan.OptimizationTarget;
 import io.github.elcheapogary.satisplanory.prodplan.ProdPlanUtils;
@@ -23,6 +23,7 @@ import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import io.github.elcheapogary.satisplanory.util.CharStreams;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -62,7 +63,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.web.WebView;
-import org.apache.commons.io.IOUtils;
 
 class ConfigTab
 {
@@ -128,14 +128,14 @@ class ConfigTab
 
             for (ProdPlanModel.InputItem inputItem : model.getInputItems()){
                 if (inputItem.getAmount().getValue().signum() > 0){
-                    b.addInputItem(inputItem.getItem(), inputItem.getItem().fromDisplayAmount(inputItem.getAmount().getValue()));
+                    b.addInputItem(inputItem.getItem(), inputItem.getAmount().getValue());
                 }
             }
 
             for (ProdPlanModel.OutputItem outputItem : model.getOutputItems()){
                 b.addOutputItem(
                         outputItem.getItem(),
-                        outputItem.getItem().fromDisplayAmount(outputItem.getMin().getValue()),
+                        outputItem.getMin().getValue(),
                         outputItem.getWeight().getValue()
                 );
             }
@@ -206,7 +206,7 @@ class ConfigTab
         try{
             String content;
             try (Reader r = new BufferedReader(new InputStreamReader(Optional.ofNullable(ConfigTab.class.getResourceAsStream("help.html")).orElseThrow(() -> new IOException("Missing resource: help.html")), StandardCharsets.UTF_8))){
-                content = IOUtils.toString(r);
+                content = CharStreams.toString(r);
             }
             webView.getEngine().loadContent(content, "text/html");
         }catch (IOException e){

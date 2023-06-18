@@ -12,6 +12,7 @@ package io.github.elcheapogary.satisplanory.ui.jfx;
 
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
+import io.github.elcheapogary.satisplanory.util.CharStreams;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,7 +25,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.web.WebView;
-import org.apache.commons.io.IOUtils;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.events.EventTarget;
 import org.w3c.dom.html.HTMLAnchorElement;
@@ -59,7 +59,7 @@ public class AboutPane
     {
         String content;
         try (Reader r = new BufferedReader(new InputStreamReader(Optional.ofNullable(AboutPane.class.getResourceAsStream(resourceName)).orElseThrow(() -> new IOException("Missing resource: " + resourceName)), StandardCharsets.UTF_8))){
-            content = IOUtils.toString(r);
+            content = CharStreams.toString(r);
         }
         WebView webView = new WebView();
         Style.configureWebView(appContext, webView);

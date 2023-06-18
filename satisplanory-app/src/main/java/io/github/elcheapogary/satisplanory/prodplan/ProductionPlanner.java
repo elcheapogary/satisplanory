@@ -10,14 +10,14 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.MatterState;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.lp.Expression;
 import io.github.elcheapogary.satisplanory.lp.InfeasibleSolutionException;
 import io.github.elcheapogary.satisplanory.lp.Model;
 import io.github.elcheapogary.satisplanory.lp.OptimizationResult;
 import io.github.elcheapogary.satisplanory.lp.UnboundedSolutionException;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.MatterState;
-import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -151,14 +151,14 @@ public class ProductionPlanner
                 for (Recipe.RecipeItem ri : recipe.getIngredients()){
                     itemsConsumedExpressionMap.compute(ri.getItem(), (item, expression) ->
                             Objects.requireNonNullElse(expression, Expression.zero())
-                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinute()))
+                                    .add(recipeVariable.multiply(ri.getAmountPerMinute()))
                     );
                 }
 
                 for (Recipe.RecipeItem ri : recipe.getProducts()){
                     itemsProducedExpressionMap.compute(ri.getItem(), (item, expression) ->
                             Objects.requireNonNullElse(expression, Expression.zero())
-                                    .add(recipeVariable.multiply(ri.getAmount().getAmountPerMinute()))
+                                    .add(recipeVariable.multiply(ri.getAmountPerMinute()))
                     );
                 }
             }
@@ -269,7 +269,7 @@ public class ProductionPlanner
 
         OptimizationResult result;
 
-        try {
+        try{
             result = model.maximize(objectiveFunctions);
         }catch (InfeasibleSolutionException e){
             throw new ProductionPlanNotFeatisbleException(e);

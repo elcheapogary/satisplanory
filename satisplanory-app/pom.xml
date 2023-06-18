@@ -14,49 +14,46 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-	<groupId>io.github.elcheapogary.satisplanory</groupId>
-	<artifactId>satisplanory-parent</artifactId>
-	<version>1.8.0-SNAPSHOT</version>
+        <groupId>io.github.elcheapogary.satisplanory</groupId>
+        <artifactId>satisplanory-parent</artifactId>
+        <version>1.8.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>satisplanory-app</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
         <satisplanory.moduleName>io.github.elcheapogary.satisplanory</satisplanory.moduleName>
         <mainClass>io.github.elcheapogary.satisplanory.ui.jfx.app.Main</mainClass>
         <build.jmods.directory>${project.build.directory}/jlink-image/jmods</build.jmods.directory>
 
         <build.date>${generated.build.date}</build.date>
 
-        <version.commons-io>2.13.0</version.commons-io>
         <version.openjfx>20.0.1</version.openjfx>
-        <version.johnzon>1.2.20</version.johnzon>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>satisplanory-gamedata</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>satisplanory-graph-layout</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${version.commons-io}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>satisplanory-util</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.json</groupId>
             <artifactId>javax.json-api</artifactId>
-            <version>1.1.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.johnzon</groupId>
             <artifactId>johnzon-core</artifactId>
-            <version>${version.johnzon}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -81,7 +78,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.9.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>satisplanory-gamedata-test</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -188,26 +190,16 @@
                                     <modules>
                                         <module>
                                             <artifact>
-                                                <groupId>commons-io</groupId>
-                                                <artifactId>commons-io</artifactId>
-                                                <version>${version.commons-io}</version>
-                                            </artifact>
-                                            <moduleInfoSource>
-                                                open module org.apache.commons.io {
-                                                }
-                                            </moduleInfoSource>
-                                        </module>
-                                        <module>
-                                            <artifact>
                                                 <groupId>org.apache.johnzon</groupId>
                                                 <artifactId>johnzon-core</artifactId>
                                                 <version>${version.johnzon}</version>
                                             </artifact>
                                             <moduleInfoSource>
                                                 module org.apache.johnzon.core {
-                                                    requires java.json;
-                                                    provides javax.json.spi.JsonProvider with org.apache.johnzon.core.JsonProviderImpl;
-                                                    uses org.apache.johnzon.core.spi.JsonPointerFactory;
+                                                requires java.json;
+                                                provides javax.json.spi.JsonProvider with
+                                                org.apache.johnzon.core.JsonProviderImpl;
+                                                uses org.apache.johnzon.core.spi.JsonPointerFactory;
                                                 }
                                             </moduleInfoSource>
                                         </module>
@@ -242,7 +234,9 @@
                                     </launcher>
                                     <compression>2</compression>
                                     <stripDebug>true</stripDebug>
-                                    <outputDirectory>${project.build.directory}/jlink-image/satisplanory-${project.version}</outputDirectory>
+                                    <outputDirectory>
+                                        ${project.build.directory}/jlink-image/satisplanory-${project.version}
+                                    </outputDirectory>
                                     <ignoreSigningInformation>true</ignoreSigningInformation>
                                 </configuration>
                             </execution>

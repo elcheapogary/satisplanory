@@ -10,6 +10,7 @@
 
 module io.github.elcheapogary.satisplanory
 {
+    requires io.github.elcheapogary.satisplanory.gamedata;
     requires io.github.elcheapogary.satisplanory.graphlayout;
     requires java.json;
     requires java.net.http;
@@ -18,7 +19,6 @@ module io.github.elcheapogary.satisplanory
     requires javafx.swing;
     requires javafx.web;
     requires jdk.xml.dom;
-    requires org.apache.commons.io;
     requires org.controlsfx.controls;
 
     exports io.github.elcheapogary.satisplanory.ui.jfx.app;

@@ -10,9 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
@@ -47,7 +47,7 @@ public class ProdPlanUtils
         ProductionPlan planWithAllRecipes = null;
         ProductionPlan planWithAllItemsAndRecipes = null;
 
-        try {
+        try{
             unmodifiedPlan = planner.createPlan();
         }catch (ProductionPlanNotFeatisbleException ignore){
         }
@@ -66,7 +66,7 @@ public class ProdPlanUtils
                 gameData.getItemByName("Water")
                         .ifPresent(item -> pb.addInputItem(item, Long.MAX_VALUE));
 
-                try {
+                try{
                     planWithAllItems = pb.build().createPlan();
                 }catch (ProductionPlanNotFeatisbleException ignore){
                 }
@@ -76,7 +76,7 @@ public class ProdPlanUtils
 
                 pb.addRecipes(gameData.getRecipes());
 
-                try {
+                try{
                     planWithAllRecipes = pb.build().createPlan();
                 }catch (ProductionPlanNotFeatisbleException ignore){
                 }

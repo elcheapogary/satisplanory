@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.graph.data;
 
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 
 public class RecipeNodeData

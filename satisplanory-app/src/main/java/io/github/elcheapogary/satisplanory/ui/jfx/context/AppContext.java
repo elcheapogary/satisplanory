@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.context;
 
-import io.github.elcheapogary.satisplanory.model.GameData;
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentData;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;

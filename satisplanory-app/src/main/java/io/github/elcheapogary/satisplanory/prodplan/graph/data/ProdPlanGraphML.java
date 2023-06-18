@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.graph.data;
 
-import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.prodplan.graph.lib.Graph;
 import io.github.elcheapogary.satisplanory.prodplan.graph.lib.GraphML;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
@@ -61,7 +61,7 @@ public class ProdPlanGraphML
         if (data instanceof RecipeNodeData d){
             retv.put("node-type", "recipe");
             retv.put("node-recipe-name", d.getRecipe().getName());
-            retv.put("node-recipe-building-name", d.getRecipe().getProducedInBuilding().getName());
+            retv.put("node-recipe-building-name", d.getRecipe().getManufacturer().getName());
             retv.put("node-recipe-amount", BigDecimalUtils.normalize(d.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)).toString());
         }else if (data instanceof InputItemNodeData d){
             retv.put("node-type", "input");
@@ -84,7 +84,7 @@ public class ProdPlanGraphML
         }else if (data instanceof OutputItemNodeData d){
             return "Output: " + d.getItem().getName() + " " + BigDecimalUtils.normalize(d.getAmount().toBigDecimal(4, RoundingMode.HALF_UP)) + " / min";
         }else if (data instanceof RecipeNodeData d){
-            return d.getRecipe().getName() + " " + BigDecimalUtils.normalize(d.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + d.getRecipe().getProducedInBuilding().getName();
+            return d.getRecipe().getName() + " " + BigDecimalUtils.normalize(d.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + d.getRecipe().getManufacturer().getName();
         }else{
             return null;
         }

@@ -14,15 +14,6 @@ You can get the latest version here: https://github.com/elcheapogary/satisplanor
 3. Run `satisplanory.exe` in the extracted zip folder. Don't run the EXE from inside the zip file - it will
    not work. Make sure you first extract the zip, then run the EXE from inside the extracted folder.
 
-Satisplanory uses recipe and item data that is shipped with Satisfactory. To read this data, Satisplanory
-needs to locate your installation of Satisfactory on your PC. Don't worry, Satisplanory makes no changes to
-the Satisfactory installation, it just read some data to use in calculations.
-
-The first time you run Satisplanory, it will try and figure out where you have Satisfactory installed. If
-it cannot find Satisfactory, you will be prompted to select your Satisfactory installation directory. Just
-browse to where ever your Satisfactory installation is and select it. On Steam the folder should be called
-`Satisfactory`, on Epic, it should be `SatisfactoryEarlyAccess` or `SatisfactoryExperimental`.
-
 ## Alternatives
 
 Don't like this calculator? Try these:

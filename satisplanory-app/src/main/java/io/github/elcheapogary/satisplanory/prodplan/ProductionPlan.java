@@ -10,8 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.InputItemNodeData;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.OutputItemNodeData;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.ProdPlanEdgeData;
@@ -84,11 +84,11 @@ public class ProductionPlan
             Map<Item, BigFraction> requirementsMap = Item.createMap();
             wantsMap.put(node, requirementsMap);
             for (Recipe.RecipeItem recipeItem : recipe.getIngredients()){
-                requirementsMap.put(recipeItem.getItem(), recipeItem.getAmount().getAmountPerMinute().multiply(amount));
+                requirementsMap.put(recipeItem.getItem(), recipeItem.getAmountPerMinute().multiply(amount));
             }
             for (Recipe.RecipeItem recipeItem : recipe.getProducts()){
                 suppliesMap.computeIfAbsent(recipeItem.getItem(), item1 -> new HashMap<>())
-                        .put(node, recipeItem.getAmount().getAmountPerMinute().multiply(amount));
+                        .put(node, recipeItem.getAmountPerMinute().multiply(amount));
             }
         }
 

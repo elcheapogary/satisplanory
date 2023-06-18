@@ -18,8 +18,6 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javax.json.Json;
@@ -29,7 +27,6 @@ import javax.json.JsonObjectBuilder;
 
 public class PersistentData
 {
-    private final StringProperty satisfactoryPath = new SimpleStringProperty();
     private final Preferences preferences;
     private final ObservableList<PersistentProductionPlan> productionPlans;
 
@@ -42,10 +39,9 @@ public class PersistentData
     public PersistentData(JsonObject json)
             throws UnsupportedVersionException
     {
-        if (json.containsKey("v") && Double.parseDouble(json.getString("v")) > 1.3){
+        if (json.containsKey("v") && Double.parseDouble(json.getString("v")) > 1.8){
             throw new UnsupportedVersionException();
         }
-        this.satisfactoryPath.set(json.getString("satisfactoryPath", null));
         this.preferences = Optional.ofNullable(json.getJsonObject("preferences"))
                 .map(Preferences::new)
                 .orElseGet(Preferences::new);
@@ -70,26 +66,10 @@ public class PersistentData
         return productionPlans;
     }
 
-    public String getSatisfactoryPath()
-    {
-        return satisfactoryPath.get();
-    }
-
-    public void setSatisfactoryPath(String satisfactoryPath)
-    {
-        this.satisfactoryPath.set(satisfactoryPath);
-    }
-
-    public StringProperty satisfactoryPathProperty()
-    {
-        return satisfactoryPath;
-    }
-
     JsonObject toJson()
     {
         return Json.createObjectBuilder()
-                .add("v", "1.3")
-                .add("satisfactoryPath", satisfactoryPath.get())
+                .add("v", "1.8")
                 .add("preferences", preferences.toJson())
                 .add("productionPlans", Json.createArrayBuilder(
                         productionPlans.stream()

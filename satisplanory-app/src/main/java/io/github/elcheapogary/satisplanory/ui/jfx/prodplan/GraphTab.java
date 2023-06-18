@@ -10,12 +10,12 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.graphlayout.draw2d.PositionConstants;
 import io.github.elcheapogary.satisplanory.graphlayout.draw2d.geometry.Insets;
 import io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.DirectedGraph;
 import io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph.DirectedGraphLayout;
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.InputItemNodeData;
 import io.github.elcheapogary.satisplanory.prodplan.graph.data.OutputItemNodeData;
@@ -745,7 +745,7 @@ class GraphTab
         if (nodeData instanceof RecipeNodeData recipeNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-recipe");
             line1 = recipeNodeData.getRecipe().getName();
-            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getProducedInBuilding().getName();
+            line2 = BigDecimalUtils.normalize(recipeNodeData.getAmount().toBigDecimal(6, RoundingMode.HALF_UP)) + " " + recipeNodeData.getRecipe().getManufacturer().getName();
         }else if (nodeData instanceof InputItemNodeData inputItemNodeData){
             vbox.getStyleClass().add("stpnr-graph-node-input");
             line1 = "Input: " + inputItemNodeData.getItem().getName();
@@ -838,7 +838,7 @@ class GraphTab
         sortedRecipeItems.sort(Comparator.comparing(recipeItem -> recipeItem.getItem().getName()));
 
         for (Recipe.RecipeItem ri : sortedRecipeItems){
-            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + ri.getItem().toNormalizedDisplayAmountString(ri.getAmount().getAmountPerMinute().multiply(amount)) + " / min"));
+            lines.getChildren().add(new Label(ri.getItem().getName() + ": " + ri.getItem().toNormalizedDisplayAmountString(ri.getAmountPerMinute().multiply(amount)) + " / min"));
         }
 
         return titledPane;
@@ -859,12 +859,12 @@ class GraphTab
             BigFraction clockSpeed = amount.divide(nBuildings).multiply(100);
             copyClockSpeedProperty.setValue(clockSpeed);
 
-            lines.getChildren().add(new Label("" + nBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(clockSpeed.toBigDecimal(4, RoundingMode.HALF_UP)) + "%"));
+            lines.getChildren().add(new Label(nBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(clockSpeed.toBigDecimal(4, RoundingMode.HALF_UP)) + "%"));
         }else{
             BigInteger intBuildings = nBuildings.toBigInteger();
 
             if (intBuildings.signum() > 0){
-                lines.getChildren().add(new Label("" + intBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(maxClockSpeedDecimal.setScale(4, RoundingMode.HALF_UP)) + "%"));
+                lines.getChildren().add(new Label(intBuildings + " x " + buildingName + " @ " + BigDecimalUtils.normalize(maxClockSpeedDecimal.setScale(4, RoundingMode.HALF_UP)) + "%"));
             }
 
             BigFraction remainder = amount.subtract(BigFraction.valueOf(maxClockSpeedDecimal).divide(100).multiply(intBuildings)).multiply(100);
@@ -919,13 +919,11 @@ class GraphTab
                 slider.setShowTickLabels(true);
                 slider.setSnapToPixel(false);
 
-                slider.valueProperty().addListener((observable, oldValue, newValue) -> {
-                    slider.setValue(BigDecimal.valueOf(newValue.doubleValue())
-                            .divide(BigDecimal.valueOf(5), 0, RoundingMode.HALF_UP)
-                            .multiply(BigDecimal.valueOf(5))
-                            .doubleValue()
-                    );
-                });
+                slider.valueProperty().addListener((observable, oldValue, newValue) -> slider.setValue(BigDecimal.valueOf(newValue.doubleValue())
+                        .divide(BigDecimal.valueOf(5), 0, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(5))
+                        .doubleValue()
+                ));
 
                 maxClockSpeedProperty.bind(Bindings.createIntegerBinding(() -> Math.max(1, (int)slider.valueProperty().get()), slider.valueProperty()));
 
@@ -941,12 +939,12 @@ class GraphTab
                 container.getChildren().add(v);
             }
 
-            addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+            addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getManufacturer().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
             maxClockSpeedProperty.addListener(observable -> {
-                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getManufacturer().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
             });
             evenClockSpeedProperty.addListener(observable -> {
-                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getProducedInBuilding().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
+                addMachines(evenClockSpeedProperty.get(), maxClockSpeedProperty.get(), nodeData.getRecipe().getManufacturer().getName(), nodeData.getAmount(), lines, copyClockSpeedProperty);
             });
 
             MenuButton menuButton = new MenuButton("Copy");
@@ -988,13 +986,12 @@ class GraphTab
             MenuItem itemsPerMin = new MenuItem("Target production rate");
             menuButton.getItems().add(itemsPerMin);
             itemsPerMin.onActionProperty().set(event -> {
-                String copyText = BigDecimalUtils.normalize(
-                        nodeData.getRecipe().getPrimaryProduct().toDisplayAmountFraction(
-                                nodeData.getRecipe().getPrimaryProductAmount()
-                                        .getAmountPerMinute()
-                                        .multiply(copyClockSpeedProperty.getValue().divide(100))
-                        ).toBigDecimal(4, RoundingMode.HALF_UP)
-                ).toString();
+                String copyText = nodeData.getRecipe().getPrimaryProduct().getItem().toNormalizedDisplayAmountString(
+                        nodeData.getRecipe().getPrimaryProduct()
+                                .getAmountPerMinute()
+                                .multiply(copyClockSpeedProperty.getValue().divide(100))
+                );
+
                 ClipboardContent clipboardContent = new ClipboardContent();
                 clipboardContent.putString(copyText);
                 Clipboard.getSystemClipboard().setContent(clipboardContent);
@@ -1010,11 +1007,10 @@ class GraphTab
             MenuItem itemsPerMinFraction = new MenuItem("Target production rate as fraction");
             menuButton.getItems().add(itemsPerMinFraction);
             itemsPerMinFraction.onActionProperty().set(event -> {
-                String copyText = nodeData.getRecipe().getPrimaryProduct().toDisplayAmountFraction(
-                        nodeData.getRecipe().getPrimaryProductAmount()
-                                .getAmountPerMinute()
-                                .multiply(copyClockSpeedProperty.getValue().divide(100))
-                ).toString();
+                String copyText = nodeData.getRecipe().getPrimaryProduct()
+                        .getAmountPerMinute()
+                        .multiply(copyClockSpeedProperty.getValue().divide(100))
+                        .toString();
                 ClipboardContent clipboardContent = new ClipboardContent();
                 clipboardContent.putString(copyText);
                 Clipboard.getSystemClipboard().setContent(clipboardContent);

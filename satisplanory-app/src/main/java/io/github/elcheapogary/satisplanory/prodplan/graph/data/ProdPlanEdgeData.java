@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan.graph.data;
 
-import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Comparator;
 import java.util.Map;

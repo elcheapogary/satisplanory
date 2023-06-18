@@ -10,8 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.test.TestGameData;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.test.TestGameData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -79,8 +79,8 @@ public class ProductionPlannerTest
         Item crudeOil = gd.requireItemByName("Crude Oil");
         Item water = gd.requireItemByName("Water");
 
-        pb.addInputItem(water, water.fromDisplayAmount(BigFraction.valueOf(999999999999L)));
-        pb.addInputItem(crudeOil, crudeOil.fromDisplayAmount(BigFraction.valueOf(360)));
+        pb.addInputItem(water, BigFraction.valueOf(999999999999L));
+        pb.addInputItem(crudeOil, BigFraction.valueOf(360));
 
         pb.requireOutputItemsPerMinute(plastic, 20);
         pb.maximizeOutputItem(plastic, 1);
@@ -94,7 +94,7 @@ public class ProductionPlannerTest
         BigFraction nFuel = plan.getOutputItemsPerMinute(fuel);
 
         assertTrue(nPlastic.compareTo(BigFraction.valueOf(20)) > 0);
-        assertEquals(plastic.toDisplayAmountFraction(nPlastic).subtract(20), fuel.toDisplayAmountFraction(nFuel));
+        assertEquals(nPlastic.subtract(20), nFuel);
     }
 
     @Test
@@ -176,7 +176,8 @@ public class ProductionPlannerTest
      * We should not create plans with surplus fluid, as fluids cannot be sinked.
      */
     @Test
-    public void testNoFluidByProducts() throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
+    public void testNoFluidByProducts()
+            throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         TestGameData gd = TestGameData.getLatestTestData();
 

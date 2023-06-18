@@ -31,8 +31,8 @@ public class SatisfactoryData
             tmp.put("Sulfur", 6840L);
             tmp.put("Uranium", 2100L);
             tmp.put("Bauxite", 9780L);
-            tmp.put("Crude Oil", 11700000L);
-            tmp.put("Nitrogen Gas", 12000000L);
+            tmp.put("Crude Oil", 11700L);
+            tmp.put("Nitrogen Gas", 12000L);
 
             resourceExtractionLimits = Collections.unmodifiableMap(tmp);
         }

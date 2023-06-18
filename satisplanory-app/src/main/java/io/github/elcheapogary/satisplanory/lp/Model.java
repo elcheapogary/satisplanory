@@ -40,7 +40,7 @@ public class Model
 
     public static Model fromJson(String json)
     {
-        try (JsonReader r = Json.createReader(new StringReader(json))) {
+        try (JsonReader r = Json.createReader(new StringReader(json))){
             return fromJson(r.readObject());
         }
     }
@@ -180,7 +180,7 @@ public class Model
             logger = new Logger(logger);
 
             StringWriter sw = new StringWriter();
-            try (JsonWriter w = Json.createWriter(sw)) {
+            try (JsonWriter w = Json.createWriter(sw)){
                 w.writeObject(toJson());
             }
             logger.accept(sw.toString());

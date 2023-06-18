@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -125,6 +124,22 @@ public class PersistentProductionPlan
             return toMap(json, JsonObject::getString);
         }
 
+        private static JsonObject stringMapToJsonObject(Map<String, String> map)
+        {
+            return mapToJsonObject(map, (jsonObjectBuilder, stringStringEntry) -> jsonObjectBuilder.add(stringStringEntry.getKey(), stringStringEntry.getValue()));
+        }
+
+        private static <V> JsonObject mapToJsonObject(Map<String, V> map, BiFunction<? super JsonObjectBuilder, Map.Entry<String, V>, ? extends JsonObjectBuilder> setter)
+        {
+            JsonObjectBuilder b = Json.createObjectBuilder();
+
+            for (var e : map.entrySet()){
+                b = setter.apply(b, e);
+            }
+
+            return b.build();
+        }
+
         public Map<String, String> getInputItems()
         {
             return inputItems;
@@ -213,22 +228,6 @@ public class PersistentProductionPlan
                     .add("outputItemsPerMinute", stringMapToJsonObject(outputItemsPerMinute))
                     .add("maximizedOutputItems", stringMapToJsonObject(maximizedOutputItems))
                     .build();
-        }
-
-        private static JsonObject stringMapToJsonObject(Map<String, String> map)
-        {
-            return mapToJsonObject(map, (jsonObjectBuilder, stringStringEntry) -> jsonObjectBuilder.add(stringStringEntry.getKey(), stringStringEntry.getValue()));
-        }
-
-        private static <V> JsonObject mapToJsonObject(Map<String, V> map, BiFunction<? super JsonObjectBuilder, Map.Entry<String, V>, ? extends JsonObjectBuilder> setter)
-        {
-            JsonObjectBuilder b = Json.createObjectBuilder();
-
-            for (var e : map.entrySet()){
-                b = setter.apply(b, e);
-            }
-
-            return b.build();
         }
 
         public static class RecipeSet

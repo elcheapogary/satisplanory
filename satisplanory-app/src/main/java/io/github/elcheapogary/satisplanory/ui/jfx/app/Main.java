@@ -11,18 +11,15 @@
 package io.github.elcheapogary.satisplanory.ui.jfx.app;
 
 import io.github.elcheapogary.satisplanory.Satisplanory;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryInstallation;
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.ui.jfx.MainPane;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentData;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.SatisplanoryPersistence;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
-import io.github.elcheapogary.satisplanory.ui.jfx.satisdata.SatisfactoryDataLoaderUi;
 import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -57,7 +54,7 @@ public class Main
         stage.setMaximized(true);
         stage.setTitle(Satisplanory.getApplicationName());
         appContext.setPersistentData(new PersistentData());
-        try {
+        try{
             appContext.setPersistentData(SatisplanoryPersistence.load());
         }catch (IOException e){
             new ExceptionDialog(appContext)
@@ -119,29 +116,20 @@ public class Main
             });
         });
 
-        File satisfactoryInstallPath = null;
-
-        if (appContext.getPersistentData().getSatisfactoryPath() != null){
-            satisfactoryInstallPath = new File(appContext.getPersistentData().getSatisfactoryPath());
-            if (!SatisfactoryInstallation.isValidSatisfactoryInstallation(satisfactoryInstallPath)){
-                satisfactoryInstallPath = null;
-            }
-        }
-
-        if (satisfactoryInstallPath == null){
-            Collection<SatisfactoryInstallation> satisfactoryInstallations = SatisfactoryInstallation.findSatisfactoryInstallations();
-
-            if (satisfactoryInstallations.size() == 1){
-                satisfactoryInstallPath = satisfactoryInstallations.iterator().next().getPath();
-            }
-        }
-
-        if (satisfactoryInstallPath != null){
-            SatisfactoryDataLoaderUi.loadSatisfactoryData(appContext, satisfactoryInstallPath);
+        try{
+            appContext.setGameData(GameData.loadUpdate8Data());
+        }catch (IOException | RuntimeException e){
+            Platform.runLater(() -> {
+                new ExceptionDialog(appContext)
+                        .setTitle("Error loading Satisfactory data")
+                        .setException(e)
+                        .setContextMessage("An error occurred while loading the Satisfactory game data.")
+                        .showAndWait();
+            });
         }
 
         new Thread(() -> {
-            try {
+            try{
                 if (!Satisplanory.isDevelopmentVersion()){
                     String latestVersion = Satisplanory.getLatestReleasedVersion();
 

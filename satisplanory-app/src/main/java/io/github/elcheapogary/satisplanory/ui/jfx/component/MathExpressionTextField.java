@@ -40,7 +40,7 @@ public class MathExpressionTextField
                 }else{
                     MathExpression expression;
 
-                    try {
+                    try{
                         expression = MathExpression.parse(textField.getText().trim());
                     }catch (NumberFormatException e){
                         textField.setText(focusText);

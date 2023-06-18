@@ -10,9 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.MatterState;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.MatterState;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
 import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.TableColumns;
@@ -104,8 +104,8 @@ class OverviewTab
         Map<String, MachinesRow> machineRowMap = new TreeMap<>();
 
         for (Recipe r : plan.getRecipes()){
-            MachinesRow row = machineRowMap.computeIfAbsent(r.getProducedInBuilding().getName(), s -> new MachinesRow());
-            row.machineName = r.getProducedInBuilding().getName();
+            MachinesRow row = machineRowMap.computeIfAbsent(r.getManufacturer().getName(), s -> new MachinesRow());
+            row.machineName = r.getManufacturer().getName();
 
             LongBinding l = Bindings.createLongBinding(() -> plan.getNumberOfMachinesWithRecipe(r)
                     .divide(BigFraction.valueOf(BigDecimal.valueOf(slider.valueProperty().get())).max(BigFraction.one()).divide(100))
@@ -266,14 +266,14 @@ class OverviewTab
                 ResourceLine l = new ResourceLine();
                 tableView.getItems().add(l);
                 l.name = item.getName();
-                l.amountUsed = item.toDisplayAmountFraction(plan.getInputItemsPerMinute(item));
+                l.amountUsed = plan.getInputItemsPerMinute(item);
                 l.amountAvailable = model.getInputItemsPerMinute(item);
                 l.percentageOfAvailable = l.amountUsed.divide(l.amountAvailable).multiply(100);
                 if (max == null){
                     l.maxExtractRate = null;
                     l.percentageOfMaxExtractRate = null;
                 }else{
-                    l.maxExtractRate = item.toDisplayAmountFraction(BigFraction.valueOf(max));
+                    l.maxExtractRate = BigFraction.valueOf(max);
                     l.percentageOfMaxExtractRate = l.amountUsed.divide(l.maxExtractRate).multiply(100);
                     totalAmountUsed = totalAmountUsed.add(l.amountUsed);
                     totalAmountAvailable = totalAmountAvailable.add(l.amountAvailable);
@@ -306,7 +306,7 @@ class OverviewTab
 
             if (item != null){
                 totalResourceTypes++;
-                totalMaxExtractRate = totalMaxExtractRate.add(item.toDisplayAmountFraction(BigFraction.valueOf(entry.getValue())));
+                totalMaxExtractRate = totalMaxExtractRate.add(BigFraction.valueOf(entry.getValue()));
             }
         }
 

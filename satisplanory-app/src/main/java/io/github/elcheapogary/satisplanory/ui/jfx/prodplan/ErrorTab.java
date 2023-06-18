@@ -10,8 +10,8 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
-import io.github.elcheapogary.satisplanory.model.Recipe;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.MultiPlan;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.MathExpression;

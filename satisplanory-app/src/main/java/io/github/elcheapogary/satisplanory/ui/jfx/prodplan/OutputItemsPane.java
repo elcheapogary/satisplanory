@@ -10,7 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
-import io.github.elcheapogary.satisplanory.model.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.MathExpressionTextField;
 import io.github.elcheapogary.satisplanory.util.MathExpression;
