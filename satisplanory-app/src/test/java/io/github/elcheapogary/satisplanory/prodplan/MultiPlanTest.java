@@ -32,6 +32,7 @@ public class MultiPlanTest
             throws ProductionPlanInternalException, ProductionPlanNotFeatisbleException, InterruptedException
     {
         ProductionPlanner planner = new ProductionPlanner.Builder()
+                .setGameData(gameData)
                 .addOutputItem(gameData.requireItemByName(itemName), BigDecimal.ONE, BigDecimal.ZERO)
                 .build();
 
@@ -51,6 +52,7 @@ public class MultiPlanTest
         TestGameData gameData = TestGameData.getLatestTestData();
 
         ProductionPlanner planner = new ProductionPlanner.Builder()
+                .setGameData(gameData)
                 .addInputItem(gameData.requireItemByName("Iron Ore"), 60)
                 .addRecipe(gameData.requireRecipeByName("Iron Ingot"))
                 .addOutputItem(gameData.requireItemByName("Iron Plate"), BigDecimal.ONE, BigDecimal.ONE)
@@ -88,6 +90,7 @@ public class MultiPlanTest
         TestGameData gameData = TestGameData.getLatestTestData();
 
         ProductionPlanner planner = new ProductionPlanner.Builder()
+                .setGameData(gameData)
                 .addRecipe(gameData.requireRecipeByName("Iron Ingot"))
                 .addRecipe(gameData.requireRecipeByName("Iron Plate"))
                 .addOutputItem(gameData.requireItemByName("Iron Plate"), BigDecimal.ONE, BigDecimal.ONE)

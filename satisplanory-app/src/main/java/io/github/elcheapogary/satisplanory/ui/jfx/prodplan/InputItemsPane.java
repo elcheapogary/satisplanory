@@ -12,14 +12,10 @@ package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.gamedata.Item;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.ItemComponents;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.MathExpressionTextField;
-import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.MathExpression;
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -125,12 +121,9 @@ class InputItemsPane
         Button addMapLimitsButton = new Button("Add All Raw Resources");
         buttons.getChildren().add(addMapLimitsButton);
         addMapLimitsButton.onActionProperty().set(event -> {
-            for (Map.Entry<String, Long> entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
-                gameData.getItemByName(entry.getKey())
-                        .ifPresent(item -> {
-                            ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, MathExpression.valueOf(BigDecimalUtils.normalize(item.toDisplayAmount(BigDecimal.valueOf(entry.getValue())))));
-                            inputItems.add(inputItem);
-                        });
+            for (Item item : gameData.getRawResources()){
+                ProdPlanModel.InputItem inputItem = new ProdPlanModel.InputItem(item, MathExpression.valueOf(gameData.getRawResourceMaxExtractionRatePerMinute(item)));
+                inputItems.add(inputItem);
             }
             gameData.getItemByName("Water")
                     .ifPresent(item -> {

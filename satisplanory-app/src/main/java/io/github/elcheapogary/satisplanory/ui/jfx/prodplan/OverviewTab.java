@@ -14,7 +14,6 @@ import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.gamedata.MatterState;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.prodplan.ProductionPlan;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.ui.jfx.component.TableColumns;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.tableexport.TableExportContextMenu;
@@ -261,7 +260,7 @@ class OverviewTab
         BigFraction usedRatioOfMaxExtract = BigFraction.zero();
 
         for (Item item : sortedItems){
-            Long max = SatisfactoryData.getResourceExtractionLimits().get(item.getName());
+            Long max = appContext.getGameData().getRawResourceMaxExtractionRatePerMinute(item);
             if (max != null || item.getName().equals("Water")){
                 ResourceLine l = new ResourceLine();
                 tableView.getItems().add(l);
@@ -301,13 +300,9 @@ class OverviewTab
         totalMaxExtractRate = BigFraction.zero();
         int totalResourceTypes = 0;
 
-        for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
-            Item item = appContext.getGameData().getItemByName(entry.getKey()).orElse(null);
-
-            if (item != null){
-                totalResourceTypes++;
-                totalMaxExtractRate = totalMaxExtractRate.add(BigFraction.valueOf(entry.getValue()));
-            }
+        for (Item item : appContext.getGameData().getRawResources()){
+            totalResourceTypes++;
+            totalMaxExtractRate = totalMaxExtractRate.add(BigFraction.valueOf(appContext.getGameData().getRawResourceMaxExtractionRatePerMinute(item)));
         }
 
         l = new ResourceLine();

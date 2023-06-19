@@ -42,7 +42,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
@@ -65,7 +66,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder pb = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
@@ -98,7 +100,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder pb = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder pb = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         pb.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
 
@@ -121,7 +124,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         builder.addRecipe(gd.requireRecipeByName("Iron Ingot"));
         builder.addRecipe(gd.requireRecipeByName("Iron Plate"));
@@ -154,7 +158,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         builder.requireOutputItemsPerMinute(gd.requireItemByName("AI Limiter"), 50);
 
@@ -170,7 +175,8 @@ public class ProductionPlannerTest
     {
         TestGameData gd = TestGameData.getLatestTestData();
 
-        ProductionPlanner.Builder builder = new ProductionPlanner.Builder();
+        ProductionPlanner.Builder builder = new ProductionPlanner.Builder()
+                .setGameData(gd);
 
         builder.addOptimizationTarget(OptimizationTarget.MAX_OUTPUT_ITEMS);
         builder.addOptimizationTarget(OptimizationTarget.MIN_RESOURCE_SCARCITY);

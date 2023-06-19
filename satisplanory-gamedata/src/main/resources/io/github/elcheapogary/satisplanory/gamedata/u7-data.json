@@ -6591,5 +6591,18 @@
         }
       ]
     }
-  ]
+  ],
+  "rawResources":{
+    "Desc_Coal_C":30900,
+    "Desc_LiquidOil_C":11700,
+    "Desc_NitrogenGas_C":12000,
+    "Desc_OreBauxite_C":9780,
+    "Desc_OreCopper_C":28860,
+    "Desc_OreGold_C":11040,
+    "Desc_OreIron_C":70380,
+    "Desc_OreUranium_C":2100,
+    "Desc_RawQuartz_C":10500,
+    "Desc_Stone_C":52860,
+    "Desc_Sulfur_C":6840
+  }
 }

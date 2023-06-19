@@ -13,7 +13,6 @@ package io.github.elcheapogary.satisplanory.prodplan;
 import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
 import java.util.Iterator;
@@ -58,9 +57,8 @@ public class ProdPlanUtils
 
                 removeMaximizeWeights(planner, pb);
 
-                for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
-                    gameData.getItemByName(entry.getKey())
-                            .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
+                for (Item item : gameData.getRawResources()){
+                    pb.addInputItem(item, gameData.getRawResourceMaxExtractionRatePerMinute(item));
                 }
 
                 gameData.getItemByName("Water")
@@ -92,9 +90,8 @@ public class ProdPlanUtils
 
                 removeMaximizeWeights(planner, pb);
 
-                for (var entry : SatisfactoryData.getResourceExtractionLimits().entrySet()){
-                    gameData.getItemByName(entry.getKey())
-                            .ifPresent(item -> pb.addInputItem(item, entry.getValue()));
+                for (Item item : gameData.getRawResources()){
+                    pb.addInputItem(item, gameData.getRawResourceMaxExtractionRatePerMinute(item));
                 }
 
                 gameData.getItemByName("Water")

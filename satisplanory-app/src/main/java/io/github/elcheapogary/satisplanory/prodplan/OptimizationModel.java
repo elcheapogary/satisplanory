@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.lp.Expression;
@@ -21,6 +22,7 @@ import java.util.Objects;
 
 class OptimizationModel
 {
+    private final GameData gameData;
     private final Map<Item, ? extends Expression> itemInputMap;
     private final Map<Item, ? extends Expression> itemOutputMap;
     private final Map<Item, ? extends Expression> itemSurplusMap;
@@ -30,12 +32,18 @@ class OptimizationModel
 
     protected OptimizationModel(Builder builder)
     {
+        this.gameData = Objects.requireNonNull(builder.gameData);
         this.itemInputMap = Collections.unmodifiableMap(builder.itemInputMap);
         this.itemOutputMap = Collections.unmodifiableMap(builder.itemOutputMap);
         this.itemSurplusMap = Collections.unmodifiableMap(builder.itemSurplusMap);
         this.recipeMap = Collections.unmodifiableMap(builder.recipeMap);
         this.itemMaximizeWeightMap = Collections.unmodifiableMap(builder.itemMaximizeWeightMap);
         this.lpModel = Objects.requireNonNull(builder.lpModel);
+    }
+
+    public GameData getGameData()
+    {
+        return gameData;
     }
 
     public Map<Item, ? extends Expression> getItemInputMap()
@@ -70,6 +78,7 @@ class OptimizationModel
 
     static class Builder
     {
+        private GameData gameData;
         private Map<Item, ? extends Expression> itemInputMap;
         private Map<Item, ? extends Expression> itemOutputMap;
         private Map<Item, ? extends Expression> itemSurplusMap;
@@ -80,6 +89,12 @@ class OptimizationModel
         public OptimizationModel build()
         {
             return new OptimizationModel(this);
+        }
+
+        public Builder setGameData(GameData gameData)
+        {
+            this.gameData = gameData;
+            return this;
         }
 
         public Builder setItemInputMap(Map<Item, ? extends Expression> itemInputMap)

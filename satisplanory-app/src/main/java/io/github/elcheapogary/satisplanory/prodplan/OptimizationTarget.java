@@ -14,7 +14,6 @@ import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.gamedata.MatterState;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.lp.Expression;
-import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -156,14 +155,13 @@ public enum OptimizationTarget
         @Override
         List<? extends Expression> getObjectiveFunctions(OptimizationModel model)
         {
-            Map<String, Long> limits = SatisfactoryData.getResourceExtractionLimits();
             Expression objectiveFunction = Expression.zero();
 
             for (var entry : model.getItemInputMap().entrySet()){
                 Item item = entry.getKey();
                 Expression expression = entry.getValue();
 
-                Long l = limits.get(item.getName());
+                Long l = model.getGameData().getRawResourceMaxExtractionRatePerMinute(item);
 
                 if (l != null){
                     objectiveFunction = objectiveFunction.subtract(expression.divide(l));

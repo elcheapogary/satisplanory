@@ -10,9 +10,9 @@
 
 package io.github.elcheapogary.satisplanory.gamedata.docload;
 
-import io.github.elcheapogary.satisplanory.gamedata.Manufacturer;
 import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.gamedata.Item;
+import io.github.elcheapogary.satisplanory.gamedata.Manufacturer;
 import io.github.elcheapogary.satisplanory.gamedata.MatterState;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.Json;
@@ -116,14 +117,13 @@ public class DocsJsonLoader
         return itemsByClassName;
     }
 
-    public static void loadDocsJson(GameData.Builder gameDataBuilder, InputStream in)
+    public static void loadDocsJson(GameData.AbstractBuilder<?> gameDataBuilder, InputStream in)
             throws IOException, DataException
     {
         try{
             JsonArray nativeClassesArray = Json.createParser(in).getArray();
 
             Map<String, Item> itemsByClassName = getItemsByClassName(nativeClassesArray);
-            Map<String, Manufacturer> manufacturerByClassNameMap = new TreeMap<>();
 
             for (JsonObject nativeClassObject : nativeClassesArray.getValuesAs(JsonObject.class)){
                 String nativeClassName = nativeClassObject.getString("NativeClass");
@@ -144,8 +144,7 @@ public class DocsJsonLoader
                                 .setPowerConsumption(BigDecimalUtils.normalize(new BigDecimal(powerConsumption)))
                                 .build();
 
-                        gameDataBuilder.addBuilding(manufacturer);
-                        manufacturerByClassNameMap.put(className, manufacturer);
+                        gameDataBuilder.addManufacturer(manufacturer);
                     }
                 }
             }
@@ -186,7 +185,8 @@ public class DocsJsonLoader
                             }
 
                             for (String className : producedInClasses){
-                                Manufacturer manufacturer = manufacturerByClassNameMap.get(className);
+                                Manufacturer manufacturer = gameDataBuilder.getManufacturerByClassName(className)
+                                        .orElse(null);
 
                                 if (manufacturer == null){
                                     unknownBuildingClasses.add(className);
@@ -208,7 +208,7 @@ public class DocsJsonLoader
                         Collection<Pair<Item, BigDecimal>> ingredients;
 
                         try{
-                            ingredients = parseItemAmountList(jsonRecipe.getString("mIngredients"), itemsByClassName);
+                            ingredients = parseItemAmountList(jsonRecipe.getString("mIngredients"), itemsByClassName::get);
                         }catch (BracketObjectNotationParseException e){
                             throw new DataException("Error parsing ingredients for recipe: " + displayName + ": " + jsonRecipe.getString("mIngredients") + ": " + e, e);
                         }
@@ -216,7 +216,7 @@ public class DocsJsonLoader
                         Collection<Pair<Item, BigDecimal>> products;
 
                         try{
-                            products = parseItemAmountList(jsonRecipe.getString("mProduct"), itemsByClassName);
+                            products = parseItemAmountList(jsonRecipe.getString("mProduct"), itemsByClassName::get);
                         }catch (BracketObjectNotationParseException e){
                             throw new DataException("Error parsing products for recipe: " + displayName + ": " + jsonRecipe.getString("mProduct") + ": " + e, e);
                         }
@@ -264,7 +264,7 @@ public class DocsJsonLoader
         }
     }
 
-    public static void loadDocsJson(GameData.Builder gameDataBuilder, File f)
+    public static void loadDocsJson(GameData.AbstractBuilder<?> gameDataBuilder, File f)
             throws IOException, DataException
     {
         try{
@@ -298,7 +298,7 @@ public class DocsJsonLoader
         return true;
     }
 
-    private static Collection<Pair<Item, BigDecimal>> parseItemAmountList(String s, Map<String, Item> itemByClassNameMap)
+    private static Collection<Pair<Item, BigDecimal>> parseItemAmountList(String s, Function<? super String, ? extends Item> itemResolver)
             throws BracketObjectNotationParseException
     {
         List<Pair<Item, BigDecimal>> retv = new LinkedList<>();
@@ -324,7 +324,7 @@ public class DocsJsonLoader
 
             c = c.substring(idx + 1, c.length() - 2);
 
-            Item item = itemByClassNameMap.get(c);
+            Item item = itemResolver.apply(c);
 
             if (item == null){
                 throw new BracketObjectNotationParseException("Unrecognized item class name: " + c);

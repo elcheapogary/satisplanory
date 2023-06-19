@@ -10,6 +10,7 @@
 
 package io.github.elcheapogary.satisplanory.prodplan;
 
+import io.github.elcheapogary.satisplanory.gamedata.GameData;
 import io.github.elcheapogary.satisplanory.gamedata.Item;
 import io.github.elcheapogary.satisplanory.gamedata.MatterState;
 import io.github.elcheapogary.satisplanory.gamedata.Recipe;
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
 
 public class ProductionPlanner
 {
+    private final GameData gameData;
     private final Map<Item, OutputRequirement> outputRequirements;
     private final Map<Item, BigFraction> inputItems;
     private final Set<Recipe> recipes;
@@ -48,6 +50,7 @@ public class ProductionPlanner
         this.strictMaximizeRatios = builder.strictMaximizeRatios;
         this.optimizationTargets = List.copyOf(builder.optimizationTargets);
         this.filterRecipesByOutputItems = builder.filterRecipesByOutputItems;
+        this.gameData = Objects.requireNonNull(builder.gameData);
     }
 
     private static void filterRecipesAndItems(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems, Collection<? extends Item> outputItems, Collection<? super Recipe> filteredRecipes, Collection<? super Item> filteredItems)
@@ -223,6 +226,7 @@ public class ProductionPlanner
         List<Expression> objectiveFunctions = new LinkedList<>();
         {
             OptimizationModel om = new OptimizationModel.Builder()
+                    .setGameData(gameData)
                     .setItemInputMap(itemInputMap)
                     .setItemMaximizeWeightMap(itemMaximizeWeightsMap)
                     .setItemOutputMap(itemOutputMap)
@@ -320,6 +324,7 @@ public class ProductionPlanner
         private final Map<Item, BigFraction> inputItems = Item.createMap();
         private final Set<Recipe> recipes = Recipe.createSet();
         private final List<OptimizationTarget> optimizationTargets = new LinkedList<>();
+        private GameData gameData;
         private boolean strictMaximizeRatios = false;
         private boolean filterRecipesByOutputItems = true;
 
@@ -335,6 +340,7 @@ public class ProductionPlanner
             this.strictMaximizeRatios = planner.strictMaximizeRatios;
             this.optimizationTargets.addAll(planner.optimizationTargets);
             this.filterRecipesByOutputItems = planner.filterRecipesByOutputItems;
+            this.gameData = planner.gameData;
         }
 
         public Builder addInputItem(Item item, long itemsPerMinute)
@@ -460,6 +466,12 @@ public class ProductionPlanner
         public Builder setFilterRecipesByOutputItems(boolean filterRecipesByOutputItems)
         {
             this.filterRecipesByOutputItems = filterRecipesByOutputItems;
+            return this;
+        }
+
+        public Builder setGameData(GameData gameData)
+        {
+            this.gameData = gameData;
             return this;
         }
 

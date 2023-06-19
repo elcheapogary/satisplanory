@@ -115,7 +115,8 @@ class ConfigTab
         vbox.getChildren().add(button);
 
         button.onActionProperty().set(event -> {
-            ProductionPlanner.Builder b = new ProductionPlanner.Builder();
+            ProductionPlanner.Builder b = new ProductionPlanner.Builder()
+                    .setGameData(appContext.getGameData());
 
             b.addRecipes(model.getEnabledRecipes());
 

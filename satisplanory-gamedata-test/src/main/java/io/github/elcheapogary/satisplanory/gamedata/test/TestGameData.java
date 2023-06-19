@@ -21,7 +21,7 @@ public class TestGameData
     private static TestGameData update7GameData = null;
     private static TestGameData update8GameData = null;
 
-    private TestGameData(Builder builder)
+    private TestGameData(AbstractBuilder<?> builder)
     {
         super(builder);
     }
@@ -74,12 +74,18 @@ public class TestGameData
     }
 
     private static class TestGameDataBuilder
-            extends Builder
+            extends AbstractBuilder<TestGameDataBuilder>
     {
         @Override
         public TestGameData build()
         {
             return new TestGameData(this);
+        }
+
+        @Override
+        protected TestGameDataBuilder self()
+        {
+            return this;
         }
     }
 }
