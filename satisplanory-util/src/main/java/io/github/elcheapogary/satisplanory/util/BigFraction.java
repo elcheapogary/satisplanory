@@ -42,9 +42,22 @@ public class BigFraction
         return One.INSTANCE;
     }
 
-    public static BigFraction valueOf(long value)
+    public static BigFraction parse(String value)
     {
-        return IntegerBigFraction.valueOfInteger(value);
+        Matcher m = parsePattern.matcher(value);
+
+        if (!m.matches()){
+            return valueOf(new BigDecimal(value));
+        }
+
+        String numerator = m.group(1);
+        String denominator = m.group(5);
+
+        if (denominator == null){
+            return valueOf(new BigInteger(numerator));
+        }else{
+            return valueOf(new BigInteger(numerator), new BigInteger(denominator));
+        }
     }
 
     public static BigFraction valueOf(BigInteger value)
@@ -109,27 +122,19 @@ public class BigFraction
         }
     }
 
+    public static BigFraction valueOf(double d)
+    {
+        return valueOf(BigDecimal.valueOf(d));
+    }
+
+    public static BigFraction valueOf(long value)
+    {
+        return IntegerBigFraction.valueOfInteger(value);
+    }
+
     public static BigFraction zero()
     {
         return Zero.INSTANCE;
-    }
-
-    public static BigFraction parse(String value)
-    {
-        Matcher m = parsePattern.matcher(value);
-
-        if (!m.matches()){
-            throw new NumberFormatException(value);
-        }
-
-        String numerator = m.group(1);
-        String denominator = m.group(5);
-
-        if (denominator == null){
-            return valueOf(new BigInteger(numerator));
-        }else{
-            return valueOf(new BigInteger(numerator), new BigInteger(denominator));
-        }
     }
 
     public BigFraction abs()
@@ -158,6 +163,16 @@ public class BigFraction
         return add(valueOf(addend));
     }
 
+    public BigFraction add(BigDecimal addend)
+    {
+        return add(valueOf(addend));
+    }
+
+    public BigFraction add(double addend)
+    {
+        return add(valueOf(addend));
+    }
+
     @Override
     public int compareTo(BigFraction o)
     {
@@ -178,6 +193,16 @@ public class BigFraction
     }
 
     public BigFraction divide(BigInteger divisor)
+    {
+        return divide(valueOf(divisor));
+    }
+
+    public BigFraction divide(BigDecimal divisor)
+    {
+        return divide(valueOf(divisor));
+    }
+
+    public BigFraction divide(double divisor)
     {
         return divide(valueOf(divisor));
     }
@@ -280,6 +305,16 @@ public class BigFraction
         return multiply(valueOf(multiplicand));
     }
 
+    public BigFraction multiply(BigDecimal multiplicand)
+    {
+        return multiply(valueOf(multiplicand));
+    }
+
+    public BigFraction multiply(double multiplicand)
+    {
+        return multiply(valueOf(multiplicand));
+    }
+
     public BigFraction negate()
     {
         return valueOf(numerator.negate(), denominator);
@@ -290,22 +325,32 @@ public class BigFraction
         return numerator.signum();
     }
 
-    public BigFraction subtract(BigFraction val)
+    public BigFraction subtract(BigFraction subtrahend)
     {
         return valueOf(
-                this.numerator.multiply(val.denominator).subtract(val.numerator.multiply(this.denominator)),
-                this.denominator.multiply(val.denominator)
+                this.numerator.multiply(subtrahend.denominator).subtract(subtrahend.numerator.multiply(this.denominator)),
+                this.denominator.multiply(subtrahend.denominator)
         );
     }
 
-    public BigFraction subtract(long value)
+    public BigFraction subtract(long subtrahend)
     {
-        return subtract(valueOf(value));
+        return subtract(valueOf(subtrahend));
     }
 
-    public BigFraction subtract(BigInteger value)
+    public BigFraction subtract(BigInteger subtrahend)
     {
-        return subtract(valueOf(value));
+        return subtract(valueOf(subtrahend));
+    }
+
+    public BigFraction subtract(BigDecimal subtrahend)
+    {
+        return subtract(valueOf(subtrahend));
+    }
+
+    public BigFraction subtract(double subtrahend)
+    {
+        return subtract(valueOf(subtrahend));
     }
 
     public BigDecimal toBigDecimal(int scale, RoundingMode roundingMode)
@@ -411,7 +456,7 @@ public class BigFraction
         }
 
         @Override
-        public boolean isInteger()
+        public final boolean isInteger()
         {
             return true;
         }
@@ -435,9 +480,9 @@ public class BigFraction
         }
 
         @Override
-        public BigFraction subtract(BigInteger value)
+        public BigFraction subtract(BigInteger subtrahend)
         {
-            return valueOfInteger(numerator.subtract(value));
+            return valueOfInteger(numerator.subtract(subtrahend));
         }
 
         @Override
@@ -512,12 +557,6 @@ public class BigFraction
         public int intValue()
         {
             return -1;
-        }
-
-        @Override
-        public boolean isInteger()
-        {
-            return true;
         }
 
         @Override
@@ -621,12 +660,6 @@ public class BigFraction
         public int intValue()
         {
             return 1;
-        }
-
-        @Override
-        public boolean isInteger()
-        {
-            return true;
         }
 
         @Override
@@ -792,12 +825,6 @@ public class BigFraction
         }
 
         @Override
-        public boolean isInteger()
-        {
-            return true;
-        }
-
-        @Override
         public long longValue()
         {
             return 0L;
@@ -874,9 +901,9 @@ public class BigFraction
         }
 
         @Override
-        public BigFraction subtract(BigFraction val)
+        public BigFraction subtract(BigFraction subtrahend)
         {
-            return val.negate();
+            return subtrahend.negate();
         }
 
         @Override
