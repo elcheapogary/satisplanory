@@ -12,78 +12,71 @@ package io.github.elcheapogary.satisplanory.graphlayout.draw2d.graph;
 
 /**
  * For Internal Use only.
- * 
+ *
  * @author hudsonr
  * @since 2.1.2
  */
-public class Rank extends NodeList {
+public class Rank
+        extends NodeList
+{
+    int bottomPadding;
+    int height;
+    int location;
+    int topPadding;
+    int total;
 
-	int bottomPadding;
-	int height;
-	int location;
+    void assignIndices()
+    {
+        total = 0;
+        Node node;
 
-	final int hash = new Object().hashCode();
-	int topPadding;
-	int total;
+        int mag;
+        for (int i = 0; i < size(); i++){
+            node = getNode(i);
+            mag = Math.max(1, node.incoming.size() + node.outgoing.size());
+            mag = Math.min(mag, 5);
+            if (node instanceof SubgraphBoundary)
+                mag = 4;
+            total += mag;
+            node.index = total;
+            total += mag;
+        }
+    }
 
-	void add(Node n) {
-		super.add(n);
-	}
+    /**
+     * Returns the number of nodes in this rank.
+     *
+     * @return the number of nodes
+     */
+    public int count()
+    {
+        return super.size();
+    }
 
-	void assignIndices() {
-		total = 0;
-		Node node;
+    /**
+     * @see Object#equals(Object)
+     */
+    public boolean equals(Object o)
+    {
+        return o == this;
+    }
 
-		int mag;
-		for (int i = 0; i < size(); i++) {
-			node = getNode(i);
-			mag = Math.max(1, node.incoming.size() + node.outgoing.size());
-			mag = Math.min(mag, 5);
-			if (node instanceof SubgraphBoundary)
-				mag = 4;
-			total += mag;
-			node.index = total;
-			total += mag;
-		}
-	}
+    /**
+     * @see Object#hashCode() Overridden for speed based on equality.
+     */
+    public int hashCode()
+    {
+        return System.identityHashCode(this);
+    }
 
-	/**
-	 * Returns the number of nodes in this rank.
-	 * 
-	 * @return the number of nodes
-	 */
-	public int count() {
-		return super.size();
-	}
-
-	/**
-	 * @see Object#equals(Object)
-	 */
-	public boolean equals(Object o) {
-		return o == this;
-	}
-
-	/**
-	 * @see Object#hashCode() Overridden for speed based on equality.
-	 */
-	public int hashCode() {
-		return hash;
-	}
-
-	void setDimensions(int location, int rowHeight) {
-		this.height = rowHeight;
-		this.location = location;
-		for (int i = 0; i < size(); i++) {
-			Node n = getNode(i);
-			n.y = location;
-			n.height = rowHeight;
-		}
-	}
-
-	/**
-	 * @deprecated Do not call
-	 */
-	public void sort() {
-	}
-
+    void setDimensions(int location, int rowHeight)
+    {
+        this.height = rowHeight;
+        this.location = location;
+        for (int i = 0; i < size(); i++){
+            Node n = getNode(i);
+            n.y = location;
+            n.height = rowHeight;
+        }
+    }
 }
