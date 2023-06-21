@@ -13,8 +13,9 @@
 </head>
 <body>
     <p>
-        This screen is the production planner - a tool to calculate how many buildings configured with which recipes
-        are required to produce a certain number of items per minute given the availability of certain input items.
+        This screen is the production planner - a tool to calculate (a) how many buildings (b) configured with which
+        recipes are required to produce (c) the required number of specific items per minute (d) given the availability
+        of certain input items.
     </p>
 
     <p>
@@ -29,8 +30,8 @@
             </p>
 
             <p>
-                You can select any or all of the default or alternate recipes. You can search for recipes by name, or by the
-                item they produce.
+                You can select any or all of the default or alternate recipes. You can search for recipes by name, or by
+                the item they produce.
             </p>
 
             <p>
@@ -41,14 +42,14 @@
         <dt>Input Items</dt>
         <dd>
             <p>
-                These are the items the calculator will attempt to use as input for the production lines. You can add all raw
-                resources on the map by using the "Add All Raw Resources" button.
+                These are the items the calculator will attempt to use as input for the production lines. You can add
+                all raw resources on the map by using the "Add All Raw Resources" button.
             </p>
 
             <p>
-                If you add no input items, or if a production plan is not possible with the input items you have selected, then
-                the calculator will attempt to find the input items required to create a production plan and suggest them to
-                you.
+                If you add no input items, or if a production plan is not possible with the input items you have
+                selected, then the calculator will attempt to find the input items required to create a production plan
+                and suggest them to you.
             </p>
         </dd>
         <dt>Output Items</dt>
@@ -58,9 +59,9 @@
             </p>
 
             <p>
-                Each item can have a minimum amount per minute and a maximization weight. The calculator will attempt to create
-                a production plan that produces at least the configured minimum items per minute, and as much as possible of the
-                items with a weight value greater than zero.
+                Each item can have a minimum amount per minute and a maximization weight. The calculator will attempt to
+                create a production plan that produces at least the configured minimum items per minute, and as much as
+                possible of the items with a weight value greater than zero.
             </p>
 
             <p>
@@ -69,90 +70,122 @@
             </p>
 
             <p>
-                You must add at least one output item that has either a minimum number of items per minute greater than zero or
-                a weight greater than zero.
+                You must add at least one output item that has either a minimum number of items per minute greater than
+                zero or a weight greater than zero.
             </p>
 
             <p>
-                The calculator will attempt to balance the output items according to their weight. eg. If you configure Iron
-                Rods with a weight of 2 and Iron Plates with a weight of 3, then the calculator will attempt to create a
-                production plan which produces 3 Iron Plates for every 2 Iron Rods. This, however, is not strictly enforced.
-                If, for some reason, fewer Iron Plates are producible then the calculator will still attempt to maximize Iron
-                Rods, even if output ratio would no longer match what is configured.
+                The calculator will attempt to balance the output items according to their weight. eg. If you configure
+                Iron Rods with a weight of 2 and Iron Plates with a weight of 3, then the calculator will attempt to
+                create a production plan which produces 3 Iron Plates for every 2 Iron Rods. This, however, is not
+                strictly enforced. If, for some reason, fewer Iron Plates are producible then the calculator will still
+                attempt to maximize Iron Rods, even if output ratio would no longer match what is configured.
             </p>
         </dd>
         <dt>Optimization Targets</dt>
         <dd>
             <p>
-                Here you can configure what the calculator should optimize for - what it is trying to achieve. There are various
-                different targets which you can enable or disable and arrange in order of importance to you.
+                Here you can configure what the calculator should optimize for - what it is trying to achieve. There are
+                various different targets which you can enable or disable and arrange in order of importance to you.
             </p>
         </dd>
     </dl>
 
     <hr>
 
-    <p><b>Maximizing Output Items vs other optimization targets</b></p>
+    <h3>Using multiple optimization targets</h3>
 
     <p>
-        Maximizing output items is when one or more of your output items has a weight greater than zero, and the
-        <i>Maximize Output Items</i> optimization target is enabled (and near the top). This means the calculator
-        should create a plan that produces as much of the output items with a weight greater than zero as possible.
+        For each optimization target, there is often only a single combination of recipes that produces the absolute
+        best result. If you enable multiple optimization targets, the results may appear as though only the first
+        optimization target was actually used. In fact, the calculator does use all optimization targets. Importantly,
+        it optimizes for each target, in order of priority, ensuring that the results of each optimization target is not
+        invalidated by subsequent optimization targets.
     </p>
 
     <p>
-        When maximizing output items, there is usually only a single combination of recipes that produces the most
-        output items. If you select the <i>Maximize Output Items</i> optimization target, this is the combination of
-        recipes that will be selected.
+        So if the first optimization target is Maximize Output Items, then the first step will be to generate a plan
+        that produces as much as possible of any output items with a weight &gt; 0. Let's imagine we are maximizing
+        the output of Screws, and that this first step may result in a plan that generates 350 screws per minute. If the
+        second optimization target is Minimize Power Consumption, then it may not appear to have any effect.
     </p>
 
     <p>
-        If you are trying to use another optimization target, like <i>Minimize Power Consumption</i>, and also want to
-        create as many of an output item as possible it can get tricky, as <i>Maximize Output Items</i> and
-        <i>Minimize Power Consumption</i> are usually contradictory. If you make <i>Maximize Output Items</i> more
-        important, then the calculator will select the plan that produces the most output items without considering
-        power (unless multiple recipe combinations result in the same maximum output items). If you make
-        <i>Minimize Power Consumption</i> more important, then the calculator will generate a minimal plan that uses as
-        little power as possible and not create as many of the output item as possible.
+        The calculator might well find a production plan for screws that uses less power than initial plan found by the
+        Maximize Output Items target, but it may be that this plan results in fewer than 350 screws per minute, so the
+        initial plan is kept, not the plan that uses less power. After all, Maximize Output Items was configured as the
+        target with first priority, so you are saying that it is more important to you than Minimize Power Consumption.
     </p>
 
     <p>
-        Here is a strategy for maximizing output items subject to another optimization target:
+        It is not impossible that there may be multiple productions plans that provide the best result for any
+        optimization target. It's rare, not impossible. You absolutely can and should use multiple optimization targets,
+        just understand that subsequent targets will only change the selected production plan if multiple plans give the
+        best result for the previous target. The further down the list an optimization target is, the less likelihood
+        there is of it having any effect.
+    </p>
+
+    <h3>How to maximize items using a non-optimal plan</h3>
+
+    <p>
+        When we maximize output items, there is usually only a single combination of recipes that produces the absolute
+        maximum number of output items. This we will call the optimal plan. What happens when we don't want to use the
+        optimal plan? Maybe reducing power consumption or reducing the number of buildings is more important to you than
+        getting the absolute maximum number of items. This section shows how to do this.
+    </p>
+
+    <p>
+        First, lets understand the problem: If we first optimize for Maximize Output Items, and then optimize for
+        another target like Minimize Number of Buildings, then the Minimize Number of Buildings target may have no
+        effect if it cannot make the same maximum number of output items.
+    </p>
+
+    <p>
+        If we swap them around, and first Minimize Number of Buildings then it will first come up with a plan that uses
+        the minimum number of buildings to produce the configured minimum output items. Indeed, if there are no minimum
+        output items it would produce and empty plan (zero buildings - the absolute minimum). The number of buildings
+        are then locked in and cannot be increased. When we then Maximize Output Items, it would only maximize to the
+        point where no new buildings need to be added - so it wouldn't change much.
+    </p>
+
+    <p>
+        To get what we want, we calculate the production plan in two phases:
     </p>
 
     <ol>
-        <li>
-            Set <i>Input Items</i> to what you have available, or add all raw resources to see what you may need.
-        </li>
-        <li>
-            <p>
-                First set a minimum amount for each output item. This should be less than the total you expect to be
-                produced. Even a minimum output of 1 should work.
-            </p>
-        </li>
-        <li>
-            <p>
-                Then, run the calculator with the desired optimization target, eg. <i>Minimize Power Consumption</i>,
-                enabled, and <i>Maximize Output Items</i> disabled.
-            </p>
-            <p>
-                This will create a plan that is not necessarily optimized for maximum output, but it allows you so see
-                the input items and recipes used when using the desired optimization target.
-            </p>
-        </li>
-        <li>
-            <p>
-                Select only the recipes used in the generated plan. There is a convenient <i>Current plan recipes only</i>
-                button at the top of the <i>Recipes</i> section to do this.
-            </p>
-        </li>
-        <li>
-            <p>
-                Run the calculator again, this time with the <i>Maximize Output Items</i> optimization target enabled
-                and prioritized. This will create as many of the output items as possible, but only using the recipes
-                determined by the previous optimization target.
-            </p>
-        </li>
+        <li>Calculate which combination of recipes we should use, and then</li>
+        <li>How many machines should we build with each recipe to maximize the desired output items.</li>
     </ol>
+
+    <p>
+        In the first phase, configure all the optimization targets you want, making Maximize Output Items the first
+        optimization target but, in the output items configuration, set the weight of each item to 0 and set a minimum
+        number of items for each item. With the all items having a weight of 0, the Maximize Output Items target will
+        do nothing, only the subsequent optimization targets will be used.
+    </p>
+
+    <p>
+        The minimum number of items required for items you wish to maximize should be > 0. The exact number isn't
+        important, we just want the calculator to have to decide which recipes are best for producing these items given
+        the configured optimization targets.
+    </p>
+
+    <p>
+        Then click the <em>Calculate</em> button, and you should get a production plan to make the configured minimum
+        number of each item. The recipes in this plan give the best results for the optimization targets you have
+        selected. Now we start the second phase where we maximize output items using only these recipes.
+    </p>
+
+    <p>
+        Come back to the <em>Configuration</em> tab, and in the recipe selection area, click the <em>Current plan
+        recipes only</em> button. This will limit the calculator to only use recipes that were used in the production
+        plan calculated in phase one. Change the output items configuration to have a weight > 0 for each item you
+        wish to maximize.
+    </p>
+
+    <p>
+        Click <em>Calculate</em> again, and now you will have a plan that maximizes the desired output items, but using
+        the recipes that give the best results for the other optimization targets that are important to you.
+    </p>
 </body>
 </html>
