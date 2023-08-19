@@ -7,7 +7,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package io.github.elcheapogary.satisplanory.ui.jfx.prodplan;
 
 import io.github.elcheapogary.satisplanory.gamedata.GameData;
@@ -355,58 +354,6 @@ public class ProdPlanBrowser
         return vbox;
     }
 
-    private static PersistentProductionPlan importFromLink(Window owner)
-    {
-        TextInputDialog dialog = new TextInputDialog();
-
-        dialog.initOwner(owner);
-        dialog.setHeaderText("");
-
-        dialog.setTitle("Input URL");
-        dialog.setHeaderText("Please enter the link/URL below");
-        dialog.setContentText("URL:");
-
-        String url = dialog.showAndWait().orElse(null);
-
-        if (url != null){
-            try{
-                return new TaskProgressDialog(owner)
-                        .setTitle("Importing link")
-                        .setContentText("Downloading and importing link")
-                        .setCancellable(true)
-                        .runTask(taskContext -> {
-                            HttpRequest request = HttpRequest.newBuilder(new URI(url))
-                                    .GET()
-                                    .build();
-
-                            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-                            if (response.statusCode() != 200){
-                                throw new IOException("Response code: " + response.statusCode());
-                            }
-
-                            JsonObject json;
-
-                            try (JsonReader r = Json.createReader(new StringReader(response.body()))){
-                                json = r.readObject();
-                            }
-
-                            PersistentProductionPlan plan = new PersistentProductionPlan();
-                            plan.loadJson(json);
-                            return plan;
-                        }).get();
-            }catch (Exception e){
-                new ExceptionDialog(owner)
-                        .setTitle("Error importing from link")
-                        .setContextMessage("An error occurred while importing from link")
-                        .setException(e)
-                        .showAndWait();
-            }
-        }
-
-        return null;
-    }
-
     private static void exportToFile(Window parentWindow, AppContext appContext, PersistentProductionPlan plan)
     {
         FileChooser fc = new FileChooser();
@@ -515,6 +462,58 @@ public class ProdPlanBrowser
                     .setException(e)
                     .showAndWait();
         }
+    }
+
+    private static PersistentProductionPlan importFromLink(Window owner)
+    {
+        TextInputDialog dialog = new TextInputDialog();
+
+        dialog.initOwner(owner);
+        dialog.setHeaderText("");
+
+        dialog.setTitle("Input URL");
+        dialog.setHeaderText("Please enter the link/URL below");
+        dialog.setContentText("URL:");
+
+        String url = dialog.showAndWait().orElse(null);
+
+        if (url != null){
+            try{
+                return new TaskProgressDialog(owner)
+                        .setTitle("Importing link")
+                        .setContentText("Downloading and importing link")
+                        .setCancellable(true)
+                        .runTask(taskContext -> {
+                            HttpRequest request = HttpRequest.newBuilder(new URI(url))
+                                    .GET()
+                                    .build();
+
+                            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+                            if (response.statusCode() != 200){
+                                throw new IOException("Response code: " + response.statusCode());
+                            }
+
+                            JsonObject json;
+
+                            try (JsonReader r = Json.createReader(new StringReader(response.body()))){
+                                json = r.readObject();
+                            }
+
+                            PersistentProductionPlan plan = new PersistentProductionPlan();
+                            plan.loadJson(json);
+                            return plan;
+                        }).get();
+            }catch (Exception e){
+                new ExceptionDialog(owner)
+                        .setTitle("Error importing from link")
+                        .setContextMessage("An error occurred while importing from link")
+                        .setException(e)
+                        .showAndWait();
+            }
+        }
+
+        return null;
     }
 
     private static PersistentProductionPlan importPlanFromFile(AppContext appContext, Window parentWindow)
