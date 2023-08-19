@@ -35,7 +35,7 @@ public class MainPane
     {
     }
 
-    private static Menu createFileMenu(Application application, Stage stage, AppContext appContext)
+    private static Menu createFileMenu(Stage stage, AppContext appContext)
     {
         Menu fileMenu = new Menu("File");
 
@@ -43,7 +43,7 @@ public class MainPane
         fileMenu.getItems().add(saveMenuItem);
 
         saveMenuItem.onActionProperty().set(event -> {
-            SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
+            SatisplanoryPersistence.save(saveMenuItem.getParentPopup().getOwnerWindow(), appContext.getPersistentData());
         });
 
         fileMenu.getItems().add(new SeparatorMenuItem());
@@ -71,7 +71,7 @@ public class MainPane
                 mainTabPane.getTabs().add(tab);
                 mainTabPane.getSelectionModel().selectLast();
             }catch (IOException e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(licensesMenuItem.getParentPopup().getOwnerWindow())
                         .setTitle("Error loading data")
                         .setContextMessage("An error occurred while loading data")
                         .setException(e)
@@ -99,7 +99,7 @@ public class MainPane
     {
         MenuBar mainMenuBar = new MenuBar();
 
-        mainMenuBar.getMenus().add(createFileMenu(application, stage, appContext));
+        mainMenuBar.getMenus().add(createFileMenu(stage, appContext));
         mainMenuBar.getMenus().add(createOptionsMenu(appContext));
         mainMenuBar.getMenus().add(createHelpMenu(application, stage, appContext, mainTabPane));
 

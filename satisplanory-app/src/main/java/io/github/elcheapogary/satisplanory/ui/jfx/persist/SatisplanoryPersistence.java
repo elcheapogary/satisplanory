@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import javafx.stage.Window;
 import javax.json.Json;
 import javax.json.JsonReader;
 import javax.json.JsonWriter;
@@ -91,7 +92,7 @@ public class SatisplanoryPersistence
     /*
      * We actually run this on the UI thread as a means of getting a stable snapshot
      */
-    public static void save(AppContext appContext, PersistentData data)
+    public static void save(Window parentWindow, PersistentData data)
     {
         File jsonFile = getJsonFile();
 
@@ -108,7 +109,7 @@ public class SatisplanoryPersistence
                 Files.deleteIfExists(tmpFile.toPath());
             }
         }catch (IOException | RuntimeException e){
-            new ExceptionDialog(appContext)
+            new ExceptionDialog(parentWindow)
                     .setTitle("Error saving Satisplanory data")
                     .setContextMessage("An error occurred while saving Satisplanory data")
                     .setDetailsMessage(e.toString())

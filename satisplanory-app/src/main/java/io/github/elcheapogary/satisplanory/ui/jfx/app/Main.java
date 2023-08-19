@@ -57,7 +57,7 @@ public class Main
         try{
             appContext.setPersistentData(SatisplanoryPersistence.load());
         }catch (IOException e){
-            new ExceptionDialog(appContext)
+            new ExceptionDialog(stage)
                     .setTitle("Error loading Satisplanory data")
                     .setContextMessage("An error occurred while attempting to load the Satisplanory data")
                     .setDetailsMessage("Satisplanory was not able to load this file: " + SatisplanoryPersistence.getJsonFile().getAbsolutePath())
@@ -65,7 +65,7 @@ public class Main
                     .showAndWait();
             return;
         }catch (UnsupportedVersionException e){
-            new ExceptionDialog(appContext)
+            new ExceptionDialog(stage)
                     .setTitle("Data is from newer version of Satisplanory")
                     .setContextMessage("Your Satisplanory data is from a newer version - please use that version")
                     .setDetailsMessage("Your data stored in:\n\n    " + SatisplanoryPersistence.getJsonFile().getAbsolutePath()
@@ -120,7 +120,7 @@ public class Main
             appContext.setGameData(GameData.loadUpdate8Data());
         }catch (IOException | RuntimeException e){
             Platform.runLater(() -> {
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(stage)
                         .setTitle("Error loading Satisfactory data")
                         .setException(e)
                         .setContextMessage("An error occurred while loading the Satisfactory game data.")
@@ -158,7 +158,7 @@ public class Main
     public void stop()
     {
         if (saveOnExit){
-            SatisplanoryPersistence.save(appContext, appContext.getPersistentData());
+            SatisplanoryPersistence.save(null, appContext.getPersistentData());
         }
     }
 }

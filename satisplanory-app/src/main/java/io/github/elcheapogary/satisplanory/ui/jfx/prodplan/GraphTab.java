@@ -30,7 +30,6 @@ import io.github.elcheapogary.satisplanory.ui.jfx.component.ZoomableScrollPane;
 import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
-import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import io.github.elcheapogary.satisplanory.util.BigDecimalUtils;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import io.github.elcheapogary.satisplanory.util.FileNameUtils;
@@ -291,13 +290,13 @@ class GraphTab
         layoutGraph.nodes.add(node);
     }
 
-    private static Dialog<Double> createScaleSelectionDialog(AppContext appContext, Pane graphPage)
+    private static Dialog<Double> createScaleSelectionDialog(Pane graphPage)
     {
         double w = graphPage.getWidth();
         double h = graphPage.getHeight();
 
         Dialog<Double> dialog = new Dialog<>();
-        dialog.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+        dialog.initOwner(graphPage.getScene().getWindow());
         dialog.setTitle("Select image scale");
         dialog.setHeaderText("Select the scale of the image");
         dialog.getDialogPane().setMinWidth(300);
@@ -363,7 +362,7 @@ class GraphTab
             contextMenu.getItems().add(menuItem);
 
             menuItem.onActionProperty().set(event -> {
-                createScaleSelectionDialog(appContext, graphPane).showAndWait().ifPresent(scale -> {
+                createScaleSelectionDialog(graphPane).showAndWait().ifPresent(scale -> {
                     SnapshotParameters parameters = new SnapshotParameters();
                     parameters.setFill(Color.TRANSPARENT);
 
@@ -379,7 +378,7 @@ class GraphTab
             contextMenu.getItems().add(menuItem);
 
             menuItem.onActionProperty().set(event -> {
-                createScaleSelectionDialog(appContext, graphPane).showAndWait().ifPresent(scale -> {
+                createScaleSelectionDialog(graphPane).showAndWait().ifPresent(scale -> {
                     FileChooser fc = new FileChooser();
                     if (appContext.getPersistentData().getPreferences().getLastImportExportDirectory() != null && appContext.getPersistentData().getPreferences().getLastImportExportDirectory().isDirectory()){
                         fc.setInitialDirectory(appContext.getPersistentData().getPreferences().getLastImportExportDirectory());
@@ -397,14 +396,14 @@ class GraphTab
 
                         WritableImage img = graphPane.snapshot(parameters, null);
 
-                        new TaskProgressDialog(appContext)
+                        new TaskProgressDialog(menuItem.getParentPopup().getOwnerWindow())
                                 .setTitle("Saving image")
                                 .setContentText("Saving image")
                                 .runTask(taskContext -> {
                                     try{
                                         ImageIO.write(SwingFXUtils.fromFXImage(img, null), "PNG", f);
                                     }catch (IOException e){
-                                        Platform.runLater(() -> new ExceptionDialog(appContext)
+                                        Platform.runLater(() -> new ExceptionDialog(menuItem.getParentPopup().getOwnerWindow())
                                                 .setTitle("Error saving image")
                                                 .setContextMessage("An error occurred while saving the image")
                                                 .setException(e)
@@ -434,7 +433,7 @@ class GraphTab
                 if (f != null){
                     appContext.getPersistentData().getPreferences().setLastImportExportDirectory(f.getAbsoluteFile().getParentFile());
 
-                    new TaskProgressDialog(appContext)
+                    new TaskProgressDialog(menuItem.getParentPopup().getOwnerWindow())
                             .setTitle("Exporting GraphML")
                             .setContentText("Exporting GraphML")
                             .runTask(taskContext -> {
@@ -443,7 +442,7 @@ class GraphTab
                                         ProdPlanGraphML.export(out, graph);
                                     }
                                 }catch (IOException | RuntimeException e){
-                                    Platform.runLater(() -> new ExceptionDialog(appContext)
+                                    Platform.runLater(() -> new ExceptionDialog(menuItem.getParentPopup().getOwnerWindow())
                                             .setTitle("Error exporting image")
                                             .setContextMessage("An error occurred while exporting the data")
                                             .setException(e)

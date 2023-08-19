@@ -18,7 +18,6 @@ import io.github.elcheapogary.satisplanory.ui.jfx.dialog.ExceptionDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.dialog.TaskProgressDialog;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.PersistentProductionPlan;
 import io.github.elcheapogary.satisplanory.ui.jfx.persist.UnsupportedVersionException;
-import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -167,7 +166,7 @@ public class ProdPlanBrowser
             Tab tab = tabMap.get(plan);
             if (tab == null){
                 try{
-                    tab = new TaskProgressDialog(appContext)
+                    tab = new TaskProgressDialog(newPlanButton.getScene().getWindow())
                             .setTitle("Loading production plan")
                             .setContentText("Loading production plan")
                             .setCancellable(false)
@@ -189,7 +188,7 @@ public class ProdPlanBrowser
                     tab.onClosedProperty().set(e -> tabMap.remove(plan));
                     tabMap.put(plan, tab);
                 }catch (Exception e){
-                    new ExceptionDialog(appContext)
+                    new ExceptionDialog(newPlanButton.getScene().getWindow())
                             .setTitle("Error loading production plan")
                             .setContextMessage("An error occurred while loading the production plan")
                             .setException(e)
@@ -206,7 +205,7 @@ public class ProdPlanBrowser
 
         newPlanButton.onActionProperty().set(event -> {
             TextInputDialog dlg = new TextInputDialog();
-            dlg.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+            dlg.initOwner(newPlanButton.getScene().getWindow());
             dlg.setHeaderText("Please provide a name for the new factory");
             dlg.setTitle("New factory name");
             dlg.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ev -> {
@@ -262,9 +261,7 @@ public class ProdPlanBrowser
 
         deleteButton.onActionProperty().set(event -> {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            for (String styleSheet : Style.getStyleSheets(appContext)){
-                alert.getDialogPane().getStylesheets().add(styleSheet);
-            }
+            alert.initOwner(deleteButton.getScene().getWindow());
             alert.setTitle("Confirm delete");
             alert.setContentText("Are you sure you want to delete this production plan?");
             alert.getButtonTypes().clear();
@@ -283,7 +280,7 @@ public class ProdPlanBrowser
 
             TextInputDialog dlg = new TextInputDialog();
             dlg.getEditor().setText(p.getName() + " (Copy)");
-            dlg.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
+            dlg.initOwner(duplicateButton.getScene().getWindow());
             dlg.setHeaderText("Please provide a name for the new factory");
             dlg.setTitle("New factory name");
             dlg.getDialogPane().lookupButton(ButtonType.OK).addEventFilter(ActionEvent.ACTION, ev -> {
@@ -299,7 +296,7 @@ public class ProdPlanBrowser
                     appContext.getPersistentData().getProductionPlans().add(n);
                     planOpener.openPlan(n);
                 }catch (UnsupportedVersionException e){
-                    new ExceptionDialog(appContext)
+                    new ExceptionDialog(duplicateButton.getScene().getWindow())
                             .setTitle("Error duplicating plan")
                             .setContextMessage("This should never happen")
                             .setException(e)
@@ -327,7 +324,7 @@ public class ProdPlanBrowser
         importButton.getItems().add(importFromLinkMenuItem);
 
         importFromLinkMenuItem.onActionProperty().set(event -> {
-            PersistentProductionPlan plan = importFromLink(appContext);
+            PersistentProductionPlan plan = importFromLink(importFromLinkMenuItem.getParentPopup().getOwnerWindow());
             if (plan != null){
                 appContext.getPersistentData().getProductionPlans().add(plan);
                 planOpener.openPlan(plan);
@@ -348,7 +345,7 @@ public class ProdPlanBrowser
         MenuItem exportToLinkMenuItem = new MenuItem("To link");
         exportButton.getItems().add(exportToLinkMenuItem);
 
-        exportToLinkMenuItem.onActionProperty().set(event -> exportToLink(appContext, list.getSelectionModel().getSelectedItem()));
+        exportToLinkMenuItem.onActionProperty().set(event -> exportToLink(exportToLinkMenuItem.getParentPopup().getOwnerWindow(), list.getSelectionModel().getSelectedItem()));
 
         MenuItem exportToFileMenuItem = new MenuItem("To file");
         exportButton.getItems().add(exportToFileMenuItem);
@@ -358,12 +355,12 @@ public class ProdPlanBrowser
         return vbox;
     }
 
-    private static PersistentProductionPlan importFromLink(AppContext appContext)
+    private static PersistentProductionPlan importFromLink(Window owner)
     {
         TextInputDialog dialog = new TextInputDialog();
 
+        dialog.initOwner(owner);
         dialog.setHeaderText("");
-        dialog.getDialogPane().getStylesheets().addAll(Style.getStyleSheets(appContext));
 
         dialog.setTitle("Input URL");
         dialog.setHeaderText("Please enter the link/URL below");
@@ -373,7 +370,7 @@ public class ProdPlanBrowser
 
         if (url != null){
             try{
-                return new TaskProgressDialog(appContext)
+                return new TaskProgressDialog(owner)
                         .setTitle("Importing link")
                         .setContentText("Downloading and importing link")
                         .setCancellable(true)
@@ -399,7 +396,7 @@ public class ProdPlanBrowser
                             return plan;
                         }).get();
             }catch (Exception e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(owner)
                         .setTitle("Error importing from link")
                         .setContextMessage("An error occurred while importing from link")
                         .setException(e)
@@ -432,7 +429,7 @@ public class ProdPlanBrowser
                         .text("The production plan was exported successfully")
                         .show();
             }catch (IOException e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(parentWindow)
                         .setTitle("Error exporting plan")
                         .setContextMessage("An error occurred while exporting the plan to file")
                         .setException(e)
@@ -441,10 +438,10 @@ public class ProdPlanBrowser
         }
     }
 
-    private static void exportToLink(AppContext appContext, PersistentProductionPlan plan)
+    private static void exportToLink(Window parentWindow, PersistentProductionPlan plan)
     {
         try{
-            String url = new TaskProgressDialog(appContext)
+            String url = new TaskProgressDialog(parentWindow)
                     .setTitle("Exporting to link")
                     .setContentText("Busy uploading the production plan to the Internet")
                     .setCancellable(true)
@@ -512,7 +509,7 @@ public class ProdPlanBrowser
                     .text("The link has been copied to your clipboard")
                     .show();
         }catch (Exception e){
-            new ExceptionDialog(appContext)
+            new ExceptionDialog(parentWindow)
                     .setTitle("Error exporting to link")
                     .setContextMessage("Error exporting to link")
                     .setException(e)
@@ -539,13 +536,13 @@ public class ProdPlanBrowser
                     return plan;
                 }
             }catch (IOException | RuntimeException e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(parentWindow)
                         .setTitle("Error importing production plan")
                         .setContextMessage("An error occurred while importing the production plan")
                         .setException(e)
                         .showAndWait();
             }catch (UnsupportedVersionException e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(parentWindow)
                         .setTitle("Requires newer version of Satisplanory")
                         .setContextMessage("Unsupported production plan format, please upgrade Satisplanory")
                         .setDetailsMessage("""

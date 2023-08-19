@@ -10,32 +10,30 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.dialog;
 
-import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
-import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
-import java.util.List;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 public class TaskProgressDialog
 {
-    private final List<? extends String> styleSheets;
+    private final Window owner;
     private String title;
     private String contentText;
     private boolean cancellable;
 
-    public TaskProgressDialog(AppContext appContext)
+    public TaskProgressDialog(Window owner)
     {
-        this.styleSheets = Style.getStyleSheets(appContext);
+        this.owner = owner;
     }
 
     public <T> TaskResult<T> runTask(Task<? extends T> task)
     {
         Dialog<TaskResult<T>> dialog = new Dialog<>();
-        dialog.getDialogPane().getStylesheets().addAll(styleSheets);
+        dialog.initOwner(owner);
         dialog.setTitle(title);
         VBox content = new VBox();
         content.setPrefWidth(360);
@@ -50,7 +48,7 @@ public class TaskProgressDialog
         dialog.getDialogPane().setContent(content);
         TaskContextImpl context = new TaskContextImpl(progressBar);
         Thread thread = new Thread(() -> {
-            try {
+            try{
                 T result = task.perform(context);
                 Platform.runLater(() -> {
                     dialog.setResult(TaskResult.forResult(result));

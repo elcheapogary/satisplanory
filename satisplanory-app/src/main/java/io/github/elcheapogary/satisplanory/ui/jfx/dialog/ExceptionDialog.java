@@ -10,28 +10,26 @@
 
 package io.github.elcheapogary.satisplanory.ui.jfx.dialog;
 
-import io.github.elcheapogary.satisplanory.ui.jfx.context.AppContext;
-import io.github.elcheapogary.satisplanory.ui.jfx.style.Style;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.List;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
+import javafx.stage.Window;
 
 public class ExceptionDialog
 {
-    private final List<? extends String> styleSheets;
+    private final Window owner;
     private String title;
     private String contextMessage;
     private String detailsMessage;
     private Exception exception;
 
-    public ExceptionDialog(AppContext appContext)
+    public ExceptionDialog(Window owner)
     {
-        this.styleSheets = Style.getStyleSheets(appContext);
+        this.owner = owner;
     }
 
     public ExceptionDialog setContextMessage(String contextMessage)
@@ -61,7 +59,9 @@ public class ExceptionDialog
     public void showAndWait()
     {
         Dialog<Void> dialog = new Dialog<>();
-        dialog.getDialogPane().getStylesheets().addAll(styleSheets);
+        if (owner != null){
+            dialog.initOwner(owner);
+        }
         if (title != null){
             dialog.setTitle(title);
         }else{

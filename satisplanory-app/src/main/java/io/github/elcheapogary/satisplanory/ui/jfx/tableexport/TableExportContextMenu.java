@@ -53,7 +53,7 @@ public class TableExportContextMenu
                         CsvExport.exportToCsv(w, tableView);
                     }
                 }catch (IOException e){
-                    new ExceptionDialog(appContext)
+                    new ExceptionDialog(menuItem.getParentPopup().getOwnerWindow())
                             .setTitle("Error exporting data")
                             .setContextMessage("An error occurred while exporting the data to file")
                             .setException(e)

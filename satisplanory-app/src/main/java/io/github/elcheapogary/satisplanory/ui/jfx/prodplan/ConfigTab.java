@@ -63,6 +63,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.web.WebView;
+import javafx.stage.Window;
 
 class ConfigTab
 {
@@ -141,10 +142,12 @@ class ConfigTab
                 );
             }
 
+            Window owner = button.getScene().getWindow();
+
             MultiPlan plan;
 
             try{
-                plan = new TaskProgressDialog(appContext)
+                plan = new TaskProgressDialog(owner)
                         .setTitle("Calculating")
                         .setContentText("Calculating production plan")
                         .setCancellable(true)
@@ -153,13 +156,13 @@ class ConfigTab
             }catch (TaskProgressDialog.TaskCancelledException e){
                 return;
             }catch (ProductionPlanNotFeatisbleException e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(owner)
                         .setTitle("No feasible plan")
                         .setContextMessage("No production plan possible with the provided input")
                         .showAndWait();
                 return;
             }catch (Exception e){
-                new ExceptionDialog(appContext)
+                new ExceptionDialog(owner)
                         .setTitle("Error calculating production plan")
                         .setContextMessage("An unexpected error occurred while calculating the production plan")
                         .setDetailsMessage("""
@@ -174,7 +177,7 @@ class ConfigTab
             if (plan.isUnmodifiedPlanFeasible()){
                 ProductionPlan p = plan.getUnmodifiedPlan();
                 if (p.getOutputItems().isEmpty()){
-                    new ExceptionDialog(appContext)
+                    new ExceptionDialog(owner)
                             .setContextMessage("This configuration generated an empty plan - it does nothing. Try adding minimum output.")
                             .setTitle("Empty plan")
                             .setDetailsMessage("Having at least one output item with a minimum number of items per minute will help.")
@@ -276,7 +279,7 @@ class ConfigTab
                 if (enabledRecipes.contains(recipe)){
                     cb.setSelected(true);
                 }
-                enabledRecipes.addListener((SetChangeListener<Recipe>)change -> {
+                enabledRecipes.addListener((SetChangeListener<Recipe>) change -> {
                     if (change.wasRemoved() && change.getElementRemoved() == recipe){
                         cb.setSelected(false);
                     }else if (change.wasAdded() && change.getElementAdded() == recipe){
