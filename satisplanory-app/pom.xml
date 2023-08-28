@@ -28,7 +28,7 @@
 
         <build.date>${generated.build.date}</build.date>
 
-        <version.openjfx>20.0.1</version.openjfx>
+        <version.openjfx>20.0.2</version.openjfx>
     </properties>
 
     <dependencies>
