@@ -7,7 +7,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package io.github.elcheapogary.satisplanory.ui.jfx.component;
 
 import javafx.geometry.Bounds;
@@ -25,7 +24,7 @@ public class ZoomableScrollPane
     {
     }
 
-    public static ScrollPane create(Node target, double minScale, double maxScale)
+    public static ScrollPane create(Node target, double maxScale)
     {
         ScrollPane sp = new ScrollPane();
         sp.setFitToWidth(true);
@@ -38,12 +37,12 @@ public class ZoomableScrollPane
 
         sp.setContent(outer);
 
-        outer.setOnScroll(scrollEvent -> zoom(sp, zoomNode, target, scrollEvent, minScale, maxScale));
+        outer.setOnScroll(scrollEvent -> zoom(sp, zoomNode, target, scrollEvent, maxScale));
 
         return sp;
     }
 
-    private static void zoom(ScrollPane sp, Node zoomNode, Node target, ScrollEvent scrollEvent, double minScale, double maxScale)
+    private static void zoom(ScrollPane sp, Node zoomNode, Node target, ScrollEvent scrollEvent, double maxScale)
     {
         scrollEvent.consume();
         double zoomFactor = Math.exp(scrollEvent.getDeltaY() * 0.005);
@@ -51,7 +50,8 @@ public class ZoomableScrollPane
         Bounds innerBounds = zoomNode.getLayoutBounds();
         Bounds viewportBounds = sp.getViewportBounds();
 
-        // calculate pixel offsets from [0, 1] range
+        double minScale = Math.min(viewportBounds.getWidth() / target.getLayoutBounds().getWidth(), viewportBounds.getHeight() / target.getLayoutBounds().getHeight());
+
         double valX = sp.getHvalue() * (innerBounds.getWidth() - viewportBounds.getWidth());
         double valY = sp.getVvalue() * (innerBounds.getHeight() - viewportBounds.getHeight());
 
@@ -67,16 +67,12 @@ public class ZoomableScrollPane
 
         target.setScaleX(scale);
         target.setScaleY(scale);
-        sp.layout(); // refresh ScrollPane scroll positions & target bounds
+        sp.layout();
 
-        // convert target coordinates to zoomTarget coordinates
         Point2D posInZoomTarget = target.parentToLocal(zoomNode.parentToLocal(new Point2D(scrollEvent.getX(), scrollEvent.getY())));
 
-        // calculate adjustment of scroll position (pixels)
         Point2D adjustment = target.getLocalToParentTransform().deltaTransform(posInZoomTarget.multiply(zoomFactor - 1));
 
-        // convert back to [0, 1] range
-        // (too large/small values are automatically corrected by ScrollPane)
         Bounds updatedInnerBounds = zoomNode.getBoundsInLocal();
         sp.setHvalue((valX + adjustment.getX()) / (updatedInnerBounds.getWidth() - viewportBounds.getWidth()));
         sp.setVvalue((valY + adjustment.getY()) / (updatedInnerBounds.getHeight() - viewportBounds.getHeight()));

@@ -650,7 +650,7 @@ class GraphTab
 
         Pane pane = createGraphPane(graph, GraphTab::createNodeComponent, GraphTab::createEdgeComponent, selectedNodeProperty);
 
-        ScrollPane sp = ZoomableScrollPane.create(pane, 0.1, 5.0);
+        ScrollPane sp = ZoomableScrollPane.create(pane, 5.0);
         sp.setPannable(true);
         bp.setCenter(sp);
 
