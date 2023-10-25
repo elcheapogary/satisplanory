@@ -7,7 +7,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package io.github.elcheapogary.satisplanory.prodplan;
 
 import io.github.elcheapogary.satisplanory.model.GameData;
@@ -17,6 +16,7 @@ import io.github.elcheapogary.satisplanory.satisfactory.SatisfactoryData;
 import io.github.elcheapogary.satisplanory.util.BigFraction;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Set;
 
 public class ProdPlanUtils
@@ -111,38 +111,127 @@ public class ProdPlanUtils
 
     static Collection<? extends Recipe> getRecipesWeCanBuild(Collection<? extends Recipe> recipes, Collection<? extends Item> inputItems)
     {
-        recipes = Recipe.createSet(recipes);
         Set<Recipe> producable = Recipe.createSet();
 
         Set<Item> availableItems = Item.createSet();
         availableItems.addAll(inputItems);
 
-        while (true){
-            boolean addedRecipe = false;
+        class UnbuildableRecipeSet
+        {
+            private final Set<Item> missingIngredients = Item.createSet();
+            private final Set<Recipe> recipes = Recipe.createSet();
+        }
 
-            for (Iterator<? extends Recipe> it = recipes.iterator(); it.hasNext(); ){
-                Recipe recipe = it.next();
+        Collection<UnbuildableRecipeSet> unbuildableRecipeSets = new LinkedList<>();
 
-                boolean allIngredientsAvailable = true;
-                for (Recipe.RecipeItem ri : recipe.getIngredients()){
-                    if (!availableItems.contains(ri.getItem())){
-                        allIngredientsAvailable = false;
-                        break;
-                    }
-                }
+        for (Recipe recipe : recipes){
+            Set<Item> missingIngredients = Item.createSet();
 
-                if (allIngredientsAvailable){
-                    addedRecipe = true;
-                    it.remove();
-                    producable.add(recipe);
-                    for (Recipe.RecipeItem ri : recipe.getProducts()){
-                        availableItems.add(ri.getItem());
-                    }
+            for (Recipe.RecipeItem ri : recipe.getIngredients()){
+                if (!availableItems.contains(ri.getItem())){
+                    missingIngredients.add(ri.getItem());
                 }
             }
 
-            if (!addedRecipe){
-                break;
+            Set<Item> addedItems = Item.createSet();
+
+            if (missingIngredients.isEmpty()){
+                producable.add(recipe);
+                for (Recipe.RecipeItem ri : recipe.getProducts()){
+                    if (availableItems.add(ri.getItem())){
+                        addedItems.add(ri.getItem());
+                    }
+                }
+            }else{
+                Collection<UnbuildableRecipeSet> newRecipeSets = new LinkedList<>();
+
+                for (Iterator<UnbuildableRecipeSet> it = unbuildableRecipeSets.iterator(); it.hasNext(); ){
+                    UnbuildableRecipeSet urs = it.next();
+
+                    boolean recipeHelps = false;
+                    for (Recipe.RecipeItem ri : recipe.getProducts()){
+                        if (urs.missingIngredients.contains(ri.getItem())){
+                            recipeHelps = true;
+                            break;
+                        }
+                    }
+
+                    if (!recipeHelps){
+                        continue;
+                    }
+
+                    UnbuildableRecipeSet n = new UnbuildableRecipeSet();
+                    n.recipes.addAll(urs.recipes);
+                    n.recipes.add(recipe);
+
+                    n.missingIngredients.addAll(urs.missingIngredients);
+
+                    for (Recipe.RecipeItem ri : recipe.getProducts()){
+                        n.missingIngredients.remove(ri.getItem());
+                    }
+
+                    Set<Item> copyOfMissingIngredients = Item.createSet();
+                    copyOfMissingIngredients.addAll(missingIngredients);
+
+                    for (Recipe otherRecipe : urs.recipes){
+                        for (Recipe.RecipeItem ri : otherRecipe.getProducts()){
+                            copyOfMissingIngredients.remove(ri.getItem());
+                        }
+                    }
+
+                    n.missingIngredients.addAll(copyOfMissingIngredients);
+
+                    if (n.missingIngredients.isEmpty()){
+                        it.remove();
+                        producable.addAll(n.recipes);
+                        for (Recipe r : n.recipes){
+                            for (Recipe.RecipeItem ri : r.getProducts()){
+                                if (availableItems.add(ri.getItem())){
+                                    addedItems.add(ri.getItem());
+                                }
+                            }
+                        }
+                        break;
+                    }else{
+                        newRecipeSets.add(n);
+                    }
+                }
+
+                if (addedItems.isEmpty()){
+                    UnbuildableRecipeSet urs = new UnbuildableRecipeSet();
+                    urs.recipes.add(recipe);
+                    urs.missingIngredients.addAll(missingIngredients);
+                    newRecipeSets.add(urs);
+
+                    unbuildableRecipeSets.addAll(newRecipeSets);
+                }
+            }
+
+            while (!addedItems.isEmpty()){
+                Item item;
+                {
+                    Iterator<Item> it = addedItems.iterator();
+                    item = it.next();
+                    it.remove();
+                }
+
+                for (Iterator<UnbuildableRecipeSet> it = unbuildableRecipeSets.iterator(); it.hasNext(); ){
+                    UnbuildableRecipeSet urs = it.next();
+
+                    urs.missingIngredients.remove(item);
+
+                    if (urs.missingIngredients.isEmpty()){
+                        it.remove();
+                        producable.addAll(urs.recipes);
+                        for (Recipe r : urs.recipes){
+                            for (Recipe.RecipeItem ri : r.getProducts()){
+                                if (availableItems.add(ri.getItem())){
+                                    addedItems.add(ri.getItem());
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
