@@ -142,6 +142,9 @@ public class BigFraction
 
     public BigFraction add(BigFraction addend)
     {
+        if (addend.signum() == 0){
+            return this;
+        }
         return valueOf(
                 this.numerator.multiply(addend.denominator).add(addend.numerator.multiply(this.denominator)),
                 this.denominator.multiply(addend.denominator)
