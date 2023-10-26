@@ -7,7 +7,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package io.github.elcheapogary.satisplanory.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
@@ -34,9 +33,11 @@ public class OptimizationResult
 
     public BigFraction getFractionValue(Expression expression)
     {
-        try (var stream = expression.getCoefficients().entrySet().parallelStream()){
+        try (var stream = expression.getCoefficients().entrySet().parallelStream()) {
             return stream.map(entry -> variableValues.get(entry.getKey()).multiply(entry.getValue()))
-                    .reduce(expression.getConstantValue(), BigFraction::add);
+                    .filter(v -> v.signum() != 0)
+                    .reduce(BigFraction.zero(), BigFraction::add)
+                    .add(expression.getConstantValue());
         }
     }
 

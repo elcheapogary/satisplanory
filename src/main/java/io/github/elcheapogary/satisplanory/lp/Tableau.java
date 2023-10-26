@@ -7,7 +7,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package io.github.elcheapogary.satisplanory.lp;
 
 import io.github.elcheapogary.satisplanory.util.BigFraction;
@@ -250,9 +249,11 @@ class Tableau
 
     public BigFraction getValue(Expression expression)
     {
-        try (var stream = expression.getCoefficients().entrySet().parallelStream()){
+        try (var stream = expression.getCoefficients().entrySet().parallelStream()) {
             return stream.map(entry -> getValue(entry.getKey()).multiply(entry.getValue()))
-                    .reduce(expression.getConstantValue(), BigFraction::add);
+                    .filter(v -> v.signum() != 0)
+                    .reduce(BigFraction.zero(), BigFraction::add)
+                    .add(expression.getConstantValue());
         }
     }
 
@@ -313,13 +314,13 @@ class Tableau
 
             Pair<TableauVariable, Pair<Row, BigFraction>> pivot;
 
-            try (var stream = objectiveRow.getCoefficients().parallelStream()){
+            try (var stream = objectiveRow.getCoefficients().parallelStream()) {
                 pivot = stream.filter(entry -> entry.getValue().signum() < 0)
                         .map(catcher.function(entry -> {
                             TableauVariable v = entry.getKey();
                             BigFraction objectiveRowValue = entry.getValue();
 
-                            try (var rowStream = v.rows.parallelStream()){
+                            try (var rowStream = v.rows.parallelStream()) {
                                 return rowStream.filter(row -> row != objectiveRow)
                                         .filter(row -> row.constant.signum() >= 0)
                                         .map(row -> Pair.of(row, row.getCoefficient(v)))
@@ -375,7 +376,7 @@ class Tableau
             }
         }
 
-        try (var stream = new ArrayList<>(variable.rows).parallelStream()){
+        try (var stream = new ArrayList<>(variable.rows).parallelStream()) {
             stream.filter(row -> row != pivotRow)
                     .forEach(r -> r.subtract(r.getCoefficient(variable), pivotRow));
         }
@@ -581,27 +582,6 @@ class Tableau
         }
     }
 
-    private static class TableauVariable
-            extends Variable
-    {
-        private final String debugName;
-        private final Set<Row> rows = Collections.synchronizedSet(new TreeSet<>(Row.COMPARATOR));
-        private Row basicRow;
-        private boolean knownZero = false;
-
-        public TableauVariable(int id, String debugName)
-        {
-            super(id);
-            this.debugName = debugName;
-        }
-
-        @Override
-        public String getDebugName()
-        {
-            return debugName;
-        }
-    }
-
     private static class Row
     {
         private static final Comparator<Row> COMPARATOR = Comparator.comparingInt(Row::getId);
@@ -644,7 +624,7 @@ class Tableau
         public void divide(BigFraction divisor)
         {
             constant = constant.divide(divisor);
-            try (var stream = coefficients.entrySet().parallelStream()){
+            try (var stream = coefficients.entrySet().parallelStream()) {
                 stream.forEach(entry -> entry.setValue(entry.getValue().divide(divisor)));
             }
         }
@@ -673,7 +653,7 @@ class Tableau
         public void negate()
         {
             constant = constant.negate();
-            try (var stream = coefficients.entrySet().parallelStream()){
+            try (var stream = coefficients.entrySet().parallelStream()) {
                 stream.forEach(e -> e.setValue(e.getValue().negate()));
             }
         }
@@ -702,7 +682,7 @@ class Tableau
         {
             Row r;
 
-            try (var stream = coefficients.entrySet().parallelStream()){
+            try (var stream = coefficients.entrySet().parallelStream()) {
                 r = stream.filter(e -> e.getKey().basicRow != null && e.getKey().basicRow != Row.this)
                         .map(e -> {
                             Row basicRow = e.getKey().basicRow;
@@ -744,6 +724,27 @@ class Tableau
         public Collection<? extends TableauVariable> variables()
         {
             return coefficients.keySet();
+        }
+    }
+
+    private static class TableauVariable
+            extends Variable
+    {
+        private final String debugName;
+        private final Set<Row> rows = Collections.synchronizedSet(new TreeSet<>(Row.COMPARATOR));
+        private Row basicRow;
+        private boolean knownZero = false;
+
+        public TableauVariable(int id, String debugName)
+        {
+            super(id);
+            this.debugName = debugName;
+        }
+
+        @Override
+        public String getDebugName()
+        {
+            return debugName;
         }
     }
 }
